@@ -194,22 +194,25 @@ export class DaySpineCard extends LitElement {
 
   private _renderAllDay(items: SpineEntry[]): TemplateResult {
     return html`<div class="allday">
-      ${items.map(
-        (e) => html`<div class="allday-item">
+      ${items.map((e) => {
+        // An all-day `#Away` is the common case for a tag, not an edge one, so
+        // the chips ride along through all three of these shapes.
+        const ttl = html`${e.title}${this._renderTags(e)}`;
+        return html`<div class="allday-item">
           ${icon("calendar-days", 18)}
           <div class="allday-body">
             ${this._startedEarlier(e) && e.end
-              ? html`<div>${e.title}<span class="dur">until ${this._endLabel(e)}</span></div>`
+              ? html`<div>${ttl}<span class="dur">until ${this._endLabel(e)}</span></div>`
               : items.length === 1 && !e.automation && !e.action
-                ? html`All day · ${e.title}`
-                : html`<div>${e.title}</div>`}
+                ? html`All day · ${ttl}`
+                : html`<div>${ttl}</div>`}
             ${e.automation
               ? html`<div class="auto">${icon("sparkles", 14)}${e.automation}</div>`
               : nothing}
             ${this._renderAction(e)}
           </div>
-        </div>`,
-      )}
+        </div>`;
+      })}
     </div>`;
   }
 
@@ -256,6 +259,18 @@ export class DaySpineCard extends LitElement {
     </div>`;
   }
 
+  /**
+   * The `#tags` a person typed into the event title.
+   *
+   * Drawn, never swallowed: a tag is how you know at breakfast what the house
+   * intends to do at nine. They all render inert for now, because nothing binds
+   * them yet — a chip that looked live would be claiming something untrue.
+   */
+  private _renderTags(e: SpineEntry): TemplateResult | typeof nothing {
+    if (!e.tags?.length) return nothing;
+    return html`${e.tags.map((t) => html`<span class="tag">#${t}</span>`)}`;
+  }
+
   private _renderContent(row: SpineRow): TemplateResult | string {
     const e = row.entry;
     switch (row.variant) {
@@ -263,11 +278,11 @@ export class DaySpineCard extends LitElement {
         return html`<div class="now-l">Now</div>
           ${row.subline ? html`<div class="now-s">${row.subline}</div>` : nothing}`;
       case "past":
-        return e!.title;
+        return html`${e!.title}${this._renderTags(e!)}`;
       case "recent":
         return html`${icon("sparkles", 14)}<span>${e!.title}</span>`;
       case "live":
-        return html`<div class="ttl">${e!.title}</div>
+        return html`<div class="ttl">${e!.title}${this._renderTags(e!)}</div>
           ${e!.automation
             ? html`<div class="auto">${icon("sparkles", 14)}${e!.automation}</div>`
             : nothing}
@@ -275,7 +290,9 @@ export class DaySpineCard extends LitElement {
       default: {
         const dur = this._config.show_duration ? this._duration(e!) : null;
         return html`<div class="ttl">
-            ${e!.title}${dur ? html`<span class="dur">${dur}</span>` : nothing}
+            ${e!.title}${this._renderTags(e!)}${dur
+              ? html`<span class="dur">${dur}</span>`
+              : nothing}
           </div>
           ${e!.automation
             ? html`<div class="auto">${icon("sparkles", 14)}${e!.automation}</div>`

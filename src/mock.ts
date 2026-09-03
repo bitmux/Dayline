@@ -19,6 +19,8 @@ export const ordinary: SpineEntry[] = [
     kind: "calendar",
     source: "CalDAV",
     title: "Trash out tonight",
+    // An all-day tag is the common case, not an edge one — "#Away all weekend".
+    tags: ["Away"],
   },
   {
     id: "auto:morning",
@@ -27,7 +29,9 @@ export const ordinary: SpineEntry[] = [
     source: "House",
     title: "Morning · lights up, thermostat to 70°",
   },
-  { id: "cal:school", start: at(8, 20), kind: "calendar", source: "Google", title: "Kid to school" },
+  // A past row, so the harness shows a chip beside a struck-through title too.
+  { id: "cal:school", start: at(8, 20), kind: "calendar", source: "Google", title: "Kid to school",
+    tags: ["Home"] },
   {
     id: "cal:kid-out",
     start: at(15, 50),
@@ -60,6 +64,7 @@ export const ordinary: SpineEntry[] = [
     kind: "calendar",
     source: "Google",
     title: "Kid bed time",
+    tags: ["Quiet"],
     automation: "Story on Sonos, 20 min, then dark",
     priority: "high",
   },

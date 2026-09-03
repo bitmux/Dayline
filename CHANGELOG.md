@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+**`#tags` in calendar event titles are now read and shown.** Put `#Away` in an
+event title and the card draws it as a chip beside the row, on timed, past and
+all-day entries alike. The tag is lifted out of the title before anything else
+reads it, so exclusions, the sentence map, the entry id and the dedupe all
+behave exactly as they did before it was added.
+
+Matching is deliberately loose, because real tags are messy: any position, any
+case, trailing punctuation tolerated, so `#vacation!` reads as `vacation`. A
+leading letter is required, which keeps "Room #3" out of it.
+
+**Nothing acts on a tag yet.** They render inert on purpose — a livelier chip
+would be claiming the house is about to do something when it is not. The feed
+also publishes `tags_seen` on the sensor, so the vocabulary people actually type
+is observable before anything is built to bind it. See
+[ROADMAP.md](ROADMAP.md) for where this goes.
+
+Fixed along the way: `dedupe` merged an event's sentence, action, stickiness and
+priority but would have dropped a tag that was only on one of the two copies —
+and only one person keeping a shared event needs to have tagged it.
+
 ## 0.2.0 — alpha, 3 September 2026
 
 **The card is now a separate HACS repository, and you need to install both.**

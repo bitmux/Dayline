@@ -18,6 +18,9 @@ Entry = dict[str, Any]
 _PRIORITY_ORDER = {"low": 0, "normal": 1, "high": 2}
 _WORD_RE = re.compile(r"[^a-z0-9 ]+")
 
+# A leading letter is required, which keeps "Room #3" and "#1 priority" out.
+_TAG_RE = re.compile(r"(^|\s)#([A-Za-z][A-Za-z0-9_-]*)[!?.,;:]*")
+
 
 @dataclass
 class MergeConfig:
@@ -47,6 +50,53 @@ def _match_sentence(cfg: MergeConfig, title: str) -> dict[str, Any]:
         if match and match in low:
             return rule
     return {}
+
+
+def split_tags(title: str) -> tuple[str, list[str]]:
+    """Separate `#tags` from the words of an event title.
+
+    A calendar event belongs to whoever provides the calendar, so the only place
+    to put metadata on one is in text a person types anyway. `#Away` is that.
+
+    Matching is loose because real tags are messy — any position, any case,
+    trailing punctuation tolerated, so `#vacation!` yields `vacation`. Binding,
+    when it exists, will be exact.
+
+    Returns the title with the tags lifted out, and the tags as typed. Lifted
+    out, not discarded: the card draws them as chips, because seeing `#Away` is
+    how you know what the house is about to do. Taking them out of the string is
+    what keeps them away from the dedupe, the sentence match and the entry id —
+    none of which should notice a tag being added to an event they already know.
+    """
+    tags: list[str] = []
+    seen: set[str] = set()
+    for _, tag in _TAG_RE.findall(title):
+        if tag.lower() not in seen:
+            seen.add(tag.lower())
+            tags.append(tag)
+    if not tags:
+        return title, []
+    stripped = " ".join(_TAG_RE.sub(lambda m: m.group(1), title).split())
+    # An event titled nothing but tags still has to render as something.
+    return (stripped or title), tags
+
+
+def tags_seen(entries: list[Entry]) -> list[str]:
+    """Every distinct tag on the day, lowercased, in the order first seen.
+
+    This is the discovery surface: nobody can bind a tag they have not been
+    shown, and asking someone to declare their vocabulary up front is exactly
+    the setup this design is trying to delete.
+    """
+    out: list[str] = []
+    seen: set[str] = set()
+    for entry in entries:
+        for tag in entry.get("tags") or []:
+            low = tag.lower()
+            if low not in seen:
+                seen.add(low)
+                out.append(low)
+    return out
 
 
 def _excluded(cfg: MergeConfig, title: str) -> bool:
@@ -112,6 +162,10 @@ def from_calendars(
         is_schedule = meta.get("role") == "schedule"
         for ev in events_by_entity.get(entity_id, []):
             title = str(ev.get("summary") or "(untitled)").strip()
+            # Before anything reads the title: exclusion, sentence matching, the
+            # id and the dedupe should all behave identically whether or not
+            # somebody has tagged the event.
+            title, tags = split_tags(title)
             if _excluded(cfg, title):
                 continue
             raw_start = str(ev.get("start", ""))
@@ -140,21 +194,24 @@ def from_calendars(
             else:
                 automation = rule.get("automation") or None
 
-            out.append(
-                {
-                    "id": f"cal:{entity_id}:{raw_start}:{title}",
-                    "start": _iso(start),
-                    "end": _iso(end),
-                    "all_day": all_day,
-                    "kind": "automation" if is_schedule else "calendar",
-                    "source": meta.get("label") or entity_id,
-                    "title": title,
-                    "automation": automation,
-                    "priority": rule.get("priority") or meta.get("priority") or "normal",
-                    "sticky": bool(rule.get("sticky", False)),
-                    "entity_id": entity_id,
-                }
-            )
+            entry: Entry = {
+                "id": f"cal:{entity_id}:{raw_start}:{title}",
+                "start": _iso(start),
+                "end": _iso(end),
+                "all_day": all_day,
+                "kind": "automation" if is_schedule else "calendar",
+                "source": meta.get("label") or entity_id,
+                "title": title,
+                "automation": automation,
+                "priority": rule.get("priority") or meta.get("priority") or "normal",
+                "sticky": bool(rule.get("sticky", False)),
+                "entity_id": entity_id,
+            }
+            # Omitted rather than empty: this payload is re-sent to every open
+            # browser on each refresh, and most events will never carry a tag.
+            if tags:
+                entry["tags"] = tags
+            out.append(entry)
     return out
 
 
@@ -289,6 +346,16 @@ def dedupe(cfg: MergeConfig, entries: list[Entry]) -> list[Entry]:
         if entry.get("entity_id") not in merged_from:
             merged_from = [*merged_from, entry.get("entity_id")]
 
+        # Tags union, because only one person keeping the shared event needs to
+        # have tagged it. Wording follows the first calendar listed; a tag is not
+        # wording, and dropping one here would lose the very thing it was for.
+        tags = list(hit.get("tags") or [])
+        lowered = {t.lower() for t in tags}
+        for tag in entry.get("tags") or []:
+            if tag.lower() not in lowered:
+                lowered.add(tag.lower())
+                tags.append(tag)
+
         hit.update(
             {
                 # The wording comes from the calendar listed first — predictable,
@@ -301,6 +368,8 @@ def dedupe(cfg: MergeConfig, entries: list[Entry]) -> list[Entry]:
                 "merged_from": merged_from,
             }
         )
+        if tags:
+            hit["tags"] = tags
     return kept
 
 

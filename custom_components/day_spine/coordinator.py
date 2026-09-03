@@ -46,6 +46,7 @@ from .merge import (
     from_sun,
     from_todo,
     remaining_count,
+    tags_seen,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -303,6 +304,9 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "now": self._render(self._opts.get(OPT_NOW_TEMPLATE) or ""),
             "sources": self._sources(),
             "stale_message": self._stale_message(),
+            # Nothing acts on these yet. They are here so the vocabulary people
+            # actually type is observable before anything is built to bind it.
+            "tags_seen": tags_seen(entries),
         }
 
     def _headline(self, left: int, now) -> str:

@@ -38,6 +38,13 @@ export interface SpineEntry {
   title: string;
   /** What the house does on its own, in plain words. Never an entity id or scene name. */
   automation?: string | null;
+  /**
+   * `#tags` the feed lifted out of the event title, as they were typed.
+   *
+   * Shown rather than hidden — seeing `#Away` on a row is how you know what the
+   * house is about to do. Nothing binds them yet, so they all draw as inert.
+   */
+  tags?: string[];
   entity_id?: string | null;
   priority?: Priority;
   /** Stays on the spine past its time until the action is taken, rather than sliding into the past. */

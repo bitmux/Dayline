@@ -134,6 +134,21 @@ export const styles = css`
     color: var(--color-accent-200);
   }
 
+  /* A #tag a person typed into an event title. Deliberately quiet: nothing
+     binds tags yet, so an accent chip would be claiming the house is about to
+     act when it is not. The louder states arrive with the behaviour. */
+  .tag {
+    display: inline-block;
+    font: 600 10px/1 ui-monospace, Menlo, monospace;
+    padding: 3px 6px;
+    margin-left: 6px;
+    border: 1px solid var(--ds-divider);
+    border-radius: 999px;
+    color: var(--color-neutral-500);
+    vertical-align: 1px;
+    white-space: nowrap;
+  }
+
   /* ---------- all-day ---------- */
 
   .allday {

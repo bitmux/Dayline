@@ -58,4 +58,5 @@ class DaySpineSensor(CoordinatorEntity[DaySpineCoordinator], SensorEntity):
             "now": data.get("now", ""),
             "sources": data.get("sources", []),
             "stale_message": data.get("stale_message", ""),
+            "tags_seen": data.get("tags_seen", []),
         }

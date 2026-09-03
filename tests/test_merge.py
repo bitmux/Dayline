@@ -36,6 +36,8 @@ from_calendars = merge.from_calendars
 from_sun = merge.from_sun
 from_todo = merge.from_todo
 remaining_count = merge.remaining_count
+split_tags = merge.split_tags
+tags_seen = merge.tags_seen
 _similar = merge._similar
 
 TZ = timezone(timedelta(hours=-5))
@@ -304,3 +306,100 @@ def test_todo_due_after_today_is_not_on_todays_spine():
     ]
     titles = {e["title"] for e in from_todo(cfg(todo_entity="todo.x"), items, DAY_START)}
     assert titles == {"Switch the laundry", "Bins, yesterday"}
+
+
+# --- tags -------------------------------------------------------------------
+
+
+def test_tags_come_out_of_the_title_and_the_words_stay():
+    assert split_tags("Portland trip #Away") == ("Portland trip", ["Away"])
+    assert split_tags("#Away Portland trip") == ("Portland trip", ["Away"])
+    assert split_tags("Weekend #Away #Quiet") == ("Weekend", ["Away", "Quiet"])
+
+
+def test_tag_matching_is_loose_because_real_tags_are_messy():
+    # A calendar someone else keeps will not spell it the way we would.
+    assert split_tags("Winter break #vacation!") == ("Winter break", ["vacation"])
+    assert split_tags("Trip #AWAY, then home") == ("Trip then home", ["AWAY"])
+    # Same tag twice is one tag, whatever the casing.
+    assert split_tags("#away trip #Away") == ("trip", ["away"])
+
+
+def test_a_number_after_a_hash_is_not_a_tag():
+    """"Room #3" and "#1 priority" are how people write, not how they tag."""
+    assert split_tags("Meet in Room #3") == ("Meet in Room #3", [])
+    assert split_tags("#1 priority") == ("#1 priority", [])
+
+
+def test_an_event_titled_only_a_tag_still_renders_as_something():
+    assert split_tags("#Away") == ("#Away", ["Away"])
+
+
+def test_tagging_an_event_does_not_disturb_anything_that_reads_its_title():
+    """Adding a tag must not change the id, the sentence match or the dedupe —
+    it is metadata about the event, not a different event."""
+    plain = from_calendars(
+        cfg(), {"calendar.family": [ev("2026-09-02T15:50:00-05:00", "Kid out of school")]},
+        DAY_START,
+    )[0]
+    tagged = from_calendars(
+        cfg(),
+        {"calendar.family": [ev("2026-09-02T15:50:00-05:00", "Kid out of school #Away")]},
+        DAY_START,
+    )[0]
+    assert tagged["title"] == plain["title"]
+    assert tagged["id"] == plain["id"]
+    assert tagged["automation"] == plain["automation"] == "Entry unlocks on her arrival"
+    assert tagged["tags"] == ["Away"]
+    assert "tags" not in plain  # omitted, not empty — this rides to every browser
+
+
+def test_exclusions_are_matched_against_the_title_without_its_tags():
+    entries = from_calendars(
+        cfg(), {"calendar.family": [ev("2026-09-02T13:00:00-05:00", "Busy #Away")]}, DAY_START
+    )
+    assert entries == []
+
+
+def test_the_same_event_from_two_calendars_still_dedupes_when_one_is_tagged():
+    entries = dedupe(
+        cfg(),
+        from_calendars(
+            cfg(),
+            {
+                "calendar.family": [ev("2026-09-02T18:00:00-05:00", "Book club #Quiet")],
+                "calendar.wife": [ev("2026-09-02T18:00:00-05:00", "Book club")],
+            },
+            DAY_START,
+        ),
+    )
+    assert len(entries) == 1
+
+
+def test_tags_seen_is_the_days_vocabulary_lowercased_and_in_order():
+    entries = [
+        {"tags": ["Away", "Quiet"]},
+        {"tags": ["away"]},
+        {"title": "no tags here"},
+        {"tags": ["Guests"]},
+    ]
+    assert tags_seen(entries) == ["away", "quiet", "guests"]
+
+
+def test_merging_never_loses_a_tag_that_was_only_on_one_copy():
+    """Only one person keeping a shared event needs to have tagged it. The
+    first calendar still supplies the wording — a tag is not wording."""
+    entries = dedupe(
+        cfg(),
+        from_calendars(
+            cfg(),
+            {
+                "calendar.family": [ev("2026-09-02T18:00:00-05:00", "Book club")],
+                "calendar.wife": [ev("2026-09-02T18:00:00-05:00", "Book club #Quiet")],
+            },
+            DAY_START,
+        ),
+    )
+    assert len(entries) == 1
+    assert entries[0]["title"] == "Book club"
+    assert entries[0]["tags"] == ["Quiet"]
