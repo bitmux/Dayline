@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Day Spine card — dev harness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  body{margin:0;padding:40px;background:#231f1b;font-family:"Figtree",system-ui,sans-serif;
+       display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+  .col{display:flex;flex-direction:column;gap:10px;width:520px}
+  .col.narrow{width:360px}
+  .lbl{font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;
+       color:rgba(232,220,198,.45)}
+  day-spine-card{box-shadow:0 12px 32px rgba(0,0,0,.35);border-radius:28px}
+</style>
+</head>
+<body>
+<script type="module">
+// Pin the clock to 2:39 PM so this harness reproduces the design reference exactly
+// however late it is opened. Harness-only — the card itself reads the real clock.
+// Installed before the bundle loads, hence the dynamic import.
+const PINNED = (() => { const d = new Date(); d.setHours(14, 39, 0, 0); return d.getTime(); })();
+Date.now = () => PINNED;
+
+const { mock } = await import("./dev-bundle.js");
+
+// A stand-in for the parts of `hass` the card touches. callService just logs, so
+// the action button can be pressed here without a Home Assistant behind it.
+function hass(attributes, { state = "3", unavailable = false } = {}) {
+  return {
+    locale: { language: "en-US" },
+    states: unavailable ? {} : {
+      "sensor.day_spine": {
+        entity_id: "sensor.day_spine",
+        state,
+        last_updated: new Date().toISOString(),
+        attributes,
+      },
+    },
+    callService: (d, s, data, target) => {
+      console.info("callService", `${d}.${s}`, { data, target });
+      return Promise.resolve();
+    },
+  };
+}
+
+function mount(label, attributes, opts = {}, config = {}, narrow = false, style = "") {
+  const col = document.createElement("div");
+  col.className = "col" + (narrow ? " narrow" : "");
+  col.setAttribute("style", style);
+  col.innerHTML = `<div class="lbl">${label}</div>`;
+  const card = document.createElement("day-spine-card");
+  card.setConfig({ type: "custom:day-spine-card", entity: "sensor.day_spine", ...config });
+  card.hass = hass(attributes, opts);
+  col.appendChild(card);
+  document.body.appendChild(col);
+}
+
+const SOURCES = [{ label: "Google" }, { label: "CalDAV" }];
+
+mount("Mid-afternoon · the ordinary case", {
+  entries: mock.ordinary,
+  headline: "2 September · everyone home by 6",
+  now: "Afternoon · house quiet, doors locked",
+  sources: SOURCES,
+});
+
+mount("Empty day · sun and now marker remain", {
+  entries: mock.emptyDay,
+  headline: "Nothing scheduled.",
+  now: "Morning · 3 lights on, 71° inside",
+  sources: SOURCES,
+});
+
+mount("Stale source · says what it doesn't know", {
+  entries: mock.staleSource,
+  headline: "1 left today",
+  now: "Morning · everyone up",
+  sources: [{ label: "Google", stale: true }, { label: "CalDAV" }],
+  stale_message:
+    "Google calendar hasn't updated since 8:14 AM yesterday. Anything on it is missing from today.",
+});
+
+mount("Busy day · overdue actionable, recent event, overflow", {
+  entries: mock.busy,
+  headline: "9 left today",
+  now: "Afternoon · house quiet, doors locked",
+  sources: [{ label: "Google" }, { label: "CalDAV" }, { label: "Tasks" }],
+});
+
+mount("Loading · rail at full height, no dots, no collapse", {}, { unavailable: true });
+
+mount("No all-day events · region omitted entirely", {
+  entries: mock.ordinary.filter((e) => !e.all_day),
+  headline: "4 left today",
+  now: "Afternoon · house quiet, doors locked",
+  sources: SOURCES,
+});
+
+// End to end: the actual attributes ha/day_spine.yaml produces, rendered by the
+// actual card. Regenerate with scratchpad/render.py after editing the feed.
+try {
+  const feed = await (await fetch("./feed-sample.json")).json();
+  mount("Real feed output · ha/day_spine.yaml → the card", feed);
+} catch (e) {
+  console.warn("feed-sample.json not found; skipping the end-to-end panel", e);
+}
+
+// The integration's own merge output, rendered by the real card. Regenerate
+// with tools/render-integration.py.
+try {
+  const feed = await (await fetch("./integration-sample.json")).json();
+  mount("Integration output · custom_components/day_spine → the card", feed);
+} catch (e) {
+  console.warn("integration-sample.json not found; skipping that panel", e);
+}
+
+mount("Overlaps · three things running at once, plus a day-spanning event", {
+  entries: mock.overlapping,
+  headline: "3 running, 3 left today",
+  now: "Afternoon · house busy",
+  sources: [{ label: "Google" }, { label: "CalDAV" }, { label: "House" }],
+});
+
+// A stand-in for a light Home Assistant theme, to prove the card adopts one.
+// These are HA's own variable names, set the way a theme sets them.
+const HA_LIGHT_THEME = `
+  --card-background-color:#ffffff; --secondary-background-color:#f5f5f5;
+  --primary-text-color:#212121;    --secondary-text-color:#727272;
+  --divider-color:#e0e0e0;         --disabled-text-color:#bdbdbd;
+  --primary-color:#03a9f4;         --accent-color:#7e57c2;
+  --error-color:#fdecea;           --ha-card-border-radius:12px;`;
+
+mount(
+  "HA theme mode · use_ha_theme, light theme vars",
+  {
+    entries: mock.busy,
+    headline: "9 left today",
+    now: "Afternoon · house quiet, doors locked",
+    sources: [{ label: "Google" }, { label: "CalDAV", stale: true }, { label: "Tasks" }],
+    stale_message: "CalDAV calendar is not updating.",
+  },
+  {},
+  { use_ha_theme: true },
+  false,
+  HA_LIGHT_THEME,
+);
+
+mount(
+  "Fluid floor · 360px, legend off",
+  {
+    entries: mock.busy,
+    headline: "9 left today",
+    now: "Afternoon · house quiet",
+    sources: SOURCES,
+  },
+  {},
+  { show_legend: false },
+  true,
+);
+</script>
+</body>
+</html>

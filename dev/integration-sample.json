@@ -1,0 +1,198 @@
+{
+ "entries": [
+  {
+   "id": "cal:calendar.family:2026-09-02:Trash out tonight",
+   "start": "2026-09-02T00:00:00-05:00",
+   "end": null,
+   "all_day": true,
+   "kind": "calendar",
+   "source": "Google",
+   "title": "Trash out tonight",
+   "automation": null,
+   "priority": "normal",
+   "sticky": false,
+   "entity_id": "calendar.family"
+  },
+  {
+   "id": "sun:rising",
+   "start": "2026-09-02T06:58:00-05:00",
+   "end": null,
+   "all_day": false,
+   "kind": "sun",
+   "source": "Sun",
+   "title": "Sunrise",
+   "automation": null,
+   "priority": "low",
+   "sticky": false,
+   "entity_id": "sun.sun"
+  },
+  {
+   "id": "cal:calendar.house_schedule:2026-09-02T07:00:00-05:00:Morning",
+   "start": "2026-09-02T07:00:00-05:00",
+   "end": "2026-09-02T07:05:00-05:00",
+   "all_day": false,
+   "kind": "automation",
+   "source": "House",
+   "title": "Morning",
+   "automation": "Lights up over 20 minutes, thermostat to 70\u00b0",
+   "priority": "normal",
+   "sticky": false,
+   "entity_id": "calendar.house_schedule"
+  },
+  {
+   "id": "cal:calendar.family:2026-09-02T08:20:00-05:00:Kid to school",
+   "start": "2026-09-02T08:20:00-05:00",
+   "end": "2026-09-02T08:40:00-05:00",
+   "all_day": false,
+   "kind": "calendar",
+   "source": "Google",
+   "title": "Kid to school",
+   "automation": null,
+   "priority": "normal",
+   "sticky": false,
+   "entity_id": "calendar.family"
+  },
+  {
+   "id": "cal:calendar.family:2026-09-02T14:00:00-05:00:Kid's art class",
+   "start": "2026-09-02T14:00:00-05:00",
+   "end": "2026-09-02T17:15:00-05:00",
+   "all_day": false,
+   "kind": "calendar",
+   "source": "Google",
+   "title": "Kid's art class",
+   "automation": null,
+   "priority": "normal",
+   "sticky": false,
+   "entity_id": "calendar.family"
+  },
+  {
+   "id": "todo:abc",
+   "start": "2026-09-02T14:01:00-05:00",
+   "end": null,
+   "all_day": false,
+   "kind": "todo",
+   "source": "Tasks",
+   "title": "Switch the laundry",
+   "automation": null,
+   "priority": "high",
+   "sticky": true,
+   "entity_id": "todo.household",
+   "action": {
+    "label": "Done",
+    "service": "todo.update_item",
+    "target": {
+     "entity_id": "todo.household"
+    },
+    "data": {
+     "item": "abc",
+     "status": "completed"
+    }
+   }
+  },
+  {
+   "id": "evt:light.living_room",
+   "start": "2026-09-02T14:36:00-05:00",
+   "end": null,
+   "expires": "2026-09-02T14:41:00-05:00",
+   "all_day": false,
+   "kind": "event",
+   "source": "House",
+   "title": "Living room lights turned off by motion sensor",
+   "entity_id": "light.living_room"
+  },
+  {
+   "id": "cal:calendar.family:2026-09-02T15:50:00-05:00:Kid out of school",
+   "start": "2026-09-02T15:50:00-05:00",
+   "end": "2026-09-02T16:20:00-05:00",
+   "all_day": false,
+   "kind": "calendar",
+   "source": "Google + CalDAV",
+   "title": "Kid out of school",
+   "automation": "Entry unlocks on her arrival",
+   "priority": "normal",
+   "sticky": false,
+   "entity_id": "calendar.family",
+   "action": null,
+   "merged_from": [
+    "calendar.family",
+    "calendar.wife"
+   ],
+   "weather": {
+    "condition": "pouring",
+    "temperature": 61,
+    "precipitation_probability": 85
+   }
+  },
+  {
+   "id": "sun:setting",
+   "start": "2026-09-02T19:47:00-05:00",
+   "end": null,
+   "all_day": false,
+   "kind": "sun",
+   "source": "Sun",
+   "title": "Sunset",
+   "automation": "Evening lights over 20 minutes",
+   "priority": "low",
+   "sticky": false,
+   "entity_id": "sun.sun",
+   "weather": {
+    "condition": "partlycloudy",
+    "temperature": 58,
+    "precipitation_probability": 10
+   }
+  },
+  {
+   "id": "cal:calendar.family:2026-09-02T21:00:00-05:00:Kid bed time",
+   "start": "2026-09-02T21:00:00-05:00",
+   "end": "2026-09-02T21:30:00-05:00",
+   "all_day": false,
+   "kind": "calendar",
+   "source": "Google",
+   "title": "Kid bed time",
+   "automation": "Story on Sonos, 20 min, then dark",
+   "priority": "high",
+   "sticky": false,
+   "entity_id": "calendar.family",
+   "weather": {
+    "condition": "clear-night",
+    "temperature": 54,
+    "precipitation_probability": 0
+   }
+  },
+  {
+   "id": "cal:calendar.wife:2026-09-02T22:00:00-05:00:Wife night shift",
+   "start": "2026-09-02T22:00:00-05:00",
+   "end": "2026-09-03T06:30:00-05:00",
+   "all_day": false,
+   "kind": "calendar",
+   "source": "CalDAV",
+   "title": "Wife night shift",
+   "automation": null,
+   "priority": "normal",
+   "sticky": false,
+   "entity_id": "calendar.wife",
+   "weather": {
+    "condition": "clear-night",
+    "temperature": 52,
+    "precipitation_probability": 0
+   }
+  }
+ ],
+ "headline": "2 September \u00b7 6 left today",
+ "now": "Afternoon \u00b7 house quiet, doors locked",
+ "sources": [
+  {
+   "label": "Google",
+   "stale": false
+  },
+  {
+   "label": "CalDAV",
+   "stale": false
+  },
+  {
+   "label": "House",
+   "stale": true
+  }
+ ],
+ "stale_message": "House calendar is not updating. Anything on it is missing from today."
+}

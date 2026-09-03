@@ -1,0 +1,21 @@
+{
+  "domain": "day_spine",
+  "name": "Dayline",
+  "codeowners": [
+    "@bitmux"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "calendar"
+  ],
+  "after_dependencies": [
+    "todo",
+    "weather",
+    "sun"
+  ],
+  "documentation": "http://git.lan/bitmux/Dayline",
+  "iot_class": "local_polling",
+  "issue_tracker": "http://git.lan/bitmux/Dayline/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

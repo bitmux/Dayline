@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="_ds/organic-8e49e359-e87d-4668-a6e7-1b93c6c99576/styles.css">
+<script src="_ds/organic-8e49e359-e87d-4668-a6e7-1b93c6c99576/_ds_bundle.js"></script>
+<script src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<style>
+body{margin:0;background:#e6dcc9;font-family:"Figtree",system-ui,sans-serif}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#201e1d;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 "Figtree",system-ui,sans-serif;color:#201e1d}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(32,30,29,.1);color:#201e1d;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 "Figtree",system-ui,sans-serif;color:rgba(32,30,29,.6)}
+.dv-card{max-width:100%;border-radius:28px;overflow:hidden;box-shadow:0 12px 32px color-mix(in srgb,#2e2b25 22%,transparent)}
+.dv-opt:target .dv-oid{background:#c67139;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 "Figtree",system-ui,sans-serif;color:rgba(32,30,29,.55)}
+.dv-next a{color:inherit}
+a{color:#8c491a}a:hover{color:#b2622d}
+[data-lucide]{display:inline-block;vertical-align:middle}
+</style></helmet>
+
+<section class="dv-turn" id="brief" style="background:#f5ead8">
+<div style="max-width:1000px;display:flex;flex-direction:column;gap:var(--space-4)">
+<div style="font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-600)">Brief · page one</div>
+<h1 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:44px;line-height:1.05;color:var(--color-text);max-width:16ch">Three ways to spend the first screen</h1>
+<p style="margin:0;max-width:62ch;font-size:15.5px;line-height:1.6;color:var(--color-neutral-800);text-wrap:pretty">Your current page one answers "what is the state of every subsystem." All three directions below answer a different question: "what does this house need from me right now, and what is it about to do without me." Everything that isn't the answer moves off page one.</p>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-6);margin-top:var(--space-2);max-width:940px">
+  <div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:700;font-size:13px;color:var(--color-accent-700)">Trust is the real spec</div><p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--color-neutral-800)">Slowness, renamed entities and broken automations are why a control stops being touched. So: every control reads back its state in words, every tap shows an immediate pending state, and an entity that stops reporting says so instead of lying.</p></div>
+  <div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:700;font-size:13px;color:var(--color-accent-700)">Nothing static</div><p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--color-neutral-800)">Cards earn their slot by relevance. The attention band is absent when nothing is wrong. Scenes shown are the ones plausible for this hour and this calendar, not all of them.</p></div>
+  <div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:700;font-size:13px;color:var(--color-accent-700)">Say what it does</div><p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--color-neutral-800)">No bare scene names. "Goodnight" carries its consequence underneath it. A button nobody can predict is a button that gets avoided.</p></div>
+</div>
+<p style="margin:var(--space-2) 0 0;max-width:62ch;font-size:12.5px;line-height:1.55;color:var(--color-neutral-600)">Assumptions: 810×1180 wall tablet as primary, phone as the same layout in one column. One dashboard for all three of you, adapting to time and calendar rather than to identity — with a small allow-list so Kid's tablet hides the few controls she can't use. Content is your real data from the screenshots.</p>
+</div>
+</section>
+
+<section class="dv-turn" id="t2" style="background:#231f1b">
+<div class="dv-thd"><a class="dv-tid" href="#t2" style="background:#f5ead8;color:#201e1d">2</a><span class="dv-tname" style="color:#e8dcc6">Dark timeline, and three ways to carry security</span></div>
+<p style="margin:-6px 0 22px;max-width:74ch;font-size:13.5px;line-height:1.6;color:rgba(232,220,198,.65)">The timeline is one card, dark, built to be reproducible from what you already have: CalDAV plus Google via HA's calendar entities, `sun`, and your automation triggers. Security options follow — all three treat it as awareness, so the resting state is a single quiet line, and cameras only claim space when something actually happened.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a">
+<div class="dv-olabel" style="color:rgba(232,220,198,.6)"><a class="dv-oid" href="#2a" style="background:rgba(245,234,216,.14);color:#e8dcc6">2a</a>The day spine, dark — calendar-derived, automation-annotated</div>
+<div class="dv-card" style="width:520px;background:#1a1714;padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-6)">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-4)">
+    <div>
+      <div style="font-family:var(--font-heading);font-weight:400;font-size:34px;line-height:1;color:var(--color-neutral-100)">Wednesday</div>
+      <div style="font-size:14px;color:var(--color-neutral-500);margin-top:4px">2 September · everyone home by 6</div>
+    </div>
+    <div style="display:flex;gap:6px;flex:none">
+      <span style="font:600 10px/1 ui-monospace,Menlo,monospace;padding:5px 8px;border-radius:999px;background:#2c2620;color:var(--color-neutral-400)">Google</span>
+      <span style="font:600 10px/1 ui-monospace,Menlo,monospace;padding:5px 8px;border-radius:999px;background:#2c2620;color:var(--color-neutral-400)">CalDAV</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:var(--radius-md);background:#241f1a">
+    <i data-lucide="calendar-days" style="width:18px;height:18px;color:var(--color-accent-2-400);flex:none"></i>
+    <div style="font-size:14.5px;color:var(--color-neutral-300)">All day · Trash out tonight</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column">
+
+    <div style="display:flex;gap:14px">
+      <div style="width:66px;flex:none;text-align:right;font-size:13px;font-weight:700;color:var(--color-neutral-600);padding-top:13px">7:00 AM</div>
+      <div style="width:2px;flex:none;background:#332c25;position:relative"><div style="position:absolute;left:-4px;top:18px;width:10px;height:10px;border-radius:999px;background:#4a4038"></div></div>
+      <div style="flex:1;padding:10px 0 16px">
+        <div style="font-size:15px;color:var(--color-neutral-600);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.2)">Morning · lights up, thermostat to 70°</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:14px">
+      <div style="width:66px;flex:none;text-align:right;font-size:13px;font-weight:700;color:var(--color-neutral-600);padding-top:13px">8:20 AM</div>
+      <div style="width:2px;flex:none;background:#332c25;position:relative"><div style="position:absolute;left:-4px;top:18px;width:10px;height:10px;border-radius:999px;background:#4a4038"></div></div>
+      <div style="flex:1;padding:10px 0 16px">
+        <div style="font-size:15px;color:var(--color-neutral-600);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.2)">Kid to school</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:14px">
+      <div style="width:66px;flex:none;text-align:right;font-family:var(--font-heading);font-size:20px;color:var(--color-accent-400);padding-top:8px">2:39</div>
+      <div style="width:2px;flex:none;background:linear-gradient(#332c25 0 20px,var(--color-accent-500) 20px 100%);position:relative"><div style="position:absolute;left:-8px;top:12px;width:18px;height:18px;border-radius:999px;background:var(--color-accent-500);box-shadow:0 0 0 5px rgba(198,113,57,.22)"></div></div>
+      <div style="flex:1;padding:6px 0 18px">
+        <div style="font-size:15px;font-weight:700;color:var(--color-accent-300)">Now</div>
+        <div style="font-size:14px;color:var(--color-neutral-500);margin-top:1px">Afternoon · house quiet, doors locked</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:14px">
+      <div style="width:66px;flex:none;text-align:right;font-size:13px;font-weight:700;color:var(--color-neutral-300);padding-top:13px">3:50 PM</div>
+      <div style="width:2px;flex:none;background:var(--color-accent-800);position:relative"><div style="position:absolute;left:-5px;top:17px;width:12px;height:12px;border-radius:999px;background:#1a1714;border:3px solid var(--color-accent-2-500)"></div></div>
+      <div style="flex:1;padding:10px 0 16px">
+        <div style="font-size:16px;font-weight:600;color:var(--color-neutral-100)">Kid out of school</div>
+        <div style="font-size:13.5px;color:var(--color-accent-2-400);display:flex;align-items:center;gap:6px;margin-top:3px"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Entry unlocks on her arrival</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:14px">
+      <div style="width:66px;flex:none;text-align:right;font-size:13px;font-weight:700;color:var(--color-neutral-300);padding-top:13px">4:15 PM</div>
+      <div style="width:2px;flex:none;background:var(--color-accent-800);position:relative"><div style="position:absolute;left:-5px;top:17px;width:12px;height:12px;border-radius:999px;background:#1a1714;border:3px solid var(--color-accent-2-500)"></div></div>
+      <div style="flex:1;padding:10px 0 16px">
+        <div style="font-size:16px;font-weight:600;color:var(--color-neutral-100)">Making dinner for house</div>
+        <div style="font-size:13.5px;color:var(--color-accent-2-400);display:flex;align-items:center;gap:6px;margin-top:3px"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Kitchen 90%, hallway 40%</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:14px">
+      <div style="width:66px;flex:none;text-align:right;font-size:13px;font-weight:700;color:var(--color-neutral-300);padding-top:13px">7:47 PM</div>
+      <div style="width:2px;flex:none;background:var(--color-accent-800);position:relative"><div style="position:absolute;left:-5px;top:17px;width:12px;height:12px;border-radius:999px;background:#1a1714;border:3px solid var(--color-accent-2-500)"></div></div>
+      <div style="flex:1;padding:10px 0 16px">
+        <div style="font-size:16px;font-weight:600;color:var(--color-neutral-100)">Sunset</div>
+        <div style="font-size:13.5px;color:var(--color-accent-2-400);display:flex;align-items:center;gap:6px;margin-top:3px"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Evening lights over 20 minutes</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:14px">
+      <div style="width:66px;flex:none;text-align:right;font-size:13px;font-weight:700;color:var(--color-neutral-300);padding-top:13px">9:00 PM</div>
+      <div style="width:2px;flex:none;background:linear-gradient(var(--color-accent-800) 0 28px,transparent 28px 100%);position:relative"><div style="position:absolute;left:-5px;top:17px;width:12px;height:12px;border-radius:999px;background:#1a1714;border:3px solid var(--color-accent-2-500)"></div></div>
+      <div style="flex:1;padding:10px 0 0">
+        <div style="font-size:16px;font-weight:600;color:var(--color-neutral-100)">Kid bed time</div>
+        <div style="font-size:13.5px;color:var(--color-accent-2-400);display:flex;align-items:center;gap:6px;margin-top:3px"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Story on Sonos, 20 min, then dark</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px;padding-top:var(--space-3);border-top:1px solid #2c2620">
+    <i data-lucide="info" style="width:16px;height:16px;color:var(--color-neutral-600);flex:none"></i>
+    <div style="flex:1;font-size:12.5px;line-height:1.45;color:var(--color-neutral-600)">Past entries stay, struck through, so the day reads as a whole. Sage lines are what the house will do on its own.</div>
+  </div>
+</div>
+</div>
+
+<div class="dv-opt" id="2b">
+<div class="dv-olabel" style="color:rgba(232,220,198,.6)"><a class="dv-oid" href="#2b" style="background:rgba(245,234,216,.14);color:#e8dcc6">2b</a>One quiet line — security as a sentence that only grows when it has to</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+
+<div class="dv-card" style="width:520px;background:#1a1714;padding:var(--space-4) var(--space-6);display:flex;flex-direction:column;gap:12px">
+  <div style="font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-600)">Resting · 21 hours a day</div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div style="width:10px;height:10px;border-radius:999px;background:var(--color-accent-2-500);flex:none"></div>
+    <div style="flex:1;font-size:16px;color:var(--color-neutral-400)">All quiet. Last movement outside was 4 hours ago.</div>
+    <button style="flex:none;cursor:pointer;font-family:inherit;border:0;background:transparent;font-size:14px;font-weight:700;color:var(--color-neutral-500);display:flex;align-items:center;gap:5px" style-hover="color:var(--color-accent-300)">Cameras<i data-lucide="chevron-right" style="width:16px;height:16px"></i></button>
+  </div>
+</div>
+
+<div class="dv-card" style="width:520px;background:#1a1714;padding:var(--space-4) var(--space-6);display:flex;flex-direction:column;gap:14px">
+  <div style="font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-600)">Something happened · self-clears in an hour</div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div style="width:10px;height:10px;border-radius:999px;background:var(--color-accent-2-500);flex:none"></div>
+    <div style="flex:1;font-size:16px;color:var(--color-neutral-300)">A package was left at the front door, 14 minutes ago.</div>
+  </div>
+  <div style="display:flex;gap:12px;align-items:center;padding-left:24px">
+    <div style="width:150px;height:88px;flex:none;border-radius:var(--radius-md);background:repeating-linear-gradient(135deg,#2c2620 0 8px,#332c25 8px 16px);display:grid;place-items:center;font:10px ui-monospace,Menlo,monospace;color:var(--color-neutral-600)">front door 2:25 PM</div>
+    <div style="flex:1;font-size:13.5px;line-height:1.5;color:var(--color-neutral-500)">The still is the notification. No red, no siren, no badge count — a thing that happened, shown once.</div>
+  </div>
+</div>
+
+<div class="dv-card" style="width:520px;background:#1a1714;padding:var(--space-4) var(--space-6);display:flex;flex-direction:column;gap:14px">
+  <div style="font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-600)">Needs a person · the only case that gets a button</div>
+  <div style="display:flex;align-items:center;gap:14px;background:#2e2117;margin:0 calc(var(--space-6) * -1);padding:var(--space-4) var(--space-6)">
+    <div style="width:10px;height:10px;border-radius:999px;background:var(--color-accent-400);flex:none"></div>
+    <div style="flex:1"><div style="font-size:16px;font-weight:700;color:var(--color-accent-200)">Back door has been open 20 minutes</div><div style="font-size:13.5px;color:var(--color-neutral-500);margin-top:1px">Nobody is in the back of the house</div></div>
+    <button style="flex:none;border:0;cursor:pointer;font-family:inherit;font-weight:700;font-size:14px;padding:11px 20px;border-radius:999px;background:var(--color-accent-500);color:#2a1a0e" style-hover="background:var(--color-accent-400)">Show me</button>
+  </div>
+  <div style="font-size:13px;line-height:1.5;color:var(--color-neutral-600)">Three levels, one slot. Nothing on this card ever moves position, so a glance in the same place always answers "is anything up."</div>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="2c">
+<div class="dv-olabel" style="color:rgba(232,220,198,.6)"><a class="dv-oid" href="#2c" style="background:rgba(245,234,216,.14);color:#e8dcc6">2c</a>Security on the same spine — activity as marks on the day, not a separate system</div>
+<div class="dv-card" style="width:520px;background:#1a1714;padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-6)">
+  <div>
+    <div style="font-family:var(--font-heading);font-weight:400;font-size:30px;line-height:1;color:var(--color-neutral-100)">Wednesday</div>
+    <div style="font-size:14px;color:var(--color-neutral-500);margin-top:4px">Nothing needs you. 6 things happened outside today.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column">
+    <div style="display:flex;gap:14px">
+      <div style="width:66px;flex:none;text-align:right;font-size:13px;font-weight:700;color:var(--color-neutral-600);padding-top:11px">11:04 AM</div>
+      <div style="width:2px;flex:none;background:#332c25;position:relative"><div style="position:absolute;left:-3px;top:16px;width:8px;height:8px;border-radius:999px;background:#4a4038"></div></div>
+      <div style="flex:1;padding:8px 0 14px;display:flex;align-items:center;gap:8px">
+        <i data-lucide="footprints" style="width:15px;height:15px;color:var(--color-neutral-600);flex:none"></i>
+        <span style="font-size:14px;color:var(--color-neutral-600)">Driveway motion · mail carrier</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:14px">
+      <div style="width:66px;flex:none;text-align:right;font-size:13px;font-weight:700;color:var(--color-neutral-400);padding-top:11px">2:25 PM</div>
+      <div style="width:2px;flex:none;background:#332c25;position:relative"><div style="position:absolute;left:-4px;top:16px;width:10px;height:10px;border-radius:999px;background:var(--color-accent-2-500)"></div></div>
+      <div style="flex:1;padding:8px 0 16px">
+        <div style="display:flex;align-items:center;gap:8px"><i data-lucide="package" style="width:15px;height:15px;color:var(--color-accent-2-400);flex:none"></i><span style="font-size:14.5px;color:var(--color-neutral-300)">Package left at the front door</span></div>
+        <div style="width:100%;height:96px;margin-top:10px;border-radius:var(--radius-md);background:repeating-linear-gradient(135deg,#2c2620 0 8px,#332c25 8px 16px);display:grid;place-items:center;font:10px ui-monospace,Menlo,monospace;color:var(--color-neutral-600)">front door still</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:14px">
+      <div style="width:66px;flex:none;text-align:right;font-family:var(--font-heading);font-size:20px;color:var(--color-accent-400);padding-top:6px">2:39</div>
+      <div style="width:2px;flex:none;background:linear-gradient(#332c25 0 18px,var(--color-accent-500) 18px 100%);position:relative"><div style="position:absolute;left:-8px;top:10px;width:18px;height:18px;border-radius:999px;background:var(--color-accent-500);box-shadow:0 0 0 5px rgba(198,113,57,.22)"></div></div>
+      <div style="flex:1;padding:4px 0 16px"><div style="font-size:15px;font-weight:700;color:var(--color-accent-300)">Now</div></div>
+    </div>
+
+    <div style="display:flex;gap:14px">
+      <div style="width:66px;flex:none;text-align:right;font-size:13px;font-weight:700;color:var(--color-neutral-300);padding-top:11px">3:50 PM</div>
+      <div style="width:2px;flex:none;background:var(--color-accent-800);position:relative"><div style="position:absolute;left:-5px;top:15px;width:12px;height:12px;border-radius:999px;background:#1a1714;border:3px solid var(--color-accent-2-500)"></div></div>
+      <div style="flex:1;padding:8px 0 14px"><div style="font-size:16px;font-weight:600;color:var(--color-neutral-100)">Kid out of school</div><div style="font-size:13.5px;color:var(--color-accent-2-400);display:flex;align-items:center;gap:6px;margin-top:3px"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Entry unlocks, driveway camera clip saved</div></div>
+    </div>
+
+    <div style="display:flex;gap:14px">
+      <div style="width:66px;flex:none;text-align:right;font-size:13px;font-weight:700;color:var(--color-neutral-300);padding-top:11px">7:47 PM</div>
+      <div style="width:2px;flex:none;background:linear-gradient(var(--color-accent-800) 0 26px,transparent 26px 100%);position:relative"><div style="position:absolute;left:-5px;top:15px;width:12px;height:12px;border-radius:999px;background:#1a1714;border:3px solid var(--color-accent-2-500)"></div></div>
+      <div style="flex:1;padding:8px 0 0"><div style="font-size:16px;font-weight:600;color:var(--color-neutral-100)">Sunset</div><div style="font-size:13.5px;color:var(--color-accent-2-400);display:flex;align-items:center;gap:6px;margin-top:3px"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Evening lights, outside cameras go sensitive</div></div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px;padding-top:var(--space-3);border-top:1px solid #2c2620">
+    <i data-lucide="info" style="width:16px;height:16px;color:var(--color-neutral-600);flex:none"></i>
+    <div style="flex:1;font-size:12.5px;line-height:1.45;color:var(--color-neutral-600)">Routine events sit dim and unlabelled-by-camera; only the noteworthy one carries a still. Yesterday's marks are one tap back.</div>
+  </div>
+</div>
+</div>
+
+</div>
+<p class="dv-next" style="color:rgba(232,220,198,.5)">Try next: "spec <a class="dv-oid" href="#2a" style="background:rgba(245,234,216,.14);color:#e8dcc6">2a</a> — the entities, template sensor and card config to build it" · "put <a class="dv-oid" href="#2b" style="background:rgba(245,234,216,.14);color:#e8dcc6">2b</a>'s three-level slot into a full dark page one" · "show <a class="dv-oid" href="#2c" style="background:rgba(245,234,216,.14);color:#e8dcc6">2c</a> at 2am with motion in the driveway"</p>
+</section>
+
+<section class="dv-turn" id="t1" style="background:#e6dcc9">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Page one, three directions</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Plain sentence — the house explains itself in words first</div>
+<div class="dv-card" style="width:810px;background:var(--color-bg);padding:var(--space-8) var(--space-6) var(--space-6);display:flex;flex-direction:column;gap:var(--space-6)">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4)">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-600)">Tuesday 1 September · 2:39 PM</div>
+      <div style="font-family:var(--font-heading);font-weight:400;font-size:52px;line-height:1;color:var(--color-text)">Afternoon</div>
+      <div style="font-size:17px;line-height:1.5;color:var(--color-neutral-800);max-width:34ch">Quiet house. Lights off, doors locked. Nothing is scheduled until Kid is out at 3:50.</div>
+    </div>
+    <div style="display:flex;gap:6px;flex:none;padding-top:4px">
+      <div style="width:44px;height:44px;border-radius:999px;background:var(--color-accent-2-300);border:2px solid var(--color-accent-2-600);display:grid;place-items:center;font-weight:800;font-size:15px;color:var(--color-accent-2-800)">R</div>
+      <div style="width:44px;height:44px;border-radius:999px;background:var(--color-neutral-200);border:2px dashed var(--color-neutral-400);display:grid;place-items:center;font-weight:800;font-size:15px;color:var(--color-neutral-600)">A</div>
+      <div style="width:44px;height:44px;border-radius:999px;background:var(--color-neutral-200);border:2px dashed var(--color-neutral-400);display:grid;place-items:center;font-weight:800;font-size:15px;color:var(--color-neutral-600)">S</div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:var(--space-4);background:var(--color-accent-200);border-radius:var(--radius-lg);padding:var(--space-4) var(--space-4) var(--space-4) var(--space-6)">
+    <i data-lucide="warehouse" style="width:30px;height:30px;color:var(--color-accent-700);flex:none"></i>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;font-size:19px;color:var(--color-accent-900)">The garage door is open</div>
+      <div style="font-size:14.5px;color:var(--color-accent-800)">Since 2:27 PM · nobody is home</div>
+    </div>
+    <button style="flex:none;border:0;cursor:pointer;font-family:inherit;font-weight:700;font-size:16px;padding:14px 26px;border-radius:999px;background:var(--color-accent);color:#fff;box-shadow:var(--shadow-sm)" style-hover="background:var(--color-accent-600)" style-active="background:var(--color-accent-700)">Close it</button>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+    <div style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-600)">Next</div>
+    <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);background:var(--color-surface);border-radius:var(--radius-md)">
+      <div style="font-weight:800;font-size:16px;color:var(--color-text);width:82px;flex:none">3:50 PM</div>
+      <div style="flex:1;font-size:17px;color:var(--color-neutral-800)">Kid out of school</div>
+      <div style="flex:none;font-size:13px;font-weight:700;color:var(--color-accent-2-700);display:flex;align-items:center;gap:6px"><i data-lucide="sparkles" style="width:16px;height:16px"></i>Porch light + entry unlock</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);background:var(--color-surface);border-radius:var(--radius-md)">
+      <div style="font-weight:800;font-size:16px;color:var(--color-text);width:82px;flex:none">4:15 PM</div>
+      <div style="flex:1;font-size:17px;color:var(--color-neutral-800)">Making dinner for house</div>
+      <div style="flex:none;font-size:13px;font-weight:700;color:var(--color-accent-2-700);display:flex;align-items:center;gap:6px"><i data-lucide="sparkles" style="width:16px;height:16px"></i>Kitchen scene</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);background:var(--color-surface);border-radius:var(--radius-md)">
+      <div style="font-weight:800;font-size:16px;color:var(--color-text);width:82px;flex:none">7:48 PM</div>
+      <div style="flex:1;font-size:17px;color:var(--color-neutral-800)">Sunset</div>
+      <div style="flex:none;font-size:13px;font-weight:700;color:var(--color-accent-2-700);display:flex;align-items:center;gap:6px"><i data-lucide="sparkles" style="width:16px;height:16px"></i>Evening lights</div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+    <div style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-600)">If you want something else</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
+      <button style="text-align:left;cursor:pointer;font-family:inherit;border:2px solid var(--color-neutral-300);background:var(--color-neutral-100);border-radius:var(--radius-lg);padding:var(--space-4);display:flex;gap:var(--space-3);align-items:flex-start" style-hover="border-color:var(--color-accent-400);background:var(--color-accent-100)">
+        <i data-lucide="chef-hat" style="width:26px;height:26px;color:var(--color-accent-700);flex:none"></i>
+        <span><span style="display:block;font-weight:700;font-size:18px;color:var(--color-text)">Cooking</span><span style="display:block;font-size:14px;color:var(--color-neutral-700);line-height:1.4">Kitchen lights full, hallway low, Sonos in the kitchen</span></span>
+      </button>
+      <button style="text-align:left;cursor:pointer;font-family:inherit;border:2px solid var(--color-neutral-300);background:var(--color-neutral-100);border-radius:var(--radius-lg);padding:var(--space-4);display:flex;gap:var(--space-3);align-items:flex-start" style-hover="border-color:var(--color-accent-400);background:var(--color-accent-100)">
+        <i data-lucide="book-open" style="width:26px;height:26px;color:var(--color-accent-700);flex:none"></i>
+        <span><span style="display:block;font-weight:700;font-size:18px;color:var(--color-text)">Bedtime story</span><span style="display:block;font-size:14px;color:var(--color-neutral-700);line-height:1.4">Kid's Sonos for 20 minutes, then off. Lamp dims with it</span></span>
+      </button>
+      <button style="text-align:left;cursor:pointer;font-family:inherit;border:2px solid var(--color-neutral-300);background:var(--color-neutral-100);border-radius:var(--radius-lg);padding:var(--space-4);display:flex;gap:var(--space-3);align-items:flex-start" style-hover="border-color:var(--color-accent-400);background:var(--color-accent-100)">
+        <i data-lucide="tv" style="width:26px;height:26px;color:var(--color-accent-700);flex:none"></i>
+        <span><span style="display:block;font-weight:700;font-size:18px;color:var(--color-text)">Watching something</span><span style="display:block;font-size:14px;color:var(--color-neutral-700);line-height:1.4">Living room down to 15%, uplight warm, TV on</span></span>
+      </button>
+      <button style="text-align:left;cursor:pointer;font-family:inherit;border:2px solid var(--color-neutral-300);background:var(--color-neutral-100);border-radius:var(--radius-lg);padding:var(--space-4);display:flex;gap:var(--space-3);align-items:flex-start" style-hover="border-color:var(--color-accent-400);background:var(--color-accent-100)">
+        <i data-lucide="moon" style="width:26px;height:26px;color:var(--color-accent-700);flex:none"></i>
+        <span><span style="display:block;font-weight:700;font-size:18px;color:var(--color-text)">Goodnight</span><span style="display:block;font-size:14px;color:var(--color-neutral-700);line-height:1.4">Everything off, doors locked, thermostat to 68°</span></span>
+      </button>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--color-divider)">
+    <div style="flex:1;display:flex;align-items:center;gap:var(--space-2);font-size:15px;color:var(--color-neutral-700)"><i data-lucide="sun" style="width:20px;height:20px;color:var(--color-accent)"></i>82° sunny · sunset 7:48</div>
+    <button style="cursor:pointer;font-family:inherit;border:0;background:transparent;font-weight:700;font-size:15px;color:var(--color-accent-700);display:flex;align-items:center;gap:6px" style-hover="color:var(--color-accent-600)">Cameras<i data-lucide="chevron-right" style="width:18px;height:18px"></i></button>
+    <button style="cursor:pointer;font-family:inherit;border:0;background:transparent;font-weight:700;font-size:15px;color:var(--color-accent-700);display:flex;align-items:center;gap:6px" style-hover="color:var(--color-accent-600)">Everything else<i data-lucide="chevron-right" style="width:18px;height:18px"></i></button>
+  </div>
+</div>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Day spine — automation made visible as a timeline you can see coming</div>
+<div class="dv-card" style="width:810px;background:var(--color-bg);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-4)">
+  <div style="display:flex;align-items:baseline;justify-content:space-between">
+    <div style="font-family:var(--font-heading);font-weight:400;font-size:34px;color:var(--color-text)">Tuesday</div>
+    <div style="font-size:15px;color:var(--color-neutral-700)">Wife home · 82° sunny</div>
+  </div>
+
+  <div style="display:flex;gap:var(--space-4)">
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+      <div style="display:flex;gap:var(--space-4);align-items:stretch">
+        <div style="width:74px;flex:none;text-align:right;font-size:14px;font-weight:700;color:var(--color-neutral-500);padding-top:16px">1:11 PM</div>
+        <div style="width:2px;flex:none;background:var(--color-neutral-300);position:relative"><div style="position:absolute;left:-5px;top:20px;width:12px;height:12px;border-radius:999px;background:var(--color-neutral-300)"></div></div>
+        <div style="flex:1;padding:14px 0 18px;font-size:15px;color:var(--color-neutral-500)">Solar noon · shades dropped in the west rooms</div>
+      </div>
+
+      <div style="display:flex;gap:var(--space-4);align-items:stretch">
+        <div style="width:74px;flex:none;text-align:right;font-family:var(--font-heading);font-size:22px;color:var(--color-accent-700);padding-top:8px">2:39</div>
+        <div style="width:2px;flex:none;background:linear-gradient(var(--color-neutral-300) 0 22px,var(--color-accent) 22px 100%);position:relative"><div style="position:absolute;left:-9px;top:14px;width:20px;height:20px;border-radius:999px;background:var(--color-accent);box-shadow:0 0 0 6px var(--color-accent-200)"></div></div>
+        <div style="flex:1;padding:8px 0 18px">
+          <div style="background:var(--color-accent-200);border-radius:var(--radius-lg);padding:var(--space-4);display:flex;align-items:center;gap:var(--space-3)">
+            <i data-lucide="warehouse" style="width:26px;height:26px;color:var(--color-accent-700);flex:none"></i>
+            <div style="flex:1"><div style="font-weight:700;font-size:17px;color:var(--color-accent-900)">Garage still open, 12 minutes</div><div style="font-size:14px;color:var(--color-accent-800)">It normally closes itself after 10</div></div>
+            <button style="flex:none;border:0;cursor:pointer;font-family:inherit;font-weight:700;font-size:15px;padding:12px 22px;border-radius:999px;background:var(--color-accent);color:#fff" style-hover="background:var(--color-accent-600)">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:var(--space-4);align-items:stretch">
+        <div style="width:74px;flex:none;text-align:right;font-size:14px;font-weight:700;color:var(--color-neutral-700);padding-top:14px">3:50 PM</div>
+        <div style="width:2px;flex:none;background:var(--color-accent-300);position:relative"><div style="position:absolute;left:-6px;top:18px;width:14px;height:14px;border-radius:999px;background:var(--color-bg);border:3px solid var(--color-accent-2-500)"></div></div>
+        <div style="flex:1;padding:12px 0 16px"><div style="font-size:17px;font-weight:600;color:var(--color-text)">Kid out of school</div><div style="font-size:14px;color:var(--color-accent-2-700);display:flex;align-items:center;gap:6px;margin-top:2px"><i data-lucide="sparkles" style="width:15px;height:15px"></i>Entry unlocks when she arrives</div></div>
+      </div>
+
+      <div style="display:flex;gap:var(--space-4);align-items:stretch">
+        <div style="width:74px;flex:none;text-align:right;font-size:14px;font-weight:700;color:var(--color-neutral-700);padding-top:14px">4:15 PM</div>
+        <div style="width:2px;flex:none;background:var(--color-accent-300);position:relative"><div style="position:absolute;left:-6px;top:18px;width:14px;height:14px;border-radius:999px;background:var(--color-bg);border:3px solid var(--color-accent-2-500)"></div></div>
+        <div style="flex:1;padding:12px 0 16px"><div style="font-size:17px;font-weight:600;color:var(--color-text)">Making dinner for house</div><div style="font-size:14px;color:var(--color-accent-2-700);display:flex;align-items:center;gap:6px;margin-top:2px"><i data-lucide="sparkles" style="width:15px;height:15px"></i>Kitchen 90%, hallway 40%</div></div>
+      </div>
+
+      <div style="display:flex;gap:var(--space-4);align-items:stretch">
+        <div style="width:74px;flex:none;text-align:right;font-size:14px;font-weight:700;color:var(--color-neutral-700);padding-top:14px">7:48 PM</div>
+        <div style="width:2px;flex:none;background:var(--color-accent-300);position:relative"><div style="position:absolute;left:-6px;top:18px;width:14px;height:14px;border-radius:999px;background:var(--color-bg);border:3px solid var(--color-accent-2-500)"></div></div>
+        <div style="flex:1;padding:12px 0 16px"><div style="font-size:17px;font-weight:600;color:var(--color-text)">Sunset</div><div style="font-size:14px;color:var(--color-accent-2-700);display:flex;align-items:center;gap:6px;margin-top:2px"><i data-lucide="sparkles" style="width:15px;height:15px"></i>Evening lights come up over 20 minutes</div></div>
+      </div>
+
+      <div style="display:flex;gap:var(--space-4);align-items:stretch">
+        <div style="width:74px;flex:none;text-align:right;font-size:14px;font-weight:700;color:var(--color-neutral-700);padding-top:14px">9:00 PM</div>
+        <div style="width:2px;flex:none;background:linear-gradient(var(--color-accent-300) 0 30px,transparent 30px 100%);position:relative"><div style="position:absolute;left:-6px;top:18px;width:14px;height:14px;border-radius:999px;background:var(--color-bg);border:3px solid var(--color-accent-2-500)"></div></div>
+        <div style="flex:1;padding:12px 0 0"><div style="font-size:17px;font-weight:600;color:var(--color-text)">Kid bed time</div><div style="font-size:14px;color:var(--color-accent-2-700);display:flex;align-items:center;gap:6px;margin-top:2px"><i data-lucide="sparkles" style="width:15px;height:15px"></i>Story on Sonos, 20 min, then her room goes dark</div></div>
+      </div>
+    </div>
+
+    <div style="width:236px;flex:none;display:flex;flex-direction:column;gap:var(--space-3)">
+      <div style="background:var(--color-accent-2-200);border-radius:var(--radius-lg);padding:var(--space-4)">
+        <div style="font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-2-700)">Right now</div>
+        <div style="font-family:var(--font-heading);font-weight:400;font-size:30px;line-height:1.1;color:var(--color-accent-2-900);margin-top:6px">Afternoon</div>
+        <div style="font-size:14px;line-height:1.45;color:var(--color-accent-2-800);margin-top:4px">All lights off. Doors locked. 74° inside.</div>
+      </div>
+      <button style="cursor:pointer;font-family:inherit;text-align:left;border:2px solid var(--color-neutral-300);background:var(--color-neutral-100);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:10px" style-hover="border-color:var(--color-accent-400);background:var(--color-accent-100)"><i data-lucide="chef-hat" style="width:22px;height:22px;color:var(--color-accent-700)"></i><span style="font-weight:700;font-size:16px;color:var(--color-text)">Cooking now</span></button>
+      <button style="cursor:pointer;font-family:inherit;text-align:left;border:2px solid var(--color-neutral-300);background:var(--color-neutral-100);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:10px" style-hover="border-color:var(--color-accent-400);background:var(--color-accent-100)"><i data-lucide="tv" style="width:22px;height:22px;color:var(--color-accent-700)"></i><span style="font-weight:700;font-size:16px;color:var(--color-text)">Watching TV</span></button>
+      <button style="cursor:pointer;font-family:inherit;text-align:left;border:2px solid var(--color-neutral-300);background:var(--color-neutral-100);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:10px" style-hover="border-color:var(--color-accent-400);background:var(--color-accent-100)"><i data-lucide="moon" style="width:22px;height:22px;color:var(--color-accent-700)"></i><span style="font-weight:700;font-size:16px;color:var(--color-text)">Goodnight</span></button>
+      <div style="border-radius:var(--radius-lg);overflow:hidden;background:repeating-linear-gradient(135deg,var(--color-neutral-200) 0 8px,var(--color-neutral-300) 8px 16px);height:132px;display:grid;place-items:center">
+        <span style="font:11px/1.4 ui-monospace,Menlo,monospace;color:var(--color-neutral-700);text-align:center">front door<br>camera</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Night ground — one answer, huge targets, state read back in words</div>
+<div class="dv-card" style="width:810px;background:#1a1714;padding:var(--space-8) var(--space-6) var(--space-6);display:flex;flex-direction:column;gap:var(--space-6)">
+  <div style="display:flex;align-items:baseline;justify-content:space-between">
+    <div style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-500)">Tuesday · 9:14 PM</div>
+    <div style="display:flex;gap:6px">
+      <div style="width:38px;height:38px;border-radius:999px;background:var(--color-accent-2-700);display:grid;place-items:center;font-weight:800;font-size:14px;color:var(--color-accent-2-100)">R</div>
+      <div style="width:38px;height:38px;border-radius:999px;background:var(--color-accent-2-700);display:grid;place-items:center;font-weight:800;font-size:14px;color:var(--color-accent-2-100)">A</div>
+      <div style="width:38px;height:38px;border-radius:999px;background:var(--color-accent-2-700);display:grid;place-items:center;font-weight:800;font-size:14px;color:var(--color-accent-2-100)">S</div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:var(--font-heading);font-weight:400;font-size:56px;line-height:1;color:var(--color-neutral-100)">Evening</div>
+    <div style="font-size:19px;line-height:1.5;color:var(--color-neutral-400);margin-top:8px;max-width:40ch">Everyone's home. Doors locked, garage closed. Kid's story has 12 minutes left.</div>
+  </div>
+
+  <div style="background:#241f1a;border-radius:var(--radius-lg);padding:var(--space-4) var(--space-6);display:flex;align-items:center;gap:var(--space-6)">
+    <div style="width:96px;height:96px;flex:none;border-radius:999px;background:conic-gradient(var(--color-accent-400) 0 60%,#3a322a 60% 100%);display:grid;place-items:center">
+      <div style="width:74px;height:74px;border-radius:999px;background:#241f1a;display:grid;place-items:center;font-family:var(--font-heading);font-size:24px;color:var(--color-accent-300)">12</div>
+    </div>
+    <div style="flex:1">
+      <div style="font-weight:700;font-size:21px;color:var(--color-neutral-100)">Bedtime story is playing in Kid's room</div>
+      <div style="font-size:15.5px;color:var(--color-neutral-400);margin-top:2px">Sonos stops and the lamp goes out at 9:26 PM</div>
+    </div>
+    <button style="flex:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:15px;padding:13px 22px;border-radius:999px;background:transparent;border:2px solid var(--color-neutral-700);color:var(--color-neutral-200)" style-hover="border-color:var(--color-accent-400);color:var(--color-accent-300)">+10 min</button>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+    <button style="cursor:pointer;font-family:inherit;text-align:left;width:100%;border:0;border-radius:var(--radius-lg);padding:var(--space-6);background:var(--color-accent-500);display:flex;align-items:center;gap:var(--space-4)" style-hover="background:var(--color-accent-400)" style-active="background:var(--color-accent-600)">
+      <i data-lucide="moon" style="width:38px;height:38px;color:#2a1a0e;flex:none"></i>
+      <span style="flex:1"><span style="display:block;font-family:var(--font-heading);font-size:30px;line-height:1.1;color:#2a1a0e">Goodnight</span><span style="display:block;font-size:16px;color:#4a2c14;margin-top:3px">Turns off 14 lights and the TV, locks up, sets 68°</span></span>
+      <i data-lucide="chevron-right" style="width:30px;height:30px;color:#4a2c14;flex:none"></i>
+    </button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
+      <button style="cursor:pointer;font-family:inherit;text-align:left;border:2px solid #3a322a;background:#241f1a;border-radius:var(--radius-lg);padding:var(--space-4);display:flex;align-items:center;gap:var(--space-3)" style-hover="border-color:var(--color-accent-400)">
+        <i data-lucide="lightbulb" style="width:26px;height:26px;color:var(--color-accent-400);flex:none"></i>
+        <span><span style="display:block;font-weight:700;font-size:18px;color:var(--color-neutral-100)">Reading light</span><span style="display:block;font-size:14px;color:var(--color-neutral-500)">Living room lamp, warm, 40%</span></span>
+      </button>
+      <button style="cursor:pointer;font-family:inherit;text-align:left;border:2px solid #3a322a;background:#241f1a;border-radius:var(--radius-lg);padding:var(--space-4);display:flex;align-items:center;gap:var(--space-3)" style-hover="border-color:var(--color-accent-400)">
+        <i data-lucide="tv" style="width:26px;height:26px;color:var(--color-accent-400);flex:none"></i>
+        <span><span style="display:block;font-weight:700;font-size:18px;color:var(--color-neutral-100)">Watching something</span><span style="display:block;font-size:14px;color:var(--color-neutral-500)">Lights to 15%, TV on</span></span>
+      </button>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:var(--space-3);background:#241f1a;border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);border-left:0">
+    <i data-lucide="wifi-off" style="width:20px;height:20px;color:var(--color-neutral-500);flex:none"></i>
+    <div style="flex:1;font-size:14.5px;color:var(--color-neutral-400)">The upstairs hallway sensor hasn't reported since Sunday. Automations that use it are paused.</div>
+    <button style="cursor:pointer;font-family:inherit;border:0;background:transparent;font-weight:700;font-size:14px;color:var(--color-accent-300)" style-hover="color:var(--color-accent-200)">Look</button>
+  </div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "build <a class="dv-oid" href="#1a">1a</a> out as a clickable prototype with the pending/confirmed tap states" · "put <a class="dv-oid" href="#1b">1b</a>'s timeline into <a class="dv-oid" href="#1c">1c</a>'s night ground" · "show me what each one looks like at 7am on a school day"</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() {
+    const draw = () => window.lucide && window.lucide.createIcons();
+    draw();
+    setTimeout(draw, 300);
+    setTimeout(draw, 1200);
+  }
+}
+</script>
+</body>
+</html>

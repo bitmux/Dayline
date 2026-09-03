@@ -1,0 +1,106 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dayline",
+        "description": "Pick the calendars that belong on the wall. Calendars you leave out are never fetched — that is the point. You can add weather and a to-do list now or later.",
+        "data": {
+          "name": "Name",
+          "calendars": "Calendars",
+          "weather_entity": "Weather (optional)",
+          "todo_entity": "To-do list (optional)"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Dayline",
+        "menu_options": {
+          "sources": "Sources — which calendars, weather, to-do list",
+          "calendars": "Calendars — labels, priority, schedule calendars",
+          "sentences": "Sentences — what the house does, in plain words",
+          "recent": "What just happened — short-lived explanations",
+          "tuning": "Tuning — sun, merging, timings, templates"
+        }
+      },
+      "sources": {
+        "title": "Sources",
+        "description": "Removing a calendar also forgets its label and priority.",
+        "data": {
+          "calendars": "Calendars",
+          "weather_entity": "Weather",
+          "todo_entity": "To-do list"
+        }
+      },
+      "calendars": {
+        "title": "Calendars",
+        "description": "The label is what the pill on the card says; calendars sharing a label share a pill. Order matters: when two calendars carry the same event worded differently, the first one listed supplies the wording.\n\nSet the role to “schedule” for a calendar that drives automations rather than describing people's plans — its events become House rows and each event's description becomes the sage sentence.",
+        "data": {}
+      },
+      "sentences": {
+        "title": "Sentences",
+        "description": "What the house will do, in plain words, matched against any text in an event's title. First match wins, so order is precedence.",
+        "data": { "selection": "Pick one to edit" }
+      },
+      "sentence_edit": {
+        "title": "Sentence",
+        "description": "Say the consequence, not the scene name: “Entry unlocks on her arrival”, not “scene.arrival_1”.",
+        "data": {
+          "match": "Matches titles containing",
+          "automation": "What the house does",
+          "priority": "Priority",
+          "sticky": "Stays until someone acts on it",
+          "delete": "Delete this sentence"
+        }
+      },
+      "recent": {
+        "title": "What just happened",
+        "description": "Short-lived lines explaining changes the house made on its own. Only listed entities can ever produce one, and only when something other than a person caused the change.",
+        "data": { "selection": "Pick one to edit" }
+      },
+      "recent_edit": {
+        "title": "Explanation",
+        "description": "One sentence per entity per state. Plain words, no entity ids.",
+        "data": {
+          "entity_id": "Entity",
+          "state": "When it changes to",
+          "phrase": "Say",
+          "delete": "Delete this line"
+        }
+      },
+      "tuning": {
+        "title": "Tuning",
+        "description": "Similarity is how much of two titles must match before they are treated as one event — 0.8 is strict. Lower it if duplicates slip through, raise it if unrelated events start merging.\n\nLeave the templates empty for sensible defaults.",
+        "data": {
+          "show_sun": "Show sunrise and sunset",
+          "sun_priority": "Sun priority",
+          "exclude": "Never show titles containing",
+          "similarity": "Merge similarity",
+          "title_noise": "Words ignored when comparing titles",
+          "recent_ttl": "How long an explanation stays",
+          "recent_max": "Most explanations at once",
+          "scan_minutes": "Check calendars every",
+          "now_template": "“Now” subline template",
+          "headline_template": "Headline template"
+        }
+      }
+    }
+  },
+  "selector": {
+    "priority": {
+      "options": {
+        "high": "High — never collapses off the card",
+        "normal": "Normal — collapses by distance from now",
+        "low": "Low — collapses first"
+      }
+    },
+    "role": {
+      "options": {
+        "people": "People — plans and appointments",
+        "schedule": "Schedule — drives the house"
+      }
+    }
+  }
+}

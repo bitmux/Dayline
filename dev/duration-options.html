@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Day Spine — end times &amp; duration, four options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --n100:#f9f4ed; --n300:#dcd3c4; --n400:#c0b6a5; --n500:#a19786; --n600:#82796a;
+  --a300:#ffc6a5; --a400:#f6a06b; --a500:#d67f48; --a800:#643312;
+  --s400:#aebf92; --s500:#8fa073;
+  --bg:#1a1714; --raised:#241f1a; --div:#2c2620; --railpast:#332c25; --dotpast:#4a4038;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:40px;background:#231f1b;font-family:"Figtree",system-ui,sans-serif;color:var(--n300)}
+h1{font-family:"Caprasimo",Georgia,serif;font-weight:400;font-size:30px;color:var(--n100);margin:0 0 6px}
+.intro{max-width:760px;font-size:14.5px;line-height:1.6;color:var(--n500);margin:0 0 10px}
+.intro b{color:var(--n300);font-weight:600}
+.warn{max-width:760px;font-size:14px;line-height:1.6;color:var(--a300);background:#2e2117;
+      border-radius:14px;padding:14px 16px;margin:16px 0 34px}
+.grid{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:9px;width:400px}
+.lbl{font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:rgba(232,220,198,.45)}
+.note{font-size:13px;line-height:1.55;color:var(--n500)}
+.note b{color:var(--n300);font-weight:600}
+.yes{color:var(--s400)} .no{color:var(--a400)}
+.card{background:var(--bg);border-radius:28px;padding:22px 24px;box-shadow:0 12px 32px rgba(0,0,0,.35)}
+.spine{display:flex;flex-direction:column}
+.row{display:flex;gap:14px}
+.t{width:66px;flex:none;text-align:right;font-size:13px;font-weight:700;color:var(--n300);padding-top:13px;
+   font-variant-numeric:tabular-nums}
+.rail{width:2px;flex:none;position:relative;background:var(--a800)}
+.rail::after{content:"";position:absolute;left:-5px;top:17px;width:12px;height:12px;border-radius:999px;
+             background:var(--bg);border:3px solid var(--s500)}
+.c{flex:1;min-width:0;padding:10px 0 16px}
+.ttl{font-size:16px;font-weight:600;color:var(--n100)}
+.auto{font-size:13.5px;color:var(--s400);display:flex;align-items:center;gap:6px;margin-top:3px}
+.row.last .rail{background:linear-gradient(var(--a800) 0 28px,transparent 28px 100%)}
+.row.last .c{padding-bottom:0}
+svg{flex:none;vertical-align:middle}
+.wx{display:flex;align-items:center;justify-content:flex-end;gap:3px;margin-top:4px;
+    font-size:11.5px;font-weight:600;color:var(--n600)}
+.wx.wet{color:var(--a400)}
+
+/* --- A: range in the gutter --- */
+.A .t .end{display:block;font-size:11.5px;font-weight:600;color:var(--n600);margin-top:2px}
+
+/* --- B: duration after the title --- */
+.dur{display:inline-block;margin-left:8px;padding:2px 7px;border-radius:999px;background:var(--div);
+     color:var(--n500);font-size:11px;font-weight:700;vertical-align:2px}
+
+/* --- C: the rail block --- */
+.C .rail{background:var(--railpast)}
+.C .row .rail .block{position:absolute;left:-3px;width:8px;border-radius:999px;background:var(--a800)}
+.C .rail::after{z-index:2}
+.C .rail .cap{position:absolute;left:-3px;width:8px;height:2px;border-radius:2px;background:var(--s500);opacity:.55}
+
+/* --- D: ongoing --- */
+.D .row.live .rail{background:linear-gradient(var(--a500) 0 100%)}
+.D .row.live .rail::after{background:var(--a500);border-color:var(--a500)}
+.D .until{font-size:13.5px;color:var(--a300);margin-top:3px;font-weight:600}
+.D .row.now .t{font-family:"Caprasimo",Georgia,serif;font-weight:400;font-size:20px;color:var(--a400);padding-top:8px}
+.D .row.now .rail{background:linear-gradient(var(--railpast) 0 20px,var(--a500) 20px 100%)}
+.D .row.now .rail::after{left:-8px;top:12px;width:18px;height:18px;background:var(--a500);border:none;
+                         box-shadow:0 0 0 5px rgba(198,113,57,.22)}
+.D .row.now .c{padding:6px 0 18px}
+.nowl{font-size:15px;font-weight:700;color:var(--a300)}
+.nows{font-size:14px;color:var(--n500);margin-top:1px}
+</style>
+</head>
+<body>
+
+<h1>End times &amp; duration</h1>
+<p class="intro">
+  Four ways to put an event's end on the spine. Same three events in each, so they compare directly.
+  Everything is drawn at the real card's tokens and geometry.
+</p>
+
+<div class="warn">
+  <b>The constraint worth deciding first:</b> the spine is <b>ordinal, not proportional</b>. Rows are
+  the same height whether the next event is ten minutes away or six hours. That is deliberate — a
+  proportional day makes a quiet evening a huge blank and a busy hour illegible on a 520px column.
+  It also means <b>duration cannot be encoded as length</b> without lying: a 20-minute row and a
+  3-hour row would be drawn the same. So duration should be <i>stated</i>, not <i>drawn</i>.
+  Option C is the one exception worth looking at, and it is the one to be most suspicious of.
+</div>
+
+<div class="grid">
+
+  <!-- ============================= A ============================= -->
+  <div class="col">
+    <div class="lbl">A · range in the gutter</div>
+    <div class="card A">
+      <div class="spine">
+        <div class="row">
+          <div class="t">3:50 PM<span class="end">– 4:20</span></div>
+          <div class="rail"></div>
+          <div class="c">
+            <div class="ttl">Kid out of school</div>
+            <div class="auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg>Entry unlocks on her arrival</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="t">4:15 PM<span class="end">– 7:30</span></div>
+          <div class="rail"></div>
+          <div class="c"><div class="ttl">Making dinner for house</div></div>
+        </div>
+        <div class="row last">
+          <div class="t">7:47 PM</div>
+          <div class="rail"></div>
+          <div class="c"><div class="ttl">Sunset</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      End time sits under the start, inside the existing 66px gutter. Costs no horizontal room and
+      no extra rows. <span class="no">Collides with the weather line</span>, which already lives
+      there — you would have to pick one, or widen the gutter to ~84px and lose it from the content.
+      Point-in-time entries (sunset) simply have no second line.
+    </div>
+  </div>
+
+  <!-- ============================= B ============================= -->
+  <div class="col">
+    <div class="lbl">B · duration chip after the title</div>
+    <div class="card">
+      <div class="spine">
+        <div class="row">
+          <div class="t">3:50 PM<div class="wx wet"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M8 19v1"/><path d="M8 14v1"/><path d="M16 19v1"/><path d="M16 14v1"/><path d="M12 21v1"/><path d="M12 16v1"/></svg>63°</div></div>
+          <div class="rail"></div>
+          <div class="c">
+            <div class="ttl">Kid out of school<span class="dur">30m</span></div>
+            <div class="auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg>Entry unlocks on her arrival</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="t">4:15 PM<div class="wx"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>66°</div></div>
+          <div class="rail"></div>
+          <div class="c"><div class="ttl">Making dinner for house<span class="dur">3h 15m</span></div></div>
+        </div>
+        <div class="row last">
+          <div class="t">7:47 PM</div>
+          <div class="rail"></div>
+          <div class="c"><div class="ttl">Sunset</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <span class="yes">Coexists with weather</span> — the gutter stays for <i>when</i>, the content
+      says <i>how long</i>. Duration is the more useful of the two facts most of the time ("how long
+      am I tied up"), and it needs no mental arithmetic. Cost: a second visual object on the title
+      line, and it competes slightly with the sage sentence beneath.
+    </div>
+  </div>
+
+  <!-- ============================= C ============================= -->
+  <div class="col">
+    <div class="lbl">C · the rail block</div>
+    <div class="card C">
+      <div class="spine">
+        <div class="row">
+          <div class="t">3:50 PM</div>
+          <div class="rail"><div class="block" style="top:23px;height:41px"></div><div class="cap" style="top:64px"></div></div>
+          <div class="c">
+            <div class="ttl">Kid out of school</div>
+            <div class="auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg>Entry unlocks on her arrival</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="t">4:15 PM</div>
+          <div class="rail"><div class="block" style="top:23px;height:41px"></div><div class="cap" style="top:64px"></div></div>
+          <div class="c"><div class="ttl">Making dinner for house</div></div>
+        </div>
+        <div class="row last">
+          <div class="t">7:47 PM</div>
+          <div class="rail"></div>
+          <div class="c"><div class="ttl">Sunset</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      The rail thickens from the dot to an end-cap. Beautiful, wordless, and <span class="no">it
+      lies</span>: both blocks above are the same length, but one event is 30 minutes and the other
+      is 3¼ hours. The eye reads length as magnitude whether or not you meant it to. Include this
+      only if the spine becomes proportional — which is a different card.
+    </div>
+  </div>
+
+  <!-- ============================= D ============================= -->
+  <div class="col">
+    <div class="lbl">D · ongoing — "until", not "how long"</div>
+    <div class="card D">
+      <div class="spine">
+        <div class="row live">
+          <div class="t">2:00 PM</div>
+          <div class="rail"></div>
+          <div class="c">
+            <div class="ttl">Making dinner for house</div>
+            <div class="until">Until 4:20 PM · happening now</div>
+          </div>
+        </div>
+        <div class="row now">
+          <div class="t">2:39</div>
+          <div class="rail"></div>
+          <div class="c"><div class="nowl">Now</div><div class="nows">Afternoon · house quiet, doors locked</div></div>
+        </div>
+        <div class="row last">
+          <div class="t">3:50 PM</div>
+          <div class="rail"></div>
+          <div class="c">
+            <div class="ttl">Kid out of school<span class="dur">30m</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      Not an alternative — an <b>addition to whichever of A or B you pick</b>. An event that spans
+      <i>now</i> currently falls into the struck-through past the moment it starts, which is wrong:
+      it is the single most relevant row on the card. This keeps it live above the marker, in accent,
+      and answers the only end-time question that is urgent — <b>when does this finish?</b>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,513 @@
+# ============================================================================
+# Day Spine — the feed
+#
+# Copy to /config/packages/day_spine.yaml. If you have never used packages,
+# add this to configuration.yaml first:
+#
+#   homeassistant:
+#     packages: !include_dir_named packages
+#
+# Everything you are meant to edit lives in the four blocks marked EDIT ME.
+# Nothing below them needs changing to get the card working.
+#
+# Produces two entities:
+#   sensor.day_spine         — the merged day, what the card reads
+#   sensor.day_spine_recent  — the short-lived "what just happened" lines
+# ============================================================================
+
+template:
+  # --------------------------------------------------------------------------
+  # 1. The merged day
+  # --------------------------------------------------------------------------
+  - trigger:
+      - trigger: time_pattern
+        minutes: "/5"
+      - trigger: homeassistant
+        event: start
+      # A house event should reach the card now, not up to five minutes from now.
+      - trigger: state
+        entity_id: sensor.day_spine_recent
+
+    action:
+      # ---------------------------------------------------------------- EDIT ME
+      # Which calendars appear, what their pill says, and how important they are
+      # by default. Calendars not listed here are never fetched — that is the
+      # point. Twenty Google calendars do not belong on a kitchen wall.
+      #
+      #   priority: high   never collapses off the card
+      #            normal  collapses by distance from now
+      #            low     collapses first
+      - variables:
+          # `role: schedule` marks a calendar that drives automations rather than
+          # describing people's plans. Its events become House rows, and each
+          # event's DESCRIPTION field becomes the sage sentence — so the schedule
+          # and the words explaining it live in one GUI-editable place, and the
+          # automation that fires from it cannot drift out of step with what the
+          # card says. Automations trigger off the same calendar:
+          #
+          #   triggers:
+          #     - trigger: calendar
+          #       entity_id: calendar.house_schedule
+          #       event: start
+          #   conditions:
+          #     - "{{ trigger.calendar_event.summary == 'Morning' }}"
+          calendars:
+            calendar.family: { label: "Google", priority: "normal" }
+            calendar.school: { label: "CalDAV", priority: "high" }
+            calendar.house_schedule: { label: "House", role: "schedule" }
+            # calendar.wife_work: { label: "Google", priority: "low" }
+
+          # ------------------------------------------------------------ EDIT ME
+          # The sentence map. Keyed by any text that appears in an event's title
+          # (case-insensitive). Supplies what the house will do, how important the
+          # entry is, and whether it sticks around until someone acts on it.
+          #
+          # This is the hand-maintained honest version. There is no clever
+          # automation-introspection here on purpose: the sentences need human
+          # wording anyway, and there are only a dozen of them.
+          sentences:
+            "out of school": { automation: "Entry unlocks on her arrival" }
+            "making dinner": { automation: "Kitchen 90%, hallway 40%" }
+            "bed time":
+              { automation: "Story on Sonos, 20 min, then dark", priority: "high" }
+            "trash": { automation: "Porch light stays on until 11" }
+
+          # ------------------------------------------------------------ EDIT ME
+          # Titles containing any of these never get a row. Keep it short — an
+          # exclusion you forget about is a missing event you cannot explain.
+          exclude: ["Busy", "Private", "OOO"]
+
+          # ------------------------------------------------------------ EDIT ME
+          # The to-do list backing actionable entries. Swapping this for Grocy or
+          # a CalDAV task list later means changing `todo_list` and the `action`
+          # block built further down — the card itself does not care.
+          todo_list: todo.household
+
+          # ------------------------------------------------------------ EDIT ME
+          # Scheduled automations.
+          #
+          # These have to be declared. Home Assistant cannot tell you when an
+          # automation will next run — triggers are not introspectable, and the
+          # logbook only knows what already happened. So the times and the words
+          # live here, next to each other, and you keep them in step with the
+          # automations by hand. A dozen lines you can read beats a clever
+          # parser you cannot trust.
+          #
+          # A `role: schedule` calendar (above) does the same job better: the
+          # times move to the calendar panel where you can edit them without
+          # touching YAML, and the automations trigger off the same events. Once
+          # you have one, empty this list — otherwise you get two rows for the
+          # same thing, which is exactly what you see if you run the sample
+          # config as shipped.
+          schedule:
+            - { at: "07:00", title: "Morning · lights up, thermostat to 70°" }
+            - { at: "22:30", title: "Goodnight", automation: "Everything off, doors checked" }
+
+          # Sun rows: sunrise and sunset. `false` drops them entirely.
+          show_sun: true
+
+          # ------------------------------------------------------------ EDIT ME
+          # Weather. Each upcoming entry gets the forecast for the hour it starts
+          # in. Set to null to switch it off.
+          weather_entity: weather.home
+
+          # ------------------------------------------------------------ EDIT ME
+          # Near-duplicate merging. Two calendars carrying the same event with
+          # slightly different wording become one row naming both.
+          #
+          #   similarity   share of words two titles must have in common, both
+          #                ways, before they are treated as the same event.
+          #                0.8 is strict. Lower it if duplicates slip through;
+          #                raise it if unrelated events start merging.
+          #   title_noise  words ignored when comparing, so "Dentist" and
+          #                "Dentist appointment" still match.
+          similarity: 0.8
+          title_noise:
+            ["a", "an", "the", "at", "to", "for", "with", "and", "of", "appointment"]
+
+      - action: calendar.get_events
+        target:
+          entity_id: "{{ calendars.keys() | list }}"
+        data:
+          start_date_time: "{{ today_at('00:00') }}"
+          end_date_time: "{{ today_at('00:00') + timedelta(days=1) }}"
+        response_variable: cal
+
+      - action: todo.get_items
+        target:
+          entity_id: "{{ todo_list }}"
+        data:
+          status: needs_action
+        response_variable: tasks
+
+      - if: "{{ weather_entity }}"
+        then:
+          - action: weather.get_forecasts
+            target:
+              entity_id: "{{ weather_entity }}"
+            data:
+              type: hourly
+            response_variable: fc
+      - variables:
+          fc: "{{ fc | default({}, true) }}"
+
+      # ----------------------------------------------------------------------
+      # Everything is merged once, here, so each attribute below just reads it.
+      # ----------------------------------------------------------------------
+      - variables:
+          merged: >
+            {% set ns = namespace(out=[]) %}
+
+            {# ---------- calendars ---------- #}
+            {% for entity, meta in calendars.items() %}
+              {% for ev in cal.get(entity, {}).get('events', []) %}
+                {% set title = ev.summary | default('(untitled)') | trim %}
+                {# a plain `set` inside a for-loop does not survive the loop in
+                   Jinja — anything accumulated across one needs a namespace #}
+                {% set x = namespace(skip=false) %}
+                {% for bad in exclude %}
+                  {% if bad | lower in title | lower %}{% set x.skip = true %}{% endif %}
+                {% endfor %}
+                {% if not x.skip %}
+                  {# first matching sentence wins #}
+                  {% set s = namespace(hit={}) %}
+                  {% for key, val in sentences.items() %}
+                    {% if s.hit == {} and key | lower in title | lower %}
+                      {% set s.hit = val %}
+                    {% endif %}
+                  {% endfor %}
+                  {% set all_day = 'T' not in ev.start %}
+                  {# A schedule calendar describes the house, not the household:
+                     its events are House rows and their description field is the
+                     sage sentence. #}
+                  {% set is_schedule = meta.get('role') == 'schedule' %}
+                  {% set ns.out = ns.out + [{
+                      'id': 'cal:' ~ entity ~ ':' ~ ev.start ~ ':' ~ title,
+                      'start': (today_at('00:00') if all_day else as_datetime(ev.start) | as_local).isoformat(),
+                      'end': (as_datetime(ev.end) | as_local).isoformat() if (ev.end is defined and not all_day) else none,
+                      'all_day': all_day,
+                      'kind': 'automation' if is_schedule else 'calendar',
+                      'source': meta.label,
+                      'title': title,
+                      'automation': (ev.description | default('', true) | trim or none)
+                                    if is_schedule else s.hit.get('automation'),
+                      'priority': s.hit.get('priority', meta.get('priority', 'normal')),
+                      'sticky': s.hit.get('sticky', false),
+                      'entity_id': entity
+                  }] %}
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+
+            {# ---------- sun ----------
+               sun.sun only ever reports the NEXT event, so an event that already
+               happened today is that time minus a day. Off by a minute or two at
+               the solstices; nobody has ever noticed. #}
+            {% if show_sun %}
+              {% for attr, label in [('next_rising', 'Sunrise'), ('next_setting', 'Sunset')] %}
+                {% set nxt = state_attr('sun.sun', attr) %}
+                {% if nxt %}
+                  {% set t = as_datetime(nxt) | as_local %}
+                  {% set today_t = t if t.date() == now().date() else t - timedelta(days=1) %}
+                  {% if today_t.date() == now().date() %}
+                    {% set s = namespace(hit={}) %}
+                    {% for key, val in sentences.items() %}
+                      {% if s.hit == {} and key | lower in label | lower %}
+                        {% set s.hit = val %}
+                      {% endif %}
+                    {% endfor %}
+                    {% set ns.out = ns.out + [{
+                        'id': 'sun:' ~ attr,
+                        'start': today_t.isoformat(),
+                        'all_day': false,
+                        'kind': 'sun',
+                        'source': 'Sun',
+                        'title': label,
+                        'automation': s.hit.get('automation'),
+                        'priority': s.hit.get('priority', 'low'),
+                        'entity_id': 'sun.sun'
+                    }] %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+
+            {# ---------- scheduled automations ---------- #}
+            {% for item in schedule %}
+              {% set ns.out = ns.out + [{
+                  'id': 'auto:' ~ item.at,
+                  'start': today_at(item.at).isoformat(),
+                  'all_day': false,
+                  'kind': 'automation',
+                  'source': 'House',
+                  'title': item.title,
+                  'automation': item.get('automation'),
+                  'priority': item.get('priority', 'normal')
+              }] %}
+            {% endfor %}
+
+            {# ---------- to-do items with a due time ----------
+               These are `sticky`: their time passing does not push them into the
+               struck-through past. They stay, with a button, until someone says
+               they are done. That is the whole point of the laundry. #}
+            {% for item in tasks.get(todo_list, {}).get('items', []) %}
+              {% if item.due is defined and item.due %}
+                {% set due_all_day = 'T' not in item.due %}
+                {% set ns.out = ns.out + [{
+                    'id': 'todo:' ~ item.uid,
+                    'start': (today_at('00:00') if due_all_day else as_datetime(item.due) | as_local).isoformat(),
+                    'all_day': due_all_day,
+                    'kind': 'todo',
+                    'source': 'Tasks',
+                    'title': item.summary,
+                    'priority': 'high',
+                    'sticky': true,
+                    'entity_id': todo_list,
+                    'action': {
+                      'label': 'Done',
+                      'service': 'todo.update_item',
+                      'target': {'entity_id': todo_list},
+                      'data': {'item': item.uid, 'status': 'completed'}
+                    }
+                }] %}
+              {% endif %}
+            {% endfor %}
+
+            {# ---------- what just happened ---------- #}
+            {% for e in state_attr('sensor.day_spine_recent', 'events') | default([], true) %}
+              {% set ns.out = ns.out + [e] %}
+            {% endfor %}
+
+            {# ---------- merge near-duplicates ----------
+               You and Wife both have the school run on your own calendars,
+               worded slightly differently. Same start, same end, and titles that
+               share most of their words: it is one event, and it gets one row
+               that names both calendars.
+
+               Similarity is word overlap both ways — "Dentist" and "Dentist
+               appointment for Kid at 4" share every word of the shorter title
+               but are only a third of the longer one, and that asymmetry is what
+               stops unrelated events from collapsing into each other. #}
+            {% set d = namespace(keep=[]) %}
+            {% for e in ns.out | sort(attribute='start') %}
+              {% set m = namespace(at=-1) %}
+              {% for k in d.keep %}
+                {% if m.at < 0 %}
+                  {% set same_start =
+                       (as_datetime(k.start) - as_datetime(e.start)).total_seconds()
+                       | abs < 60 %}
+                  {% set same_end =
+                       (k.get('end') is none and e.get('end') is none) or
+                       (k.get('end') and e.get('end') and
+                        (as_datetime(k.end) - as_datetime(e.end)).total_seconds()
+                        | abs < 60) %}
+                  {% set a = k.title | lower | regex_replace('[^a-z0-9 ]', '')
+                             | split | reject('in', title_noise) | list %}
+                  {% set b = e.title | lower | regex_replace('[^a-z0-9 ]', '')
+                             | split | reject('in', title_noise) | list %}
+                  {% set shared = a | select('in', b) | list | count %}
+                  {% set ratio = shared / [a | count, b | count, 1] | max %}
+                  {% if same_start and same_end and ratio >= similarity %}
+                    {% set m.at = loop.index0 %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+
+              {% if m.at < 0 %}
+                {% set d.keep = d.keep + [e] %}
+              {% else %}
+                {% set k = d.keep[m.at] %}
+                {# Keep the fuller title, both source labels, whichever sentence
+                   exists, and the higher priority. Merging must never lose
+                   information — that is how people stop believing the card. #}
+                {% set order = ['low', 'normal', 'high'] %}
+                {# The wording comes from whichever calendar you listed first —
+                   predictable, and it lets you decide whose phrasing wins by
+                   ordering the `calendars` block. #}
+                {% set merged_entry = k | combine({
+                     'source': (k.source if e.get('source', '') in k.get('source', '').split(' + ')
+                                else k.get('source', '') ~ ' + ' ~ e.get('source', '')),
+                     'automation': k.get('automation') or e.get('automation'),
+                     'action': k.get('action') or e.get('action'),
+                     'sticky': k.get('sticky', false) or e.get('sticky', false),
+                     'priority': (k.get('priority', 'normal')
+                        if order.index(k.get('priority', 'normal'))
+                           >= order.index(e.get('priority', 'normal'))
+                        else e.get('priority', 'normal')),
+                     'merged_from': (k.get('merged_from', [k.get('entity_id')])
+                                     + [e.get('entity_id')]) | unique | list
+                   }) %}
+                {% set d.keep = d.keep[:m.at] + [merged_entry] + d.keep[m.at + 1:] %}
+              {% endif %}
+            {% endfor %}
+
+            {# ---------- hourly forecast ----------
+               Each upcoming entry picks up the forecast for the hour it starts
+               in, so "you are going to the fair, and it will be raining" is
+               visible before anyone leaves. #}
+            {% set w = namespace(out=[]) %}
+            {% for e in d.keep %}
+              {% set hour = namespace(hit=none) %}
+              {% if weather_entity and not e.get('all_day') and as_datetime(e.start) >= now() %}
+                {% for f in fc.get(weather_entity, {}).get('forecast', []) %}
+                  {% set gap = (as_datetime(f.datetime) - as_datetime(e.start))
+                               .total_seconds() %}
+                  {% if hour.hit is none and gap > -3600 and gap < 3600 %}
+                    {% set hour.hit = {
+                        'condition': f.get('condition'),
+                        'temperature': f.get('temperature'),
+                        'precipitation_probability': f.get('precipitation_probability')
+                    } %}
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+              {% set w.out = w.out + [e | combine({'weather': hour.hit})] %}
+            {% endfor %}
+
+            {{ w.out }}
+
+          # Entries still ahead of us, anything sticky that is not done, and
+          # anything currently running — an event you are in the middle of has
+          # not "happened" yet as far as the rest of your day is concerned.
+          remaining: >
+            {% set ns = namespace(n=0) %}
+            {% for e in merged %}
+              {% set running = e.get('end')
+                               and as_datetime(e.start) <= now()
+                               and as_datetime(e.end) > now() %}
+              {% if e.get('kind') != 'event'
+                    and (e.get('sticky') or running or as_datetime(e.start) >= now()) %}
+                {% set ns.n = ns.n + 1 %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.n }}
+
+          # A source is stale when its entity is not reporting. Time-since-last-
+          # update guessing is deliberately not attempted: the card must never
+          # claim something it does not know.
+          # One pill per label. Two calendars sharing a label share a pill, and
+          # the pill goes stale if either of them is down.
+          source_list: >
+            {% set ns = namespace(labels=[], bad=[]) %}
+            {% for entity, meta in calendars.items() %}
+              {% if meta.label not in ns.labels %}
+                {% set ns.labels = ns.labels + [meta.label] %}
+              {% endif %}
+              {% if states(entity) in ['unavailable', 'unknown']
+                    and meta.label not in ns.bad %}
+                {% set ns.bad = ns.bad + [meta.label] %}
+              {% endif %}
+            {% endfor %}
+            {% set out = namespace(pills=[]) %}
+            {% for label in ns.labels %}
+              {% set out.pills = out.pills
+                 + [{'label': label, 'stale': label in ns.bad}] %}
+            {% endfor %}
+            {{ out.pills }}
+
+    sensor:
+      - name: Day Spine
+        unique_id: day_spine_feed
+        # State stays short on purpose — HA truncates state strings at 255 chars,
+        # so the payload belongs in attributes.
+        state: "{{ remaining }}"
+        attributes:
+          entries: "{{ merged }}"
+
+          headline: >
+            {% set n = remaining | int %}
+            {{ now().strftime('%-d %B') }} ·
+            {{ 'nothing scheduled' if n == 0
+               else (n ~ ' left today' if n > 1 else '1 left today') }}
+
+          # ------------------------------------------------------------ EDIT ME
+          # The "Now" subline: what the house is doing this minute. Swap the
+          # entity names for yours. Anything unavailable is simply left out
+          # rather than rendered as a wrong number.
+          now: >
+            {% set h = now().hour %}
+            {% set part = 'Morning' if h < 12 else ('Afternoon' if h < 17 else
+                          ('Evening' if h < 22 else 'Night')) %}
+            {% set lights = states.light
+                 | selectattr('state', 'eq', 'on') | list | count %}
+            {% set temp = state_attr('climate.house', 'current_temperature') %}
+            {{ part }} ·
+            {{ (lights ~ ' lights on') if lights else 'no lights on' }}
+            {{- (', ' ~ temp | round | int ~ '° inside') if temp else '' }}
+
+          sources: "{{ source_list }}"
+
+          stale_message: >
+            {% set bad = source_list | selectattr('stale') | map(attribute='label') | list %}
+            {% if bad %}
+              {{ bad | join(' and ') }} {{ 'calendars are' if bad | count > 1
+                 else 'calendar is' }} not updating. Anything on
+              {{ 'them' if bad | count > 1 else 'it' }} is missing from today.
+            {% endif %}
+
+  # --------------------------------------------------------------------------
+  # 2. "What just happened"
+  #
+  # Short-lived lines explaining changes the house made on its own, so nobody has
+  # to wonder why the lights went off. They expire on their own; the card also
+  # drops them client-side, so a stuck feed cannot leave a stale line on screen.
+  # --------------------------------------------------------------------------
+  - trigger:
+      # ---------------------------------------------------------------- EDIT ME
+      # Only entities listed here can ever produce a line. Start with the two or
+      # three whose automatic behaviour has actually confused someone.
+      - trigger: state
+        entity_id:
+          - light.living_room
+          - light.kitchen
+        to: ["on", "off"]
+
+    condition:
+      # A parent context means something else caused this — an automation, a
+      # script, a scene. A person flipping a switch already knows what they did.
+      - condition: template
+        value_template: "{{ trigger.to_state.context.parent_id is not none }}"
+
+    action:
+      - variables:
+          ttl_seconds: 300
+          # ------------------------------------------------------------ EDIT ME
+          # One sentence per entity per state. Plain words, no entity ids.
+          phrases:
+            light.living_room:
+              "on": "Living room lights came on"
+              "off": "Living room lights turned off by motion sensor"
+            light.kitchen:
+              "on": "Kitchen lights came on"
+              "off": "Kitchen lights turned off by motion sensor"
+
+    sensor:
+      - name: Day Spine Recent
+        unique_id: day_spine_recent
+        state: "{{ state_attr('sensor.day_spine_recent', 'events') | default([], true) | count }}"
+        attributes:
+          events: >
+            {# Carry forward what has not expired, then append this one. Reading
+               `this` is what gives a template sensor a memory between triggers. #}
+            {% set ns = namespace(keep=[]) %}
+            {% set prev = this.attributes.get('events', []) if this is defined else [] %}
+            {% for e in prev %}
+              {% if as_datetime(e.expires) > now() %}
+                {% set ns.keep = ns.keep + [e] %}
+              {% endif %}
+            {% endfor %}
+            {% set phrase = phrases.get(trigger.entity_id, {}).get(trigger.to_state.state) %}
+            {% if phrase %}
+              {% set ns.keep = ns.keep + [{
+                  'id': 'evt:' ~ trigger.entity_id ~ ':' ~ trigger.to_state.last_changed.timestamp() | int,
+                  'start': (trigger.to_state.last_changed | as_local).isoformat(),
+                  'expires': (now() + timedelta(seconds=ttl_seconds)).isoformat(),
+                  'all_day': false,
+                  'kind': 'event',
+                  'source': 'House',
+                  'title': phrase,
+                  'entity_id': trigger.entity_id
+              }] %}
+            {% endif %}
+            {# Six is plenty. Past that it is a logbook, not a spine. #}
+            {{ ns.keep[-6:] }}

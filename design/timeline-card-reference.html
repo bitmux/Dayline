@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Day Spine card — design reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="_ds/organic-8e49e359-e87d-4668-a6e7-1b93c6c99576/styles.css">
+<script src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<style>
+  body{margin:0;padding:40px;background:#231f1b;font-family:"Figtree",system-ui,sans-serif;display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+  .col{display:flex;flex-direction:column;gap:10px}
+  .lbl{font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:rgba(232,220,198,.45)}
+  .card{width:520px;background:#1a1714;border-radius:var(--radius-lg);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-6);box-shadow:0 12px 32px rgba(0,0,0,.35)}
+  .hdr{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-4)}
+  .day{font-family:var(--font-heading);font-weight:400;font-size:34px;line-height:1;color:var(--color-neutral-100)}
+  .sub{font-size:14px;color:var(--color-neutral-500);margin-top:4px}
+  .pills{display:flex;gap:6px;flex:none}
+  .pill{font:600 10px/1 ui-monospace,Menlo,monospace;padding:5px 8px;border-radius:999px;background:#2c2620;color:var(--color-neutral-400)}
+  .pill.stale{background:#2e2117;color:var(--color-accent-200)}
+  .allday{display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:var(--radius-md);background:#241f1a;font-size:14.5px;color:var(--color-neutral-300)}
+  .spine{display:flex;flex-direction:column}
+  .row{display:flex;gap:14px}
+  .t{width:66px;flex:none;text-align:right;font-size:13px;font-weight:700}
+  .rail{width:2px;flex:none;position:relative}
+  .c{flex:1}
+  .row.past .t{color:var(--color-neutral-600);padding-top:13px}
+  .row.past .rail{background:#332c25}
+  .row.past .rail::after{content:"";position:absolute;left:-4px;top:18px;width:10px;height:10px;border-radius:999px;background:#4a4038}
+  .row.past .c{padding:10px 0 16px;font-size:15px;color:var(--color-neutral-600);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.2)}
+  .row.now .t{font-family:var(--font-heading);font-weight:400;font-size:20px;color:var(--color-accent-400);padding-top:8px}
+  .row.now .rail{background:linear-gradient(#332c25 0 20px,var(--color-accent-500) 20px 100%)}
+  .row.now .rail::after{content:"";position:absolute;left:-8px;top:12px;width:18px;height:18px;border-radius:999px;background:var(--color-accent-500);box-shadow:0 0 0 5px rgba(198,113,57,.22)}
+  .row.now .c{padding:6px 0 18px}
+  .now-l{font-size:15px;font-weight:700;color:var(--color-accent-300)}
+  .now-s{font-size:14px;color:var(--color-neutral-500);margin-top:1px}
+  .row.next .t{color:var(--color-neutral-300);padding-top:13px}
+  .row.next .rail{background:var(--color-accent-800)}
+  .row.next .rail::after{content:"";position:absolute;left:-5px;top:17px;width:12px;height:12px;border-radius:999px;background:#1a1714;border:3px solid var(--color-accent-2-500);box-sizing:border-box}
+  .row.next .c{padding:10px 0 16px}
+  .row.last .rail{background:linear-gradient(var(--color-accent-800) 0 28px,transparent 28px 100%)}
+  .row.last .c{padding:10px 0 0}
+  .ttl{font-size:16px;font-weight:600;color:var(--color-neutral-100)}
+  .auto{font-size:13.5px;color:var(--color-accent-2-400);display:flex;align-items:center;gap:6px;margin-top:3px}
+  .foot{display:flex;align-items:center;gap:10px;padding-top:var(--space-3);border-top:1px solid #2c2620;font-size:12.5px;line-height:1.45;color:var(--color-neutral-600)}
+  .foot.warn{color:var(--color-accent-200)}
+  [data-lucide]{display:inline-block;vertical-align:middle;flex:none}
+</style>
+</head>
+<body>
+
+<div class="col">
+  <div class="lbl">Mid-afternoon · the ordinary case</div>
+  <div class="card" id="s-ordinary">
+    <div class="hdr">
+      <div><div class="day">Wednesday</div><div class="sub">2 September · everyone home by 6</div></div>
+      <div class="pills"><span class="pill">Google</span><span class="pill">CalDAV</span></div>
+    </div>
+    <div class="allday"><i data-lucide="calendar-days" style="width:18px;height:18px;color:var(--color-accent-2-400)"></i>All day · Trash out tonight</div>
+    <div class="spine">
+      <div class="row past"><div class="t">7:00 AM</div><div class="rail"></div><div class="c">Morning · lights up, thermostat to 70°</div></div>
+      <div class="row past"><div class="t">8:20 AM</div><div class="rail"></div><div class="c">Kid to school</div></div>
+      <div class="row now"><div class="t">2:39</div><div class="rail"></div><div class="c"><div class="now-l">Now</div><div class="now-s">Afternoon · house quiet, doors locked</div></div></div>
+      <div class="row next"><div class="t">3:50 PM</div><div class="rail"></div><div class="c"><div class="ttl">Kid out of school</div><div class="auto"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Entry unlocks on her arrival</div></div></div>
+      <div class="row next"><div class="t">4:15 PM</div><div class="rail"></div><div class="c"><div class="ttl">Making dinner for house</div><div class="auto"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Kitchen 90%, hallway 40%</div></div></div>
+      <div class="row next"><div class="t">7:47 PM</div><div class="rail"></div><div class="c"><div class="ttl">Sunset</div><div class="auto"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Evening lights over 20 minutes</div></div></div>
+      <div class="row next last"><div class="t">9:00 PM</div><div class="rail"></div><div class="c"><div class="ttl">Kid bed time</div><div class="auto"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Story on Sonos, 20 min, then dark</div></div></div>
+    </div>
+    <div class="foot"><i data-lucide="info" style="width:16px;height:16px"></i>Past entries stay, struck through, so the day reads as a whole. Sage lines are what the house will do on its own.</div>
+  </div>
+</div>
+
+<div class="col">
+  <div class="lbl">Empty day · sun and now marker remain</div>
+  <div class="card" id="s-empty">
+    <div class="hdr">
+      <div><div class="day">Saturday</div><div class="sub">5 September · nothing scheduled</div></div>
+      <div class="pills"><span class="pill">Google</span><span class="pill">CalDAV</span></div>
+    </div>
+    <div class="spine">
+      <div class="row past"><div class="t">6:58 AM</div><div class="rail"></div><div class="c">Sunrise</div></div>
+      <div class="row now"><div class="t">9:12</div><div class="rail"></div><div class="c"><div class="now-l">Now</div><div class="now-s">Morning · 3 lights on, 71° inside</div></div></div>
+      <div class="row next last"><div class="t">7:42 PM</div><div class="rail"></div><div class="c"><div class="ttl">Sunset</div><div class="auto"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Evening lights over 20 minutes</div></div></div>
+    </div>
+    <div class="foot"><i data-lucide="info" style="width:16px;height:16px"></i>An empty day still renders. The card never collapses to nothing.</div>
+  </div>
+
+  <div class="lbl" style="margin-top:22px">Stale source · says what it doesn't know</div>
+  <div class="card" id="s-stale">
+    <div class="hdr">
+      <div><div class="day">Thursday</div><div class="sub">3 September · 2 entries from CalDAV</div></div>
+      <div class="pills"><span class="pill stale">Google</span><span class="pill">CalDAV</span></div>
+    </div>
+    <div class="spine">
+      <div class="row now"><div class="t">7:31</div><div class="rail"></div><div class="c"><div class="now-l">Now</div><div class="now-s">Morning · everyone up</div></div></div>
+      <div class="row next last"><div class="t">8:20 AM</div><div class="rail"></div><div class="c"><div class="ttl">Kid to school</div><div class="auto"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Doors lock behind her</div></div></div>
+    </div>
+    <div class="foot warn"><i data-lucide="wifi-off" style="width:16px;height:16px"></i>Google calendar hasn't updated since 8:14 AM yesterday. Anything on it is missing from today.</div>
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>
