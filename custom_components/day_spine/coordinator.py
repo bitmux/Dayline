@@ -7,7 +7,7 @@ from datetime import timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.core import CoreState, Event, HomeAssistant, callback
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.template import Template
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -162,6 +162,15 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self.async_set_updated_data(self._compose())
 
+    def _log_fetch_failure(self, what: str) -> None:
+        """A failed fetch while Home Assistant is still starting is an ordering
+        detail, not a fault — the calendar or to-do integration simply is not up
+        yet, and async_at_started asks again. Only shout once it should work."""
+        if self.hass.state is CoreState.running:
+            _LOGGER.exception("%s failed", what)
+        else:
+            _LOGGER.debug("%s not available yet during startup", what)
+
     # -- the slow path ------------------------------------------------------
 
     async def _async_update_data(self) -> dict[str, Any]:
@@ -205,7 +214,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 return_response=True,
             )
         except Exception:  # noqa: BLE001 - one bad calendar must not blank the card
-            _LOGGER.exception("calendar.get_events failed")
+            self._log_fetch_failure("calendar.get_events")
             return {}
         return {
             entity_id: payload.get("events", [])
@@ -225,7 +234,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 return_response=True,
             )
         except Exception:  # noqa: BLE001
-            _LOGGER.exception("todo.get_items failed")
+            self._log_fetch_failure("todo.get_items")
             return []
         return ((response or {}).get(todo) or {}).get("items", [])
 
@@ -242,7 +251,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 return_response=True,
             )
         except Exception:  # noqa: BLE001
-            _LOGGER.exception("weather.get_forecasts failed")
+            self._log_fetch_failure("weather.get_forecasts")
             return []
         return ((response or {}).get(weather) or {}).get("forecast", [])
 
