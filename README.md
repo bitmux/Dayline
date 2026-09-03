@@ -35,6 +35,11 @@ is logbook-oriented — it tells you what happened, not what is about to.
   sensor", for five minutes, so nobody has to wonder.
 - **Joins the hourly forecast** to upcoming entries — you are going to the fair,
   and it will be raining.
+- **Brings its own colours.** The Organic palette — warm dark ground, terracotta
+  now-marker, sage for anything the house does on its own — is the default and
+  is independent of your Home Assistant theme. Set `use_ha_theme: true` and it
+  takes its colours from the active theme instead; the geometry and typefaces
+  stay put either way, so it is the same card in either dress.
 - **Never hides anything silently.** What the density budget collapses is
   counted on a `+N more today` row. A stale calendar tints its own pill and says
   so in the footer. The card states what it does not know.
@@ -91,14 +96,28 @@ than opening the file, since it loads its fixtures by fetch — including panels
 integration and the YAML package. Its clock is pinned to 2:39 PM so it
 reproduces the design reference whenever you open it.
 
-## Status
+## Status — 0.1.0, alpha
 
-Early, but real: installed through HACS on a live Home Assistant 2026.8, config
-flow clicked through, drawing a live day from Local Calendar, a to-do list and
-the National Weather Service. Three bugs that only a live instance could show —
-a sunset dropped by a UTC date rollover, rain that never rendered as rain on the
-default weather provider, and events spanning midnight landing at the wrong end
-of the day — were found that way and are covered by tests.
+Alpha in the honest sense: everything described above works and is running, but
+it has been through one instance, not many, and the version number is where it
+is because the *functionality* has barely been argued with yet. Expect the
+options to move.
+
+What that means concretely, as of 0.1.0:
+
+- Installed through HACS on a live Home Assistant 2026.8, config flow clicked
+  through, drawing a real day from Local Calendar, a Local To-do list and the
+  National Weather Service.
+- Four bugs found by meeting a live instance rather than a fixture, all now
+  covered by tests or verified on the instance: a sunset dropped by a UTC date
+  rollover, rain that never rendered as rain on Home Assistant's default weather
+  provider, events spanning midnight landing at the wrong end of the day, and a
+  cold boot that produced a spine with no to-dos and no forecast for five
+  minutes.
+- The card registers itself as a Lovelace resource, so it appears in the card
+  picker without anyone pasting a URL.
 
 Not built yet: drag-to-reschedule, a visual editor for the card's own options,
-and the security/awareness variants sketched in `design/`.
+and the security/awareness variants sketched in `design/`. Untested against
+Google/CalDAV calendars, recurring events, and any weather provider other than
+NWS and met.no.
