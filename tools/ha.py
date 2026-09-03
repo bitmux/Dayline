@@ -81,6 +81,23 @@ def state(entity_id: str) -> dict:
     return rest(f"states/{entity_id}")
 
 
+def head(path: str) -> int:
+    """Status code for a path served by Home Assistant itself, not the API.
+
+    Frontend assets — a card registered as a Lovelace resource, say — live
+    outside /api/ and are served unauthenticated. What matters about them is
+    only whether they are there, which is the one thing a resource list cannot
+    tell you: a resource row is just a string, and it stays exactly as
+    convincing after the file behind it stops existing.
+    """
+    req = urllib.request.Request(f"{URL}/{path.lstrip('/')}", method="HEAD")
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return r.status
+    except urllib.error.HTTPError as e:
+        return e.code
+
+
 def call_service(domain: str, service: str, **data) -> Any:
     """Fire a service. Add return_response=True in `data` for a response service."""
     want_response = data.pop("return_response", False)

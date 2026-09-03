@@ -202,6 +202,33 @@ forecast joining, counting. `tools/check-flow.py` catches config-flow fields
 with no translation, which Home Assistant renders as a blank label rather than
 an error.
 
+### Driving a test instance
+
+`tools/ha-dev.py` is the whole deploy loop in one place, so it does not have to
+be retyped:
+
+```bash
+python3 tools/ha-dev.py doctor
+```
+
+checks the chain in the order it actually breaks — Home Assistant up, feed
+sensor producing entries, both HACS repositories installed, the card registered
+as a Lovelace resource, and that resource's URL actually serving a file. That
+last check matters: a resource row is just a string, and it stays exactly as
+convincing after the file behind it stops existing.
+
+```bash
+git push origin main && python3 tools/ha-dev.py deploy
+```
+
+pulls both repositories through HACS, restarts, waits for the API to go away and
+come back `RUNNING` — not merely to answer, which it keeps doing for a moment
+after the restart request — and then runs `doctor`. Push first: HACS pulls from
+GitHub, not from your working tree.
+
+Also `update [integration|card]`, `restart`, `resources`, `feed`, `logs [--all]`
+and `repos`. There is a `ha-dev` skill wrapping the same commands.
+
 ### Testing against a real instance
 
 The checks above prove the merge against stub data, which is only ever as right
