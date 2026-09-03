@@ -113,28 +113,25 @@ def seed() -> None:
         print(f"  {CHORES.split('.')[1]:16} {due_in / 60:+.1f}h  {summary}")
 
 
-def clear() -> None:
-    base = now()
+async def _delete_events(base: datetime) -> None:
+    """There is no `calendar.delete_event` service — deleting is websocket-only,
+    which is what the calendar panel's own delete button uses. `get_events` does
+    not return uids either, so the listing comes from the REST calendar view."""
     lo = (base - timedelta(days=2)).isoformat()
     hi = (base + timedelta(days=2)).isoformat()
-    for cal in (FAMILY, HOUSE):
-        r = ha.call_service(
-            "calendar",
-            "get_events",
-            entity_id=cal,
-            start_date_time=lo,
-            end_date_time=hi,
-            return_response=True,
-        )
-        events = r.get("service_response", {}).get(cal, {}).get("events", [])
-        print(f"  {cal}: {len(events)} events — delete them in the calendar panel")
-        for e in events:
-            print("     ", e.get("start"), e.get("summary"))
-    print(
-        "\nHome Assistant has no calendar.delete_event service; the frontend does it\n"
-        "over the websocket API. Removing the two Local Calendar config entries and\n"
-        "re-adding them is the quicker reset."
-    )
+    async with ha.WS() as ws:
+        for cal in (FAMILY, HOUSE):
+            events = ha.rest(f"calendars/{cal}?start={lo}&end={hi}")
+            print(f"  {cal}: {len(events)} events")
+            for e in events:
+                await ws.cmd("calendar/event/delete", entity_id=cal, uid=e["uid"])
+                print(f"     removed {e.get('summary')}")
+
+
+def clear() -> None:
+    import asyncio
+
+    asyncio.run(_delete_events(now()))
     for item in ha.call_service(
         "todo", "get_items", entity_id=CHORES, return_response=True
     ).get("service_response", {}).get(CHORES, {}).get("items", []):
