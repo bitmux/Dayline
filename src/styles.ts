@@ -134,9 +134,11 @@ export const styles = css`
     color: var(--color-accent-200);
   }
 
-  /* A #tag a person typed into an event title. Deliberately quiet: nothing
-     binds tags yet, so an accent chip would be claiming the house is about to
-     act when it is not. The louder states arrive with the behaviour. */
+  /* A #tag a person typed into an event title, in the three states the feed
+     can put it in: outline for something the house is going to do, filled for
+     something it has done, and flat grey for a tag that will do nothing at all.
+     Grey is the default and the quietest, because a chip claiming the house is
+     about to act has to earn it. */
   .tag {
     display: inline-block;
     font: 600 10px/1 ui-monospace, Menlo, monospace;
@@ -147,6 +149,15 @@ export const styles = css`
     color: var(--color-neutral-500);
     vertical-align: 1px;
     white-space: nowrap;
+  }
+  .tag.will_fire {
+    border-color: var(--color-accent-700);
+    color: var(--color-accent-300);
+  }
+  .tag.fired {
+    border-color: var(--color-accent-500);
+    background: var(--color-accent-800);
+    color: var(--color-accent-200);
   }
 
   /* ---------- all-day ---------- */

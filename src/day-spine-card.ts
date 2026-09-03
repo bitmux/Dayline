@@ -268,7 +268,11 @@ export class DaySpineCard extends LitElement {
    */
   private _renderTags(e: SpineEntry): TemplateResult | typeof nothing {
     if (!e.tags?.length) return nothing;
-    return html`${e.tags.map((t) => html`<span class="tag">#${t}</span>`)}`;
+    // Inert unless the feed says otherwise. A chip that claims the house is
+    // about to act should have to earn it; one that stays quiet is only ever
+    // under-promising.
+    const state = e.tag_state ?? "inert";
+    return html`${e.tags.map((t) => html`<span class="tag ${state}">#${t}</span>`)}`;
   }
 
   private _renderContent(row: SpineRow): TemplateResult | string {

@@ -192,10 +192,17 @@ but it is not discoverable, and a tag that silently does nothing is exactly the
 failure this design is trying to avoid elsewhere. It goes in `INSTALL.md` next
 to the tag documentation, not only here.
 
-> Still open: a fire missed while Home Assistant was down. A grace window (fire
-> on start-up if the tagged event is still running and we never fired) is
-> probably right, but it fails silently in both directions, so it wants a
-> decision rather than a discovery.
+> **Shipped, but not settled: an event already under way fires immediately.**
+> This is the grace window, and it was taken in the direction that makes the
+> feature work — an all-day event starts at midnight, and midnight is always
+> behind us, so future-only scheduling would mean an all-day `#Away` never fired
+> at all. What has fired is persisted, so a restart does not re-assert the
+> morning's tags.
+>
+> The alternative on the table is narrower and cleaner: **all-day events display
+> tags but never fire them.** That removes the whole catch-up question, at the
+> cost of vacation mode — which is the use everyone actually has. Revisit once
+> there is real behaviour to argue from rather than a guess about it.
 
 ### Two layers of scope, and why both
 

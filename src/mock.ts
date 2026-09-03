@@ -20,7 +20,9 @@ export const ordinary: SpineEntry[] = [
     source: "CalDAV",
     title: "Trash out tonight",
     // An all-day tag is the common case, not an edge one — "#Away all weekend".
+    // An all-day event starts at midnight, so by mid-afternoon it has fired.
     tags: ["Away"],
+    tag_state: "fired",
   },
   {
     id: "auto:morning",
@@ -31,7 +33,8 @@ export const ordinary: SpineEntry[] = [
   },
   // A past row, so the harness shows a chip beside a struck-through title too.
   { id: "cal:school", start: at(8, 20), kind: "calendar", source: "Google", title: "Kid to school",
-    tags: ["Home"] },
+    // Its moment passed with nothing bound to it: the flat grey chip.
+    tags: ["Home"], tag_state: "inert" },
   {
     id: "cal:kid-out",
     start: at(15, 50),
@@ -65,6 +68,7 @@ export const ordinary: SpineEntry[] = [
     source: "Google",
     title: "Kid bed time",
     tags: ["Quiet"],
+    tag_state: "will_fire",
     automation: "Story on Sonos, 20 min, then dark",
     priority: "high",
   },

@@ -1,0 +1,63 @@
+blueprint:
+  name: "Dayline: when a calendar #tag starts"
+  description: >
+    Put `#Away` in a calendar event's title and this runs whatever you choose
+    when that event starts.
+
+
+    Two things have to be true for it to fire. The calendar must carry the
+    **Dayline Control** label — an unlabelled calendar shows its tags on the
+    card but cannot act, which is what stops a `#vacation` someone else wrote in
+    November from reaching the thermostat. And the tag must match this
+    automation's, case and leading `#` ignored.
+
+
+    It fires once, at the event's start. Nothing fires when the event ends, ever
+    — coming back is its own entry: `Return #Home from vacation` at 4pm. That
+    keeps the return visible on the spine, which an invisible end action never
+    would be.
+
+
+    Calendars are read every five minutes, so a tag added to an event that
+    starts within the next few minutes may not fire at all.
+  domain: automation
+  source_url: https://github.com/bitmux/Dayline/blob/main/blueprints/automation/dayline/dayline_tag.yaml
+  input:
+    tag:
+      name: Tag
+      description: >
+        The word after the `#`, as you type it in event titles. Case does not
+        matter and a leading `#` is fine either way.
+      selector:
+        text:
+    actions:
+      name: What to do
+      description: >
+        Usually a single `script.turn_on`. Anything the action editor can build
+        works, including conditions — "unless someone is still home" belongs
+        here, in your automation, rather than as a setting in Dayline.
+      selector:
+        action:
+
+# Queued, never single. Two tagged events starting in the same minute is
+# ordinary, and `single` would drop one of them with a warning nobody reads.
+mode: queued
+max: 10
+max_exceeded: silent
+
+variables:
+  wanted: !input tag
+
+triggers:
+  - trigger: event
+    event_type: dayline_tag
+
+conditions:
+  - condition: template
+    value_template: >
+      {{ trigger.event.data.tag | default('') | lower ==
+         wanted | replace('#', '') | trim | lower }}
+
+# The whole event is on `trigger.event.data` — tag, calendar, summary, start,
+# end, all_day — so the actions below can read what they are reacting to.
+actions: !input actions

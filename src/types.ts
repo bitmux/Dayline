@@ -42,9 +42,19 @@ export interface SpineEntry {
    * `#tags` the feed lifted out of the event title, as they were typed.
    *
    * Shown rather than hidden — seeing `#Away` on a row is how you know what the
-   * house is about to do. Nothing binds them yet, so they all draw as inert.
+   * house is about to do.
    */
   tags?: string[];
+
+  /**
+   * What those tags will do, decided by the feed.
+   *
+   * `will_fire` before the event starts, `fired` once it has, and `inert` when
+   * the calendar is not allowed to act. The inert state is the important one:
+   * someone who types `#vacation!` gets an answer rather than silence, and
+   * silence is what makes people decide a system is broken.
+   */
+  tag_state?: "will_fire" | "fired" | "inert";
   entity_id?: string | null;
   priority?: Priority;
   /** Stays on the spine past its time until the action is taken, rather than sliding into the past. */

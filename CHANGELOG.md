@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+**Labels replace picking calendars out of a list.** Apply Home Assistant's
+`Dayline` label to a calendar and it joins the spine — no config flow, no
+restart, and adding a calendar next month never involves Dayline at all. The
+same label on anything that is not a calendar means the other thing: explain
+that entity when it changes on its own, in a sentence built from its name unless
+you have written a better one. With no label anywhere, the configured list is
+still used; with neither, every calendar in the instance is, because a first run
+should render a day rather than interrogate you about one.
+
+**A `#tag` can now act.** When a tagged event starts, Dayline fires a
+`dayline_tag` event carrying the tag, the calendar, the summary and the times —
+and a shipped blueprint binds it to whatever you like, usually a script. The
+binding lives in an ordinary automation you can open and extend, so conditions
+("unless someone is still home") are yours to write and Dayline never generates
+automations or writes into another integration's storage.
+
+Two rules worth knowing, both settled rather than incidental. **A tag fires once,
+at the event's start; nothing fires at the end, ever** — coming back is its own
+entry, `Return #Home from vacation` at 4pm, which keeps the return visible on the
+spine. And **only a calendar carrying the `Dayline Control` label may fire**:
+default deny, so a `#vacation` in a subscribed school calendar shows on the card
+and does nothing. An event already under way when Dayline first sees it fires
+immediately, which is what makes an all-day `#Away` work at all — its start is
+midnight, and midnight is always behind us. What has already fired is persisted,
+so a restart does not re-assert this morning's tags.
+
+Calendars are read every five minutes. A tag added to an event starting within
+the next few minutes may not fire.
+
+Chips now say which of those three things is true: outline for a tag that will
+fire, filled for one that has, flat grey for one that will do nothing.
+
 **`#tags` in calendar event titles are now read and shown.** Put `#Away` in an
 event title and the card draws it as a chip beside the row, on timed, past and
 all-day entries alike. The tag is lifted out of the title before anything else

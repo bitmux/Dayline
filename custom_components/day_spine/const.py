@@ -24,6 +24,19 @@ OPT_NOW_TEMPLATE = "now_template"
 OPT_HEADLINE_TEMPLATE = "headline_template"
 OPT_SCAN_MINUTES = "scan_minutes"
 
+# --- labels, applied in Home Assistant's own UI rather than chosen here ------
+# `Dayline` on a calendar puts it on the spine; on anything else it makes that
+# entity's automatic changes worth explaining. `Dayline Control` is the second,
+# narrower permission: this calendar's `#tags` may act on the house.
+LABEL_INCLUDE = "Dayline"
+LABEL_CONTROL = "Dayline Control"
+
+# --- the tag primitive -------------------------------------------------------
+# Fired when a tagged event starts, and that is the entire integration point.
+# The binding from tag to script lives in an ordinary automation, which is Home
+# Assistant's job and not ours.
+EVENT_TAG = "dayline_tag"
+
 PRIORITIES = ["high", "normal", "low"]
 ROLES = ["people", "schedule"]
 
