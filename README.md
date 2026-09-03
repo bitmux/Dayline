@@ -64,7 +64,8 @@ belongs to HACS, which is exactly why the two halves are separate repositories
 rather than one repository serving its own card.
 
 Full instructions, the YAML alternative, and every card option:
-**[INSTALL.md](INSTALL.md)**.
+**[INSTALL.md](INSTALL.md)**. Where this is going, and the principles that
+decide the arguments: **[ROADMAP.md](ROADMAP.md)**.
 
 ## How it is put together
 

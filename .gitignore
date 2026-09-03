@@ -3,9 +3,9 @@ node_modules/
 __pycache__/
 .pytest_cache/
 
-# Build output. The bundle that ships is the staged copy inside the integration
-# (custom_components/day_spine/www/), because HACS installs only what is
-# committed — an ignored bundle means an installed integration with no card.
+# Build output. Nothing ships from here: `npm run stage-card` copies the bundle
+# into the sibling Dayline-card checkout, which is the HACS Dashboard repository
+# and is where the committed, installed copy lives.
 dist/
 dev/dev-bundle.js
 dev/dev-bundle.js.map
