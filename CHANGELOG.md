@@ -17,6 +17,13 @@ hard refresh. Two independent causes, both fixed.
   and `customElements.define` throws on a name already taken, aborting the
   module below that line. The define is now guarded, so whichever copy arrives
   first wins and the other is a no-op.
+- **A cold boot no longer opens the log with three warnings naming your own
+  calendars.** They were only an ordering detail — the sources had not started
+  yet, and the refresh a moment later filled the spine in — but
+  `homeassistant.helpers.service` logs them before raising, so catching the
+  error never suppressed them. Entities that do not exist yet are now left out
+  of the call instead. A name still missing once everything has started is a
+  real problem and still says so.
 
 ## 0.1.0 — alpha, 3 September 2026
 

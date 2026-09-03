@@ -171,6 +171,31 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         else:
             _LOGGER.debug("%s not available yet during startup", what)
 
+    def _present(self, entity_ids: list[str], what: str) -> list[str]:
+        """The subset the state machine actually knows about.
+
+        Asking a response service for an entity that has not been created yet
+        makes `homeassistant.helpers.service` log "Referenced entities ... are
+        missing or not currently available" — and it logs it before raising, so
+        catching the error does not suppress it. On a cold boot that puts three
+        lines at the top of the log naming the user's own calendars, which reads
+        like a misconfiguration and is only an ordering detail; async_at_started
+        asks again a moment later and the spine fills in.
+
+        An entity that exists but is unavailable still has a state object, so
+        this only ever filters out what genuinely is not there yet. Once
+        everything has started, a name that is still missing is a real problem
+        and says so.
+        """
+        missing = [e for e in entity_ids if self.hass.states.get(e) is None]
+        if missing:
+            names = ", ".join(missing)
+            if self.hass.state is CoreState.running:
+                _LOGGER.warning("%s: %s does not exist", what, names)
+            else:
+                _LOGGER.debug("%s: %s has not started yet", what, names)
+        return [e for e in entity_ids if e not in missing]
+
     # -- the slow path ------------------------------------------------------
 
     async def _async_update_data(self) -> dict[str, Any]:
@@ -198,7 +223,9 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return self._compose()
 
     async def _fetch_calendars(self, day_start) -> dict[str, list[dict[str, Any]]]:
-        calendars = self.entry.data.get(CONF_CALENDARS) or []
+        calendars = self._present(
+            list(self.entry.data.get(CONF_CALENDARS) or []), "calendar.get_events"
+        )
         if not calendars:
             return {}
         try:
@@ -223,7 +250,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _fetch_todo(self) -> list[dict[str, Any]]:
         todo = self.entry.data.get(CONF_TODO)
-        if not todo:
+        if not todo or not self._present([todo], "todo.get_items"):
             return []
         try:
             response = await self.hass.services.async_call(
@@ -240,7 +267,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _fetch_forecast(self) -> list[dict[str, Any]]:
         weather = self.entry.data.get(CONF_WEATHER)
-        if not weather:
+        if not weather or not self._present([weather], "weather.get_forecasts"):
             return []
         try:
             response = await self.hass.services.async_call(
