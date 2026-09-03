@@ -122,12 +122,25 @@ run `npm run build` if you want to rebuild it from source.)
 
 ## Adding the card
 
-**Add card → Manual**:
+**Add card → search "Dayline"**, which fills in the feed sensor for you. Or **Add
+card → Manual**:
 
 ```yaml
 type: custom:day-spine-card
 entity: sensor.day_spine
 ```
+
+> **Check that entity id.** The sensor is named after the config entry's title,
+> so an integration you named "Dayline" gives you `sensor.dayline`, not
+> `sensor.day_spine`. Whatever appears under **Settings → Devices & services →
+> Dayline → 1 entity** is the right answer.
+
+> **If the card says "Configuration error" or "Custom element doesn't exist",
+> hard-refresh the page** (Ctrl/Cmd-Shift-R). The integration adds its card to
+> the frontend's module list at startup, and a browser tab that was already open
+> — or that has the old page cached — never asks for the new list. This is the
+> first thing to try after installing or updating, and it is almost always this
+> rather than anything on the server.
 
 Every key below is optional except `entity`.
 

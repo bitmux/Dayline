@@ -120,8 +120,15 @@ export class DaySpineCard extends LitElement {
     return 6;
   }
 
-  public static getStubConfig(): DaySpineCardConfig {
-    return { type: "custom:day-spine-card", entity: "sensor.day_spine" };
+  public static getStubConfig(hass?: HomeAssistant): DaySpineCardConfig {
+    // The sensor is named after the config entry's title, so an integration set
+    // up as "Dayline" produces `sensor.dayline` and one left at the default
+    // produces `sensor.day_spine`. Guessing either one is wrong half the time,
+    // so find the feed by its shape: a sensor carrying an `entries` list.
+    const found = Object.keys(hass?.states ?? {}).find(
+      (id) => id.startsWith("sensor.") && Array.isArray(hass?.states[id]?.attributes?.entries),
+    );
+    return { type: "custom:day-spine-card", entity: found ?? "sensor.day_spine" };
   }
 
   // ------------------------------------------------------------------- render
