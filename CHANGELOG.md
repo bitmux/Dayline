@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.1 — alpha, 3 September 2026
+
+Upgrading the integration could leave the card broken in the browser until a
+hard refresh. Two independent causes, both fixed.
+
+- **The cache-buster never changed.** The `?v=` on the card's URL was a
+  hand-typed constant, so a rebuilt bundle arrived under the same URL and every
+  browser that had already seen it kept serving itself the old copy. It is now
+  a hash of the file's own bytes, so the URL changes exactly when the file does
+  — and the Lovelace resource is rewritten to match on the next restart.
+- **A second load of the bundle threw and took the rest of it with it.** The
+  card is registered two ways on purpose, and after an upgrade the
+  service-worker-cached index shell can still import the *previous* URL while
+  the dashboard imports the current one. Same file, two URLs, two executions —
+  and `customElements.define` throws on a name already taken, aborting the
+  module below that line. The define is now guarded, so whichever copy arrives
+  first wins and the other is a no-op.
+
 ## 0.1.0 — alpha, 3 September 2026
 
 First release that actually runs somewhere. Installed through HACS on Home

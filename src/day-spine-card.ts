@@ -1,5 +1,5 @@
 import { LitElement, html, nothing, type TemplateResult } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { state } from "lit/decorators.js";
 import { styles } from "./styles";
 import { icon, conditionIcon } from "./icons";
 import type {
@@ -42,7 +42,6 @@ const WET_THRESHOLD = 40;
 /** Config with every default filled in — what the render code actually sees. */
 type ResolvedConfig = DaySpineCardConfig & typeof DEFAULTS;
 
-@customElement("day-spine-card")
 export class DaySpineCard extends LitElement {
   static override styles = styles;
 
@@ -594,12 +593,27 @@ declare global {
   }
 }
 
-window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "day-spine-card",
-  name: "Dayline",
-  description: "Today as one vertical spine: calendar, sun, and what the house will do on its own.",
-  preview: false,
-});
+// This file can legitimately be executed twice in one page. The integration
+// registers the card two ways — an import baked into the frontend's index shell
+// and a Lovelace resource — and after an upgrade the shell is still served from
+// the service worker's cache, so it imports the *previous* versioned URL while
+// the dashboard imports the current one. Two URLs, one file, two executions.
+//
+// `customElements.define` throws on a name that is already taken, and an
+// exception at the top level of a module aborts the rest of it. Unguarded, the
+// second execution would take out the picker registration below it, and the
+// browser would report an error for a card that is in fact perfectly fine.
+// Whichever copy arrives first wins; they are the same code.
+if (!customElements.get("day-spine-card")) {
+  customElements.define("day-spine-card", DaySpineCard);
 
-console.info("%c DAYLINE %c 0.1.0 ", "background:#d67f48;color:#1a1714", "");
+  window.customCards = window.customCards || [];
+  window.customCards.push({
+    type: "day-spine-card",
+    name: "Dayline",
+    description: "Today as one vertical spine: calendar, sun, and what the house will do on its own.",
+    preview: false,
+  });
+
+  console.info("%c DAYLINE %c 0.1.1 ", "background:#d67f48;color:#1a1714", "");
+}

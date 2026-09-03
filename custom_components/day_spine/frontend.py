@@ -9,6 +9,7 @@ URL into the Resources page and remember to hard-refresh.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from pathlib import Path
 
@@ -20,14 +21,27 @@ _LOGGER = logging.getLogger(__name__)
 URL_BASE = "/day_spine_frontend"
 CARD_FILE = "day-spine-card.js"
 
-# Bumped when the bundle changes. It is a cache-buster, nothing more: without it
-# a browser that has seen the old file will keep it after an upgrade, and the
-# card will look broken in a way no amount of restarting fixes.
-CARD_VERSION = "0.1.0"
-
-_CARD_URL = f"{URL_BASE}/{CARD_FILE}?v={CARD_VERSION}"
+# The release this bundle belongs to. Human-facing only — it is the hash below
+# that actually busts caches.
+CARD_RELEASE = "0.1.1"
 
 _registered = False
+
+
+def _card_url(source: Path) -> str:
+    """The URL to serve the card under, ending in something that changes when
+    the file does.
+
+    A hand-typed version constant does not change when the file does. During an
+    alpha the bundle is rebuilt far more often than the release is bumped, so
+    HACS happily delivers new code under the same `?v=0.1.0` and every browser
+    that has already seen that URL keeps serving itself the old one out of
+    cache — while the dashboard looks broken in a way no amount of restarting
+    the server fixes. Hashing the bytes makes the URL wrong exactly when, and
+    only when, the file is different.
+    """
+    digest = hashlib.sha256((source / CARD_FILE).read_bytes()).hexdigest()[:8]
+    return f"{URL_BASE}/{CARD_FILE}?v={CARD_RELEASE}.{digest}"
 
 
 async def async_register_card(hass: HomeAssistant) -> None:
@@ -68,15 +82,19 @@ async def async_register_card(hass: HomeAssistant) -> None:
     # way to put a card in front of the picker.
     #
     # Both point at the identical URL string, so the browser's module registry
-    # runs the file once however many times it is asked for.
-    add_extra_js_url(hass, _CARD_URL)
-    await _async_register_resource(hass)
+    # runs the file once however many times it is asked for — until an upgrade
+    # changes the URL, at which point a service-worker-cached shell can still be
+    # importing the old one. The card guards its own `customElements.define`
+    # against exactly that.
+    card_url = await hass.async_add_executor_job(_card_url, source)
+    add_extra_js_url(hass, card_url)
+    await _async_register_resource(hass, card_url)
 
     _registered = True
-    _LOGGER.debug("Day Spine card registered at %s", _CARD_URL)
+    _LOGGER.debug("Day Spine card registered at %s", card_url)
 
 
-async def _async_register_resource(hass: HomeAssistant) -> None:
+async def _async_register_resource(hass: HomeAssistant, card_url: str) -> None:
     """Add the card to Lovelace's resource list, or update the version on it.
 
     Storage mode only — a YAML dashboard's resources are the user's file to
@@ -97,14 +115,14 @@ async def _async_register_resource(hass: HomeAssistant) -> None:
         for item in resources.async_items():
             if str(item.get("url", "")).split("?")[0] != f"{URL_BASE}/{CARD_FILE}":
                 continue
-            if item.get("url") != _CARD_URL:
+            if item.get("url") != card_url:
                 await resources.async_update_item(
-                    item["id"], {"res_type": "module", "url": _CARD_URL}
+                    item["id"], {"res_type": "module", "url": card_url}
                 )
-                _LOGGER.debug("Updated the Dayline card resource to %s", _CARD_URL)
+                _LOGGER.debug("Updated the Dayline card resource to %s", card_url)
             return
 
-        await resources.async_create_item({"res_type": "module", "url": _CARD_URL})
+        await resources.async_create_item({"res_type": "module", "url": card_url})
         _LOGGER.debug("Added the Dayline card as a Lovelace resource")
     except Exception:  # noqa: BLE001 - a dashboard quirk must not break the feed
         _LOGGER.exception("Could not register the Dayline card as a Lovelace resource")
