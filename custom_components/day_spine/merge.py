@@ -121,6 +121,16 @@ def from_calendars(
                 continue
             end = None if all_day else _parse(str(ev.get("end") or "")) or None
 
+            # `calendar.get_events` returns everything *overlapping* the window,
+            # so a meeting that ran from 10pm yesterday to half past midnight
+            # comes back with yesterday's start. Rendered as a clock time that
+            # reads "10:11 PM", it looks like tonight, already struck through.
+            # It was running when the day began, so that is where it goes.
+            if not all_day and start < day_start:
+                if end is None or end <= day_start:
+                    continue
+                start = day_start
+
             rule = _match_sentence(cfg, title)
             # A schedule calendar describes the house, not the household: its
             # event descriptions are the sage sentences, written where the

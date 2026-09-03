@@ -128,6 +128,25 @@ def test_a_schedule_event_without_a_description_says_nothing_rather_than_guessin
     assert entries[0]["automation"] is None
 
 
+def test_an_event_running_across_midnight_starts_the_day_rather_than_ending_it():
+    """`calendar.get_events` returns everything overlapping the window, so a
+    live instance handed back a 10:11 PM start for an event that ran into
+    today. At clock resolution that reads as tonight, already missed."""
+    entries = from_calendars(
+        cfg(),
+        {
+            "calendar.family": [
+                ev("2026-09-01T22:11:00-05:00", "Budget review", "2026-09-02T00:11:00-05:00"),
+                ev("2026-09-01T20:00:00-05:00", "Ended yesterday", "2026-09-01T21:00:00-05:00"),
+            ]
+        },
+        DAY_START,
+    )
+    assert [e["title"] for e in entries] == ["Budget review"]
+    assert entries[0]["start"] == DAY_START.isoformat()
+    assert entries[0]["end"] == "2026-09-02T00:11:00-05:00"
+
+
 # --- dedupe -----------------------------------------------------------------
 
 

@@ -181,10 +181,25 @@ template:
                      its events are House rows and their description field is the
                      sage sentence. #}
                   {% set is_schedule = meta.get('role') == 'schedule' %}
+                  {% set day0 = today_at('00:00') %}
+                  {% set st = day0 if all_day else as_datetime(ev.start) | as_local %}
+                  {% set en = (as_datetime(ev.end) | as_local) if (ev.end is defined and not all_day) else none %}
+                  {# get_events returns everything OVERLAPPING today, so a meeting
+                     that ran from 10pm yesterday to half past midnight comes back
+                     with yesterday's start. At clock resolution that reads as
+                     tonight, already struck through. It was running when the day
+                     began, so that is where it goes; if it also ended before the
+                     day began it is not today's business at all. #}
+                  {% if st < day0 and (en is none or en <= day0) %}
+                    {% set x.skip = true %}
+                  {% endif %}
+                  {% set st = day0 if st < day0 else st %}
+                {% endif %}
+                {% if not x.skip %}
                   {% set ns.out = ns.out + [{
                       'id': 'cal:' ~ entity ~ ':' ~ ev.start ~ ':' ~ title,
-                      'start': (today_at('00:00') if all_day else as_datetime(ev.start) | as_local).isoformat(),
-                      'end': (as_datetime(ev.end) | as_local).isoformat() if (ev.end is defined and not all_day) else none,
+                      'start': st.isoformat(),
+                      'end': en.isoformat() if en else none,
                       'all_day': all_day,
                       'kind': 'automation' if is_schedule else 'calendar',
                       'source': meta.label,
