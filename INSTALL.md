@@ -9,7 +9,28 @@ are two ways to get the feed, and you only need one.
 | Changing what it says | Settings → Devices & services → Configure | Edit Jinja, reload |
 | Entities created | One | Two |
 | Needs | HA 2024.11+ | HA 2024.6+ |
-| Ships the card | Yes, automatically | No, register it yourself |
+| Needs the card installed | Yes | Yes |
+
+---
+
+## The card — install this whichever feed you choose
+
+**HACS → ⋮ (top right) → Custom repositories.** Repository
+`https://github.com/bitmux/Dayline-card`, type **Dashboard**. Open it in the
+HACS list, **Download**, then hard-refresh the browser.
+
+HACS copies the bundle into `/config/www/community/Dayline-card/` and registers
+it as a Lovelace resource for you. Check it landed under **Settings →
+Dashboards → ⋮ → Resources**; you should see one `/hacsfiles/Dayline-card/…`
+entry of type **JavaScript module**.
+
+> **Why this is a separate repository.** HACS keys a custom repository by
+> `owner/repo` and gives it exactly one category, so one repository cannot be
+> both an Integration and a Dashboard. Dayline used to sidestep that by having
+> the integration serve its own bundle and add the Lovelace resource itself —
+> which meant reaching into `hass.data["lovelace"]` and writing to another
+> integration's storage collection through no public API. It worked until it
+> didn't. Registering a frontend resource is HACS's job.
 
 ---
 
@@ -20,13 +41,6 @@ are two ways to get the feed, and you only need one.
 **HACS → ⋮ (top right) → Custom repositories.** Repository
 `https://github.com/bitmux/Dayline`, type **Integration**. It then appears in
 the HACS list as Dayline — open it, **Download**, and restart Home Assistant.
-
-One repository, one category. The card is not a separate HACS *Dashboard* entry:
-Home Assistant does file out plugins and integrations separately, but that split
-is about where HACS copies files to, and this integration carries its own card
-under `custom_components/day_spine/www/` and registers it at startup. Adding it a
-second time as a Dashboard repository would install a duplicate copy of the
-bundle that nothing loads.
 
 ### By hand
 
@@ -44,8 +58,7 @@ Setup asks four things, and only the first is required:
 - **Weather** — optional, adds the forecast to upcoming rows.
 - **To-do list** — optional, adds actionable rows with a Done button.
 
-That is enough to render. The card is served by the integration, so there is
-**no Resources page step** — add the card to a dashboard and it is there.
+That is enough to render, provided the card is installed too.
 
 ### Changing what it says
 
@@ -99,14 +112,9 @@ homeassistant:
 Work through the blocks marked **EDIT ME**, then **Developer Tools → YAML →
 Reload template entities**.
 
-Then install the card by hand: copy
-`custom_components/day_spine/www/day-spine-card.js` to `/config/www/`, and
-register it under **Settings → Dashboards → ⋮ → Resources → Add resource** with
-URL `/local/day-spine-card.js`, type **JavaScript module**. Hard-refresh
-afterwards.
-
-(That is the committed bundle. `dist/` is build output and is not in the repo —
-run `npm run build` if you want to rebuild it from source.)
+The card is installed exactly the same way as it is for the integration — the
+HACS **Dashboard** repository above. The package changes where the feed comes
+from, not how the card gets to the browser.
 
 > The package needs two entities where the integration needs one. A template
 > sensor has no memory between evaluations except its own previous attributes,
@@ -136,12 +144,13 @@ entity: sensor.day_spine
 > Dayline → 1 entity** is the right answer.
 
 > **If the card says "Custom element doesn't exist" and Dayline is missing from
-> the card picker**, the bundle did not reach your browser. On a storage-mode
-> dashboard the integration registers itself under **Settings → Dashboards → ⋮ →
-> Resources** as `/day_spine_frontend/day-spine-card.js?v=…` — check it is
-> listed, then hard-refresh (Ctrl/Cmd-Shift-R). On a YAML dashboard nothing can
-> be registered for you: add that same URL to your `resources:` yourself, type
-> **module**.
+> the card picker**, the bundle did not reach your browser — which is about the
+> card repository, not the integration. Check **Settings → Dashboards → ⋮ →
+> Resources** lists one `/hacsfiles/Dayline-card/day-spine-card.js` of type
+> **module**; if it is missing, HACS did not finish installing the Dashboard
+> repository. If it is there and the card still does not appear, hard-refresh
+> (Ctrl/Cmd-Shift-R). On a YAML dashboard nothing is registered for you: add
+> that URL to your own `resources:`, type **module**.
 
 Every key below is optional except `entity`.
 
@@ -175,10 +184,10 @@ Live rows, overdue actionables and all-day entries are never collapsed by
 npm install && npm run build
 ```
 
-`npm run build` writes `dist/` and stages the bundle into
-`custom_components/day_spine/www/`, which is the copy that ships — HACS installs
-only what is committed, so the staged one is the one that matters. `npm run
-watch` rebuilds on save.
+`npm run build` writes `dist/day-spine-card.js`. `npm run watch` rebuilds on
+save. To publish a card change, `npm run stage-card` copies that bundle into the
+sibling `Dayline-card/` checkout, which is the HACS Dashboard repository and
+holds the built file and nothing else — commit and push it there.
 
 Checks, all of which run without a Home Assistant:
 

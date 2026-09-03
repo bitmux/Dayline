@@ -46,14 +46,22 @@ is logbook-oriented — it tells you what happened, not what is about to.
 
 ## Installing
 
-**HACS → ⋮ → Custom repositories**, add `https://github.com/bitmux/Dayline`
-with category **Integration**, download it, restart Home Assistant, then
-**Settings → Devices & services → Add integration → Dayline**.
+Dayline is **two HACS repositories**, because Home Assistant treats a backend
+integration and a frontend card as separate things and installing them is two
+separate steps.
 
-Setup asks for your calendars and nothing else that matters. The card ships with
-the integration and registers itself, so there is **one** repository to add and
-no Resources page step — Dayline is not a second, separate HACS "Dashboard"
-entry.
+| | Repository | HACS category |
+|---|---|---|
+| The feed — decides what to show | this one | **Integration** |
+| The card — draws it | [bitmux/Dayline-card](https://github.com/bitmux/Dayline-card) | **Dashboard** |
+
+**HACS → ⋮ → Custom repositories**, add both. Download both, restart Home
+Assistant, then **Settings → Devices & services → Add integration → Dayline**.
+Setup asks for your calendars and nothing else that matters.
+
+HACS registers the card as a Lovelace resource itself — that registration
+belongs to HACS, which is exactly why the two halves are separate repositories
+rather than one repository serving its own card.
 
 Full instructions, the YAML alternative, and every card option:
 **[INSTALL.md](INSTALL.md)**.

@@ -1,14 +1,14 @@
 {
   "name": "day-spine-card",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Home Assistant Lovelace card rendering today as one vertical spine",
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "rollup -c && npm run stage",
+    "build": "rollup -c",
     "watch": "rollup -c --watch",
     "typecheck": "tsc --noEmit",
-    "stage": "mkdir -p custom_components/day_spine/www && cp dist/day-spine-card.js custom_components/day_spine/www/day-spine-card.js"
+    "stage-card": "cp dist/day-spine-card.js ../Dayline-card/day-spine-card.js && echo 'staged into ../Dayline-card'"
   },
   "dependencies": {
     "lit": "^3.2.1"

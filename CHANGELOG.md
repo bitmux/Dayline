@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.2.0 — alpha, 3 September 2026
+
+**The card is now a separate HACS repository, and you need to install both.**
+Add `https://github.com/bitmux/Dayline-card` with category **Dashboard**
+alongside this one.
+
+The integration used to serve the card's bundle and register it as a Lovelace
+resource itself. Registering a frontend resource is not something an
+integration has a public API for: it meant reaching into `hass.data["lovelace"]`
+and writing into another integration's storage collection, with no contract
+about when or whether the frontend would honour it. It worked, then stopped
+working, in ways that did not reduce to anything in this repository — and 0.1.1
+tried to shore it up rather than replace it.
+
+HACS owns that registration and does it through supported paths, which is what
+the Dashboard category is for. One repository cannot be both categories, so
+there are two.
+
+- The integration is now only the feed. `frontend.py`, the bundled `www/` copy,
+  and the `frontend` / `http` / `lovelace` manifest dependencies are gone.
+- Existing installs: HACS will not clean up the old Lovelace resource pointing
+  at `/day_spine_frontend/day-spine-card.js`. Delete it under **Settings →
+  Dashboards → ⋮ → Resources** after installing the card repository, or the
+  dashboard will keep asking for a URL nothing serves any more.
+
 ## 0.1.1 — alpha, 3 September 2026
 
 Upgrading the integration could leave the card broken in the browser until a

@@ -9,15 +9,17 @@ from homeassistant.helpers.start import async_at_started
 
 from .const import DOMAIN
 from .coordinator import DaySpineCoordinator
-from .frontend import async_register_card
 
 PLATFORMS = [Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    # The card ships with the integration, so there is no Resources page step.
-    await async_register_card(hass)
-
+    # This integration is the feed and nothing else. The card is a separate HACS
+    # Dashboard repository, installed and registered as a Lovelace resource by
+    # HACS itself — which owns that registration and does it through supported
+    # paths. Serving the bundle from here meant writing into Lovelace's own
+    # storage collection from outside, with no public API and no contract, and
+    # it behaved accordingly.
     coordinator = DaySpineCoordinator(hass, entry)
     await coordinator.async_setup()
     await coordinator.async_config_entry_first_refresh()
