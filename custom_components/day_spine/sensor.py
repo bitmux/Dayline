@@ -29,6 +29,14 @@ class DaySpineSensor(CoordinatorEntity[DaySpineCoordinator], SensorEntity):
     state is something you can usefully put in an automation or a badge.
     """
 
+    # The day itself is not history. `entries` alone is most of a megabyte on a
+    # busy instance, and recording it every few minutes would fill the database
+    # with a payload nobody will ever query — the state, which is a number and
+    # genuinely worth a graph, still records.
+    _unrecorded_attributes = frozenset(
+        {"entries", "sources", "tags_seen", "calendars", "calendar_source", "tag_control"}
+    )
+
     _attr_has_entity_name = True
     _attr_icon = "mdi:timeline-clock-outline"
     _attr_native_unit_of_measurement = "entries"

@@ -130,7 +130,11 @@ def _higher(a: str | None, b: str | None) -> str:
     return (a or "normal") if pa >= pb else (b or "normal")
 
 
-def _within(a: datetime | None, b: datetime | None, seconds: int = 60) -> bool:
+# How far apart two copies of "the same event" are allowed to start.
+_WINDOW = 60
+
+
+def _within(a: datetime | None, b: datetime | None, seconds: int = _WINDOW) -> bool:
     if a is None and b is None:
         return True
     if a is None or b is None:
@@ -325,9 +329,21 @@ def dedupe(cfg: MergeConfig, entries: list[Entry]) -> list[Entry]:
     """
     kept: list[Entry] = []
     for entry in sorted(entries, key=lambda e: e["start"]):
+        start = _parse(entry["start"])
         hit = None
-        for candidate in kept:
-            if not _within(_parse(candidate["start"]), _parse(entry["start"])):
+        for candidate in reversed(kept):
+            candidate_start = _parse(candidate["start"])
+            # `kept` is in start order, so once we are further back than the
+            # match window nothing earlier can match either. Without the break
+            # this is quadratic — invisible at twenty entries, and not at two
+            # thousand, which is one enthusiast with a lot of calendars away.
+            if (
+                start is not None
+                and candidate_start is not None
+                and (start - candidate_start).total_seconds() >= _WINDOW
+            ):
+                break
+            if not _within(candidate_start, start):
                 continue
             if not _within(_parse(candidate.get("end")), _parse(entry.get("end"))):
                 continue

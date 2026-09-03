@@ -64,6 +64,26 @@ export class DaySpineCard extends LitElement {
     }
     this._config = { ...DEFAULTS, ...config };
     this._expanded = false;
+    this._applyFonts();
+  }
+
+  /**
+   * Push a chosen font-family onto the host as a custom property, so the rest
+   * of the stylesheet keeps referring to `--font-body` and never learns that
+   * anyone had an opinion. Unset removes the property rather than writing the
+   * default back, which leaves the stylesheet as the single place the default
+   * lives.
+   */
+  private _applyFonts(): void {
+    const body = this._config.font_family;
+    const heading = this._config.heading_font_family ?? body;
+    for (const [prop, value] of [
+      ["--font-body", body],
+      ["--font-heading", heading],
+    ] as const) {
+      if (value) this.style.setProperty(prop, value);
+      else this.style.removeProperty(prop);
+    }
   }
 
   public set hass(hass: HomeAssistant) {

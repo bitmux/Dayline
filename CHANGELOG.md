@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+**Pick your own font.** `font_family: Arial, sans-serif` on the card, written
+exactly as you would in CSS, replaces both typefaces; `heading_font_family`
+overrides the day name alone. Pair either with `load_fonts: false` to stop
+fetching webfonts nothing is using. The two typefaces are part of the design,
+but they are not worth arguing with anyone about on their own dashboard.
+
+**Fixed: a fired `#tag` chip was invisible under an active Home Assistant
+theme.** In theme mode every accent shade resolves to the one `--primary-color`,
+so the filled chip was drawing its text in its own background colour. Text that
+sits *on* an accent fill now has its own token, and in theme mode it takes the
+theme's `--text-primary-color`, which is the answer the theme already has.
+
+**Two things that only matter at scale, fixed before anyone hit them.** The
+merge compared every entry against every other one — invisible at twenty
+entries, and tens of seconds at two thousand. It now stops at the match window,
+since `kept` is in start order and nothing further back can be the same event.
+And the day itself is no longer written to the recorder database: `entries` is
+most of a megabyte on a busy instance and recording it every few minutes would
+fill the database with a payload nobody will ever query. The state — a number,
+and genuinely worth a graph — still records.
+
 **Labels replace picking calendars out of a list.** Apply Home Assistant's
 `Dayline` label to a calendar and it joins the spine — no config flow, no
 restart, and adding a calendar next month never involves Dayline at all. The

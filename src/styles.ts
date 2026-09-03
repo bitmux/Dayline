@@ -39,6 +39,10 @@ export const styles = css`
     --ds-rail-past: #332c25;
     --ds-dot-past: #4a4038;
     --ds-alert: #2e2117;
+    /* Text that sits *on* an accent fill rather than beside it. Its own token
+       because in themed mode every accent shade collapses to the one
+       --primary-color, and anything drawn accent-on-accent disappears. */
+    --ds-on-accent: var(--color-accent-200);
 
     display: block;
     /*
@@ -82,6 +86,10 @@ export const styles = css`
 
     --color-accent-2-400: var(--accent-color, #aebf92);
     --color-accent-2-500: var(--accent-color, #8fa073);
+
+    /* The theme's own answer to "text on the primary colour", because ours
+       would be the primary colour. */
+    --ds-on-accent: var(--text-primary-color, #fff);
 
     border-radius: var(--ha-card-border-radius, var(--radius-lg));
   }
@@ -157,7 +165,7 @@ export const styles = css`
   .tag.fired {
     border-color: var(--color-accent-500);
     background: var(--color-accent-800);
-    color: var(--color-accent-200);
+    color: var(--ds-on-accent);
   }
 
   /* ---------- all-day ---------- */

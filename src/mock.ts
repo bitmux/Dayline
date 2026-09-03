@@ -106,6 +106,9 @@ export const busy: SpineEntry[] = [
     kind: "calendar",
     source: "CalDAV",
     title: "Recycling out",
+    // Themed mode draws this filled, which is where accent-on-accent showed up.
+    tags: ["Away"],
+    tag_state: "fired",
     automation: "Porch light stays on until 11",
   },
   {
@@ -166,7 +169,7 @@ export const busy: SpineEntry[] = [
   { id: "cal:call", start: offset(140), kind: "calendar", source: "Google", title: "Call with Marcus",
     weather: { condition: "sunny", temperature: 68, precipitation_probability: 0 } },
   { id: "cal:dinner", start: offset(170), kind: "calendar", source: "CalDAV", title: "Making dinner for house", automation: "Kitchen 90%, hallway 40%" },
-  { id: "cal:soccer", start: offset(200), kind: "calendar", source: "Google", title: "Soccer practice pickup",
+  { id: "cal:soccer", start: offset(200), kind: "calendar", source: "Google", title: "Soccer practice pickup", tags: ["Quiet"], tag_state: "will_fire",
     weather: { condition: "windy", temperature: 59, precipitation_probability: 20 } },
   { id: "cal:book", start: offset(230), kind: "calendar", source: "Google", title: "Book club" },
   { id: "sun:set", start: at(19, 47), kind: "sun", source: "Sun", title: "Sunset", automation: "Evening lights over 20 minutes" },

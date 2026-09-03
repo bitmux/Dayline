@@ -403,3 +403,66 @@ def test_merging_never_loses_a_tag_that_was_only_on_one_copy():
     assert len(entries) == 1
     assert entries[0]["title"] == "Book club"
     assert entries[0]["tags"] == ["Quiet"]
+
+
+# --- scale -----------------------------------------------------------------
+
+
+def test_merging_two_thousand_entries_does_not_go_quadratic() -> None:
+    """One enthusiast with a lot of calendars is not a hypothetical.
+
+    Bounded by the match window rather than by the size of the day: nothing
+    starting more than a minute earlier can be the same event, and `kept` is in
+    start order, so the scan stops instead of walking the whole day for every
+    row.
+    """
+    import time
+
+    entries = [
+        {
+            "id": f"cal:x:{i}",
+            "start": (DAY_START + timedelta(seconds=i * 30)).isoformat(),
+            "end": None,
+            "all_day": False,
+            "kind": "calendar",
+            "source": "Google",
+            "title": f"Event number {i}",
+            "entity_id": "calendar.x",
+        }
+        for i in range(2000)
+    ]
+    cfg = MergeConfig(similarity=0.8, title_noise=[])
+
+    began = time.perf_counter()
+    kept = dedupe(cfg, entries)
+    elapsed = time.perf_counter() - began
+
+    assert len(kept) == 2000
+    # Generous on purpose — this is a guard against the quadratic scan coming
+    # back, not a benchmark. The unbounded version takes tens of seconds here.
+    assert elapsed < 2.0, f"dedupe took {elapsed:.1f}s for 2000 entries"
+
+
+def test_the_window_still_folds_what_it_should_at_scale() -> None:
+    """The early break must not cost a real merge: the same event on two
+    calendars, in the middle of a crowded day, still becomes one row."""
+    entries = []
+    for i in range(500):
+        start = (DAY_START + timedelta(seconds=i * 30)).isoformat()
+        entries.append({
+            "id": f"cal:a:{i}", "start": start, "end": None, "all_day": False,
+            "kind": "calendar", "source": "Google", "title": f"Event number {i}",
+            "entity_id": "calendar.a",
+        })
+    entries.append({
+        "id": "cal:b:250",
+        "start": (DAY_START + timedelta(seconds=250 * 30 + 20)).isoformat(),
+        "end": None, "all_day": False, "kind": "calendar", "source": "CalDAV",
+        "title": "Event number 250", "entity_id": "calendar.b",
+    })
+
+    kept = dedupe(MergeConfig(similarity=0.8, title_noise=[]), entries)
+
+    assert len(kept) == 500
+    folded = [e for e in kept if e["title"] == "Event number 250"]
+    assert folded[0]["source"] == "Google + CalDAV"

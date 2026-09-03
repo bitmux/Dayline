@@ -84,6 +84,18 @@ export interface DaySpineCardConfig {
   /** Seconds. Card-side floor for entries that arrive without their own `expires`. */
   recent_ttl?: number;
   load_fonts?: boolean;
+  /**
+   * A CSS `font-family` for the whole card, written exactly as you would in
+   * CSS: `Arial, sans-serif`.
+   *
+   * The two typefaces are part of the design, but they are not worth arguing
+   * with someone about on their own dashboard. Setting this replaces both
+   * unless `heading_font_family` says otherwise, and pairs with
+   * `load_fonts: false` to stop fetching webfonts nothing is using.
+   */
+  font_family?: string;
+  /** Overrides `font_family` for the day name alone. */
+  heading_font_family?: string;
   legend?: string;
   show_weather?: boolean;
   /** The duration chip on upcoming entries that have an end. */
