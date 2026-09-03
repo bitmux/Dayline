@@ -135,12 +135,13 @@ entity: sensor.day_spine
 > `sensor.day_spine`. Whatever appears under **Settings → Devices & services →
 > Dayline → 1 entity** is the right answer.
 
-> **If the card says "Configuration error" or "Custom element doesn't exist",
-> hard-refresh the page** (Ctrl/Cmd-Shift-R). The integration adds its card to
-> the frontend's module list at startup, and a browser tab that was already open
-> — or that has the old page cached — never asks for the new list. This is the
-> first thing to try after installing or updating, and it is almost always this
-> rather than anything on the server.
+> **If the card says "Custom element doesn't exist" and Dayline is missing from
+> the card picker**, the bundle did not reach your browser. On a storage-mode
+> dashboard the integration registers itself under **Settings → Dashboards → ⋮ →
+> Resources** as `/day_spine_frontend/day-spine-card.js?v=…` — check it is
+> listed, then hard-refresh (Ctrl/Cmd-Shift-R). On a YAML dashboard nothing can
+> be registered for you: add that same URL to your `resources:` yourself, type
+> **module**.
 
 Every key below is optional except `entity`.
 

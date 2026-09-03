@@ -25,6 +25,8 @@ CARD_FILE = "day-spine-card.js"
 # card will look broken in a way no amount of restarting fixes.
 CARD_VERSION = "0.1.0"
 
+_CARD_URL = f"{URL_BASE}/{CARD_FILE}?v={CARD_VERSION}"
+
 _registered = False
 
 
@@ -53,6 +55,56 @@ async def async_register_card(hass: HomeAssistant) -> None:
     except ImportError:  # Home Assistant older than 2024.7
         hass.http.register_static_path(URL_BASE, str(source), cache_headers=False)
 
-    add_extra_js_url(hass, f"{URL_BASE}/{CARD_FILE}?v={CARD_VERSION}")
+    # Two mechanisms, deliberately, because they load at different moments.
+    #
+    # add_extra_js_url bakes an import into the frontend's index shell. That
+    # shell is cached hard by the frontend's service worker, so a browser that
+    # loaded the page before this integration existed keeps serving itself a
+    # shell with no mention of the card — and the card is then missing on every
+    # machine that ever visited, which no amount of restarting the server fixes.
+    #
+    # A Lovelace resource is fetched by the dashboard at runtime over the
+    # websocket instead, so it survives a stale shell. It is also the documented
+    # way to put a card in front of the picker.
+    #
+    # Both point at the identical URL string, so the browser's module registry
+    # runs the file once however many times it is asked for.
+    add_extra_js_url(hass, _CARD_URL)
+    await _async_register_resource(hass)
+
     _registered = True
-    _LOGGER.debug("Day Spine card registered at %s/%s", URL_BASE, CARD_FILE)
+    _LOGGER.debug("Day Spine card registered at %s", _CARD_URL)
+
+
+async def _async_register_resource(hass: HomeAssistant) -> None:
+    """Add the card to Lovelace's resource list, or update the version on it.
+
+    Storage mode only — a YAML dashboard's resources are the user's file to
+    edit, and INSTALL.md says so. Never fatal: the feed is worth having even
+    when the card cannot be registered.
+    """
+    lovelace = hass.data.get("lovelace")
+    resources = getattr(lovelace, "resources", None)
+    if resources is None or not hasattr(resources, "async_create_item"):
+        _LOGGER.debug("Dashboards are in YAML mode; register the card by hand")
+        return
+
+    try:
+        # A storage collection does not read its store until something asks.
+        if not resources.loaded:
+            await resources.async_get_info()
+
+        for item in resources.async_items():
+            if str(item.get("url", "")).split("?")[0] != f"{URL_BASE}/{CARD_FILE}":
+                continue
+            if item.get("url") != _CARD_URL:
+                await resources.async_update_item(
+                    item["id"], {"res_type": "module", "url": _CARD_URL}
+                )
+                _LOGGER.debug("Updated the Dayline card resource to %s", _CARD_URL)
+            return
+
+        await resources.async_create_item({"res_type": "module", "url": _CARD_URL})
+        _LOGGER.debug("Added the Dayline card as a Lovelace resource")
+    except Exception:  # noqa: BLE001 - a dashboard quirk must not break the feed
+        _LOGGER.exception("Could not register the Dayline card as a Lovelace resource")

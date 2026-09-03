@@ -6,7 +6,10 @@
   ],
   "config_flow": true,
   "dependencies": [
-    "calendar"
+    "calendar",
+    "frontend",
+    "http",
+    "lovelace"
   ],
   "after_dependencies": [
     "todo",
