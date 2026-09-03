@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Day Spine card — one state, for capture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  /* No page chrome and no background: one card alone on transparency, so the
+     capture can be cropped to exactly the card. tools/shots.py does the rest. */
+  html,body{margin:0;padding:0;background:transparent}
+  body{width:520px;font-family:"Figtree",system-ui,sans-serif}
+  day-spine-card{display:block;border-radius:28px;overflow:hidden}
+</style>
+</head>
+<body>
+<script type="module">
+// Pinned harder than index.html: the whole *date* is fixed, not just the time,
+// so the header reads "Wednesday" against a headline that says 2 September
+// however long from now these are regenerated. The card reads the clock through
+// both `Date.now()` and `new Date()`, so both have to be pinned.
+const PINNED = new Date(2026, 8, 2, 14, 39, 0, 0).getTime();
+const RealDate = Date;
+// eslint-disable-next-line no-global-assign
+Date = class extends RealDate {
+  constructor(...args) { super(...(args.length ? args : [PINNED])); }
+  static now() { return PINNED; }
+};
+
+const { mock } = await import("./dev-bundle.js");
+const SOURCES = [{ label: "Google" }, { label: "CalDAV" }];
+
+const STATES = {
+  ordinary: [{
+    entries: mock.ordinary,
+    headline: "2 September · everyone home by 6",
+    now: "Afternoon · house quiet, doors locked",
+    sources: SOURCES,
+  }],
+  empty: [{
+    entries: mock.emptyDay,
+    headline: "Nothing scheduled.",
+    now: "Morning · 3 lights on, 71° inside",
+    sources: SOURCES,
+  }],
+  stale: [{
+    entries: mock.staleSource,
+    headline: "1 left today",
+    now: "Morning · everyone up",
+    sources: [{ label: "Google", stale: true }, { label: "CalDAV" }],
+    stale_message:
+      "Google calendar hasn't updated since 8:14 AM yesterday. Anything on it is missing from today.",
+  }],
+  busy: [{
+    entries: mock.busy,
+    headline: "9 left today",
+    now: "Afternoon · house quiet, doors locked",
+    sources: [{ label: "Google" }, { label: "CalDAV" }, { label: "Tasks" }],
+  }],
+};
+
+const key = new URLSearchParams(location.search).get("state") || "ordinary";
+const [attributes, config = {}] = STATES[key];
+
+const card = document.createElement("day-spine-card");
+card.setConfig({ type: "custom:day-spine-card", entity: "sensor.day_spine", ...config });
+card.hass = {
+  locale: { language: "en-US" },
+  states: {
+    "sensor.day_spine": {
+      entity_id: "sensor.day_spine",
+      state: String(attributes.entries?.length ?? 0),
+      last_updated: new Date().toISOString(),
+      attributes,
+    },
+  },
+  callService: () => Promise.resolve(),
+};
+document.body.appendChild(card);
+
+// Chrome's --virtual-time-budget still needs a signal that the fonts have
+// settled; without it the first capture comes out in Georgia.
+await document.fonts.ready;
+await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+document.title = "ready";
+</script>
+</body>
+</html>

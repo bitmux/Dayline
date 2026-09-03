@@ -15,9 +15,27 @@ are two ways to get the feed, and you only need one.
 
 ## Option A — the integration
 
+### Through HACS
+
+**HACS → ⋮ (top right) → Custom repositories.** Repository
+`https://github.com/bitmux/Dayline`, type **Integration**. It then appears in
+the HACS list as Dayline — open it, **Download**, and restart Home Assistant.
+
+One repository, one category. The card is not a separate HACS *Dashboard* entry:
+Home Assistant does file out plugins and integrations separately, but that split
+is about where HACS copies files to, and this integration carries its own card
+under `custom_components/day_spine/www/` and registers it at startup. Adding it a
+second time as a Dashboard repository would install a duplicate copy of the
+bundle that nothing loads.
+
+### By hand
+
 Copy `custom_components/day_spine/` to `/config/custom_components/day_spine/`
-and restart Home Assistant. Then **Settings → Devices & services → Add
-integration → Dayline**.
+and restart Home Assistant.
+
+### Either way
+
+**Settings → Devices & services → Add integration → Dayline**.
 
 Setup asks four things, and only the first is required:
 
@@ -195,7 +213,21 @@ returned, runs `merge.py` over them, and writes `dev/live-sample.json`. Open
 
 That last part matters: `dev/index.html` pins its clock to 2:39 PM to reproduce
 the design reference, so it can never show you a timezone bug. `dev/live.html`
-does not pin anything, which is how the missing sunset below was found.
+does not pin anything, which is how the missing sunset was found.
+
+```bash
+python3 tools/live-sensor.py
+```
+
+`live-sensor.py` goes one step further and takes the finished attributes off
+`sensor.dayline` — the coordinator's own output, from *inside* Home Assistant —
+into the same `dev/live-sample.json`. `live-merge.py` proves the merge; this
+proves the integration. Between them the only thing left unproven is the card.
+
+`tools/seed-ha.py` is safe to re-run, but it appends: run it twice in a day and
+you get two of everything. It cannot clear up after itself — Home Assistant has
+no `calendar.delete_event` service — so remove and re-add the Local Calendar
+entries when the fixtures get muddy.
 
 > `dev/live-sample.json` is gitignored. It is generated from whatever calendars
 > the instance actually has, and on a real instance that is family data.
@@ -208,7 +240,16 @@ Renders every card state side by side with no Home Assistant involved:
 python3 -m http.server 8765
 ```
 
-then open `http://localhost:8765/dev/index.html`. Its clock is
+then open `http://localhost:8765/dev/index.html`. With that server running,
+
+```bash
+.venv/bin/python tools/shots.py
+```
+
+regenerates `design/screenshots/01`, `02`, `03` and `07` by driving headless
+Chrome over `dev/shot.html` — the screenshots in the README are captures of the
+built card, not drawings of it, so they cannot claim something the card does not
+do. Its clock is
 pinned to 2:39 PM so it reproduces the design reference whenever you open it.
 Two of its panels are real feed output — `tools/render-integration.py` and
 `tools/render-feed.py` regenerate them, and both catch errors in their

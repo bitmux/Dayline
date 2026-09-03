@@ -119,7 +119,8 @@
    "weather": {
     "condition": "rainy",
     "temperature": 63,
-    "precipitation_probability": 70
+    "precipitation_probability": 70,
+    "precipitation": null
    }
   },
   {
@@ -135,7 +136,8 @@
    "weather": {
     "condition": "partlycloudy",
     "temperature": 58,
-    "precipitation_probability": 10
+    "precipitation_probability": 10,
+    "precipitation": null
    }
   },
   {
@@ -153,7 +155,8 @@
    "weather": {
     "condition": "clear-night",
     "temperature": 54,
-    "precipitation_probability": 0
+    "precipitation_probability": 0,
+    "precipitation": null
    }
   },
   {
@@ -168,7 +171,8 @@
    "weather": {
     "condition": "clear-night",
     "temperature": 52,
-    "precipitation_probability": 0
+    "precipitation_probability": 0,
+    "precipitation": null
    }
   }
  ],

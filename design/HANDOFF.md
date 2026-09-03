@@ -289,7 +289,10 @@ placeholders — real camera snapshots substitute in at those positions.
 
 ## Screenshots
 
-`screenshots/` — rendered captures of the designs, for reference while implementing.
+`screenshots/` — 01, 02, 03 and 07 are captures of the **built card**, produced by
+`tools/shots.py` from the mock data in `src/mock.ts`. They are regenerated rather
+than drawn, so they cannot drift from what the card actually does. 04 is still a
+design-tool export of a variant that has not been built.
 
 | File | What it shows |
 |---|---|
@@ -297,8 +300,11 @@ placeholders — real camera snapshots substitute in at those positions.
 | `02-card-empty-day.png` | Empty day: sun rows and now marker remain, card never collapses |
 | `03-card-stale-source.png` | Stale Google source — pill tinted, footer states what is missing |
 | `04-security-quiet-line-2b.png` | Security option 2b: one fixed slot, three escalation levels |
-| `05-security-on-spine-2c.png` | Security option 2c: activity as dim marks on the same timeline |
-| `06-page-one-context-1b.png` | The timeline in page-one context, alongside scenes and camera |
+| `07-card-busy-day.png` | Busy day: overdue actionable, recent event, weather, `+N more today` |
+
+The two other design exports — security option 2c on the spine, and the timeline
+in page-one context — had a household's names rendered into the pixels, so they
+are not in this repository. They are design references for work not in this pass.
 
 ## Files
 

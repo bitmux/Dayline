@@ -41,11 +41,14 @@ is logbook-oriented — it tells you what happened, not what is about to.
 
 ## Installing
 
-Copy `custom_components/day_spine/` into `/config/custom_components/`, restart,
-then **Settings → Devices & services → Add integration → Dayline**.
+**HACS → ⋮ → Custom repositories**, add `https://github.com/bitmux/Dayline`
+with category **Integration**, download it, restart Home Assistant, then
+**Settings → Devices & services → Add integration → Dayline**.
 
 Setup asks for your calendars and nothing else that matters. The card ships with
-the integration and registers itself, so there is no Resources page step.
+the integration and registers itself, so there is **one** repository to add and
+no Resources page step — Dayline is not a second, separate HACS "Dashboard"
+entry.
 
 Full instructions, the YAML alternative, and every card option:
 **[INSTALL.md](INSTALL.md)**.
@@ -90,9 +93,12 @@ reproduces the design reference whenever you open it.
 
 ## Status
 
-Early. The card and the feed both work and are tested where they can be, but
-**nothing here has yet run inside a live Home Assistant** — the config flow in
-particular needs clicking through.
+Early, but real: installed through HACS on a live Home Assistant 2026.8, config
+flow clicked through, drawing a live day from Local Calendar, a to-do list and
+the National Weather Service. Three bugs that only a live instance could show —
+a sunset dropped by a UTC date rollover, rain that never rendered as rain on the
+default weather provider, and events spanning midnight landing at the wrong end
+of the day — were found that way and are covered by tests.
 
 Not built yet: drag-to-reschedule, a visual editor for the card's own options,
 and the security/awareness variants sketched in `design/`.
