@@ -192,15 +192,35 @@ def test_sun_uses_todays_times_even_though_the_entity_reports_tomorrows():
         cfg(),
         next_rising=datetime(2026, 9, 3, 6, 58, tzinfo=TZ),   # already happened today
         next_setting=datetime(2026, 9, 2, 19, 47, tzinfo=TZ),  # still to come
-        today=NOW.date(),
+        day_start=DAY_START,
     )
     starts = {e["title"]: e["start"] for e in entries}
     assert starts["Sunrise"].startswith("2026-09-02T06:58")
     assert starts["Sunset"].startswith("2026-09-02T19:47")
 
 
+def test_sun_survives_a_utc_date_that_has_already_rolled_over():
+    """The values below are verbatim from a live instance in America/Chicago.
+
+    `sun.sun` publishes UTC. In summer, sunset after 19:00 local lands on
+    tomorrow's UTC date, and comparing calendar dates dropped the row —
+    silently, and only for the half of the year anyone is outside.
+    """
+    utc = timezone(timedelta(0))
+    entries = from_sun(
+        cfg(),
+        next_rising=datetime(2026, 9, 3, 11, 36, 2, tzinfo=utc),   # 06:36 local today
+        next_setting=datetime(2026, 9, 4, 0, 42, 8, tzinfo=utc),   # 19:42 local today
+        day_start=DAY_START,
+    )
+    starts = {e["title"]: e["start"] for e in entries}
+    assert set(starts) == {"Sunrise", "Sunset"}
+    assert starts["Sunrise"].startswith("2026-09-02T06:36")
+    assert starts["Sunset"].startswith("2026-09-02T19:42")
+
+
 def test_sun_can_be_switched_off():
-    assert from_sun(cfg(show_sun=False), datetime(2026, 9, 3, 6, 58, tzinfo=TZ), None, NOW.date()) == []
+    assert from_sun(cfg(show_sun=False), datetime(2026, 9, 3, 6, 58, tzinfo=TZ), None, DAY_START) == []
 
 
 # --- todo -------------------------------------------------------------------
@@ -253,3 +273,15 @@ def test_running_events_count_as_still_to_come():
         {"start": "2026-09-02T14:36:00-05:00", "end": None, "title": "just happened", "kind": "event"},
     ]
     assert remaining_count(entries, NOW) == 3
+
+
+def test_todo_due_after_today_is_not_on_todays_spine():
+    """A live instance had a to-do due at 02:51 tomorrow rendering as a bare
+    "2:51 AM" row, which reads as this morning — i.e. as already missed."""
+    items = [
+        {"uid": "today", "summary": "Switch the laundry", "due": "2026-09-02T23:11:00-05:00"},
+        {"uid": "tomorrow", "summary": "Refill the softener", "due": "2026-09-03T02:51:00-05:00"},
+        {"uid": "overdue", "summary": "Bins, yesterday", "due": "2026-09-01T18:00:00-05:00"},
+    ]
+    titles = {e["title"] for e in from_todo(cfg(todo_entity="todo.x"), items, DAY_START)}
+    assert titles == {"Switch the laundry", "Bins, yesterday"}

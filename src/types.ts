@@ -23,6 +23,9 @@ export interface SpineWeather {
   condition?: string;
   temperature?: number;
   precipitation_probability?: number;
+  /** Millimetres. The fallback signal for providers that report no
+   * probability — met.no, which is what a default install has. */
+  precipitation?: number;
 }
 
 export interface SpineEntry {

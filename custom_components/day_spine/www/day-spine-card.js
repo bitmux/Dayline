@@ -680,13 +680,10 @@ function t(t,e,r,i){var o,s=arguments.length,a=s<3?e:null===i?i=Object.getOwnPro
             ${e.title}${t?F`<span class="dur">${t}</span>`:V}
           </div>
           ${e.automation?F`<div class="auto">${$t("sparkles",14)}${e.automation}</div>`:V}
-          ${this._renderAction(e)}`}}}_renderWeather(t){const e=t.entry?.weather;if(!this._config.show_weather||!e||"future"!==t.variant)return V;if(void 0===e.condition&&void 0===e.temperature)return V;const r=e.precipitation_probability;return F`<div
-      class="wx ${"number"==typeof r&&r>=40?"wet":""}"
-      title=${"number"==typeof r?`${Math.round(r)}% chance of precipitation`:V}
-    >
-      ${i=e.condition,o=13,$t(yt[i??""]??"cloud",o)}
+          ${this._renderAction(e)}`}}}_renderWeather(t){const e=t.entry?.weather;if(!this._config.show_weather||!e||"future"!==t.variant)return V;if(void 0===e.condition&&void 0===e.temperature)return V;const r=e.precipitation_probability,i=e.precipitation,o="number"==typeof r&&r>=40||"number"!=typeof r&&"number"==typeof i&&i>0,s="number"==typeof r?`${Math.round(r)}% chance of precipitation`:"number"==typeof i&&i>0?`${i} mm of precipitation forecast`:V;return F`<div class="wx ${o?"wet":""}" title=${s}>
+      ${a=e.condition,n=13,$t(yt[a??""]??"cloud",n)}
       ${void 0!==e.temperature?F`<span>${Math.round(e.temperature)}°</span>`:V}
-    </div>`;var i,o}_renderProgress(t){const e=Math.round(100*(t.progress??0));return F`<div class="prog">
+    </div>`;var a,n}_renderProgress(t){const e=Math.round(100*(t.progress??0));return F`<div class="prog">
       <div class="prog-track" role="progressbar" aria-valuenow=${e} aria-valuemin="0" aria-valuemax="100">
         <div class="prog-fill" style="width:${e}%"></div>
         <span class="prog-chip">${this._remaining(t.entry)}</span>

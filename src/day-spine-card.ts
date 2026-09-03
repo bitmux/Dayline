@@ -289,11 +289,19 @@ export class DaySpineCard extends LitElement {
     if (w.condition === undefined && w.temperature === undefined) return nothing;
 
     const pop = w.precipitation_probability;
-    const wet = typeof pop === "number" && pop >= WET_THRESHOLD;
-    return html`<div
-      class="wx ${wet ? "wet" : ""}"
-      title=${typeof pop === "number" ? `${Math.round(pop)}% chance of precipitation` : nothing}
-    >
+    const mm = w.precipitation;
+    // Two signals because providers disagree about which one they publish:
+    // met.no gives millimetres and no probability at all.
+    const wet =
+      (typeof pop === "number" && pop >= WET_THRESHOLD) ||
+      (typeof pop !== "number" && typeof mm === "number" && mm > 0);
+    const hint =
+      typeof pop === "number"
+        ? `${Math.round(pop)}% chance of precipitation`
+        : typeof mm === "number" && mm > 0
+          ? `${mm} mm of precipitation forecast`
+          : nothing;
+    return html`<div class="wx ${wet ? "wet" : ""}" title=${hint}>
       ${conditionIcon(w.condition, 13)}
       ${w.temperature !== undefined ? html`<span>${Math.round(w.temperature)}°</span>` : nothing}
     </div>`;

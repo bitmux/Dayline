@@ -179,7 +179,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 cfg,
                 dt_util.parse_datetime(str(sun.attributes.get("next_rising") or "")),
                 dt_util.parse_datetime(str(sun.attributes.get("next_setting") or "")),
-                now.date(),
+                day_start,
             )
 
         entries = dedupe(cfg, entries)

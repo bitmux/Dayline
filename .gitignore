@@ -9,3 +9,12 @@ __pycache__/
 dist/
 dev/dev-bundle.js
 dev/dev-bundle.js.map
+
+# a long-lived access token lives here
+.ha-env
+
+# built for hand-copying to an instance; regenerate with tools/package.sh
+dayline-integration.tar.gz
+
+# generated from a live instance — could hold real calendar entries
+dev/live-sample.json

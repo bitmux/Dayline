@@ -130,7 +130,7 @@ def main() -> None:
         CFG,
         next_rising=datetime(2026, 9, 3, 6, 58, tzinfo=TZ),
         next_setting=datetime(2026, 9, 2, 19, 47, tzinfo=TZ),
-        today=NOW.date(),
+        day_start=DAY_START,
     )
     entries = dedupe(CFG, entries)
     entries = attach_weather(entries, FORECAST, NOW)

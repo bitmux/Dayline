@@ -356,7 +356,8 @@ template:
                     {% set hour.hit = {
                         'condition': f.get('condition'),
                         'temperature': f.get('temperature'),
-                        'precipitation_probability': f.get('precipitation_probability')
+                        'precipitation_probability': f.get('precipitation_probability'),
+                        'precipitation': f.get('precipitation')
                     } %}
                   {% endif %}
                 {% endfor %}

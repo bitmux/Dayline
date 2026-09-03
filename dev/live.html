@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dayline — live instance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  body{margin:0;padding:40px;background:#231f1b;font-family:"Figtree",system-ui,sans-serif;
+       display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+  .col{display:flex;flex-direction:column;gap:10px;width:520px}
+  .lbl{font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;
+       color:rgba(232,220,198,.45)}
+  .note{font:400 12px/1.5 "Figtree",system-ui;color:rgba(232,220,198,.4);max-width:520px}
+  day-spine-card{box-shadow:0 12px 32px rgba(0,0,0,.35);border-radius:28px}
+</style>
+</head>
+<body>
+<script type="module">
+// Unlike index.html, this one runs on the REAL clock — the whole point is to see
+// the card against a live instance's actual day, with the now marker where it
+// really is. Regenerate the payload with `python3 tools/live-merge.py`.
+await import("./dev-bundle.js");
+
+function hass(attributes) {
+  return {
+    locale: { language: "en-US" },
+    states: {
+      "sensor.day_spine": {
+        entity_id: "sensor.day_spine",
+        state: String(attributes.entries?.length ?? 0),
+        last_updated: new Date().toISOString(),
+        attributes,
+      },
+    },
+    callService: (d, s, data, target) => {
+      console.info("callService", `${d}.${s}`, { data, target });
+      return Promise.resolve();
+    },
+  };
+}
+
+function mount(label, attributes, config = {}) {
+  const col = document.createElement("div");
+  col.className = "col";
+  col.innerHTML = `<div class="lbl">${label}</div>`;
+  const card = document.createElement("day-spine-card");
+  card.setConfig({ type: "custom:day-spine-card", entity: "sensor.day_spine", ...config });
+  card.hass = hass(attributes);
+  col.appendChild(card);
+  document.body.appendChild(col);
+}
+
+try {
+  const feed = await (await fetch("./live-sample.json?" + Date.now())).json();
+  mount("Live instance · real calendars, real NWS forecast, real clock", feed);
+  mount("Same data, HA theme colours", feed, { use_ha_theme: true });
+
+  const note = document.createElement("div");
+  note.className = "note";
+  note.textContent =
+    `${feed.entries.length} entries · generated ${new Date().toLocaleTimeString()}. ` +
+    `This is merge.py's output from the live test server, drawn by the real card.`;
+  document.body.appendChild(note);
+} catch (e) {
+  document.body.innerHTML =
+    '<div class="note">No live-sample.json. Run <code>python3 tools/live-merge.py</code> first.</div>';
+  console.warn(e);
+}
+</script>
+</body>
+</html>

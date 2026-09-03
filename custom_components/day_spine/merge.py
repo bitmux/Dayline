@@ -154,9 +154,14 @@ def from_todo(cfg: MergeConfig, items: list[dict[str, Any]], day_start: datetime
     These are sticky: their time passing does not slide them into the
     struck-through past. They stay, with a button, until someone says they are
     done — which is the whole point of the laundry.
+
+    Anything due after today ends is somebody else's day. Overdue items from
+    before today are kept: that is the laundry going mouldy, and the reason the
+    row exists at all.
     """
     if not cfg.todo_entity:
         return []
+    day_end = day_start + timedelta(days=1)
     out: list[Entry] = []
     for item in items:
         due = item.get("due")
@@ -165,6 +170,8 @@ def from_todo(cfg: MergeConfig, items: list[dict[str, Any]], day_start: datetime
         all_day = "T" not in str(due)
         start = day_start if all_day else _parse(str(due))
         if start is None:
+            continue
+        if start >= day_end:
             continue
         out.append(
             {
@@ -193,21 +200,29 @@ def from_todo(cfg: MergeConfig, items: list[dict[str, Any]], day_start: datetime
 
 
 def from_sun(cfg: MergeConfig, next_rising: datetime | None, next_setting: datetime | None,
-             today: date) -> list[Entry]:
+             day_start: datetime) -> list[Entry]:
     """Today's sunrise and sunset.
 
     `sun.sun` only ever reports the *next* occurrence, so an event that already
     happened today is that time minus a day. Off by a minute or two around the
     solstices, which nobody has ever noticed.
+
+    The window has to be the *local* day, not the UTC one. `sun.sun` publishes
+    UTC, so west of Greenwich a sunset after 19:00 local already belongs to
+    tomorrow's UTC date — comparing calendar dates dropped the sunset row for
+    half the year, silently, only in summer.
     """
     if not cfg.show_sun:
         return []
+    tz = day_start.tzinfo
+    day_end = day_start + timedelta(days=1)
     out: list[Entry] = []
     for value, label, key in ((next_rising, "Sunrise", "rising"), (next_setting, "Sunset", "setting")):
         if value is None:
             continue
-        moment = value if value.date() == today else value - timedelta(days=1)
-        if moment.date() != today:
+        local = value.astimezone(tz)
+        moment = local if day_start <= local < day_end else local - timedelta(days=1)
+        if not (day_start <= moment < day_end):
             continue
         rule = _match_sentence(cfg, label)
         out.append(
@@ -300,7 +315,12 @@ def attach_weather(entries: list[Entry], forecast: list[dict[str, Any]], now: da
             entry["weather"] = {
                 "condition": f.get("condition"),
                 "temperature": f.get("temperature"),
+                # Not every provider reports a probability. met.no — the one
+                # Home Assistant sets up by default — reports millimetres and
+                # no probability at all, so carrying only the probability meant
+                # rain never once got the wet treatment on a default install.
                 "precipitation_probability": f.get("precipitation_probability"),
+                "precipitation": f.get("precipitation"),
             }
     return entries
 

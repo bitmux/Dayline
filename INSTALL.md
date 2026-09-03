@@ -161,8 +161,48 @@ forecast joining, counting. `tools/check-flow.py` catches config-flow fields
 with no translation, which Home Assistant renders as a blank label rather than
 an error.
 
-The dev harness renders every card state side by side with no Home Assistant
-involved:
+### Testing against a real instance
+
+The checks above prove the merge against stub data, which is only ever as right
+as whoever wrote the stub. To run the same code against a live instance, put its
+address and a long-lived access token in `.ha-env` at the repo root (gitignored —
+it is a credential):
+
+```bash
+printf 'HA_URL=http://your-ha\nHA_TOKEN=eyJhbGci...\n' > .ha-env && chmod 600 .ha-env
+```
+
+Then:
+
+```bash
+python3 tools/seed-ha.py
+```
+
+`seed-ha.py` creates two Local Calendars and a to-do list and fills them with a
+day positioned around the server's own clock — a couple of overlapping live
+events, a schedule calendar carrying sage sentences in its event descriptions, a
+near-duplicate pair for the dedupe to fold, and enough entries to make the
+density budget engage.
+
+```bash
+python3 tools/live-merge.py
+```
+
+`live-merge.py` fetches through the real `calendar.get_events`,
+`todo.get_items` and `weather.get_forecasts`, prints the exact keys each one
+returned, runs `merge.py` over them, and writes `dev/live-sample.json`. Open
+`dev/live.html` to see the real card draw a real day on the real clock.
+
+That last part matters: `dev/index.html` pins its clock to 2:39 PM to reproduce
+the design reference, so it can never show you a timezone bug. `dev/live.html`
+does not pin anything, which is how the missing sunset below was found.
+
+> `dev/live-sample.json` is gitignored. It is generated from whatever calendars
+> the instance actually has, and on a real instance that is family data.
+
+### The dev harness
+
+Renders every card state side by side with no Home Assistant involved:
 
 ```bash
 python3 -m http.server 8765
