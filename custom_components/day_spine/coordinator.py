@@ -459,6 +459,10 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._cancel_fires()
         for fire in plan.now:
             self._fire(fire)
+            # The plan decided these were still to come, then we went and did
+            # them. Say so in the same breath, or the row spends up to a whole
+            # poll promising something it has already delivered.
+            fire.entry["tag_state"] = tagging.FIRED
         for fire in plan.later:
             self._unsub_fires.append(
                 async_track_point_in_time(
