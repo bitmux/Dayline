@@ -2,15 +2,65 @@
 
 from __future__ import annotations
 
+import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.start import async_at_started
 
-from .const import DOMAIN
+from .const import DOMAIN, MAX_BUTTONS, PRIORITIES, SERVICE_DISMISS, SERVICE_SHOW
 from .coordinator import DaySpineCoordinator
 
 PLATFORMS = [Platform.SENSOR]
+
+# Up to two, because a row is one line of a timeline and a third button turns it
+# into a dialog. Two is "do it" and "not now", which is the shape of almost every
+# decision worth putting in front of someone walking past a wall tablet.
+_BUTTON = vol.Schema(
+    {
+        vol.Required("label"): cv.string,
+        vol.Required("script"): cv.entity_domain("script"),
+    }
+)
+
+SHOW_SCHEMA = vol.Schema(
+    {
+        vol.Required("message"): cv.string,
+        vol.Optional("id"): cv.string,
+        vol.Optional("sentence"): cv.string,
+        vol.Optional("priority", default="high"): vol.In(PRIORITIES),
+        vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=1)),
+        vol.Optional("start"): cv.string,
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Optional("buttons"): vol.All(cv.ensure_list, vol.Length(max=MAX_BUTTONS), [_BUTTON]),
+    }
+)
+
+DISMISS_SCHEMA = vol.Schema({vol.Required("id"): cv.string})
+
+
+@callback
+def _async_register_services(hass: HomeAssistant) -> None:
+    """Register once for the integration, not once per config entry.
+
+    Both go to every configured feed. There is normally one, and someone running
+    two spines almost certainly wants a row on both rather than a target
+    selector to get wrong from inside an automation.
+    """
+    if hass.services.has_service(DOMAIN, SERVICE_SHOW):
+        return
+
+    async def _show(call: ServiceCall) -> None:
+        for coordinator in hass.data.get(DOMAIN, {}).values():
+            coordinator.async_show(dict(call.data))
+
+    async def _dismiss(call: ServiceCall) -> None:
+        for coordinator in hass.data.get(DOMAIN, {}).values():
+            coordinator.async_dismiss(call.data["id"])
+
+    hass.services.async_register(DOMAIN, SERVICE_SHOW, _show, schema=SHOW_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_DISMISS, _dismiss, schema=DISMISS_SCHEMA)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -36,6 +86,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(async_at_started(hass, _refresh_when_everything_is_up))
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    _async_register_services(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     return True

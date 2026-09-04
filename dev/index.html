@@ -227,6 +227,15 @@ mount(
   "height:460px",
 );
 
+// The garage case: a standing row with two buttons, and the row an automation
+// pushed in with day_spine.show when the script declined to close it.
+mount("Standing rows · two buttons, and a script that declined", {
+  entries: mock.standing,
+  headline: "4 September · 4 left today",
+  now: "Afternoon · house quiet, garage open",
+  sources: SOURCES,
+});
+
 mount("Empty day · sun and now marker remain", {
   entries: mock.emptyDay,
   headline: "Nothing scheduled.",

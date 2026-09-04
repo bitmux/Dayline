@@ -339,3 +339,72 @@ export const manyAllDay: SpineEntry[] = [
     title: "Dinner with the neighbours",
   },
 ];
+
+
+/**
+ * Standing rows: true until they are not.
+ *
+ * The garage case end to end — a door open since 10:42 with a two-button
+ * choice, and the row an automation pushed in afterwards when the script
+ * declined. That second row is the whole answer to "how does a branchy script
+ * tell you it refused": it says so itself, and Dayline never has to guess.
+ */
+export const standing: SpineEntry[] = [
+  {
+    id: "standing:cover.garage",
+    start: at(10, 42),
+    kind: "standing",
+    source: "House",
+    title: "Garage is open",
+    priority: "high",
+    sticky: true,
+    entity_id: "cover.garage",
+    actions: [
+      {
+        label: "Close it",
+        service: "script.turn_on",
+        target: { entity_id: "script.close_garage_safely" },
+      },
+      {
+        label: "Leave it",
+        service: "script.turn_on",
+        target: { entity_id: "script.dayline_dismiss_garage" },
+      },
+    ],
+  },
+  {
+    id: "push:garage_refused",
+    start: at(14, 31),
+    kind: "standing",
+    source: "House",
+    title: "Garage did not close — someone is in the driveway",
+    automation: "Trying again when the camera is clear",
+    priority: "high",
+    sticky: true,
+    actions: [
+      {
+        label: "Close anyway",
+        service: "script.turn_on",
+        target: { entity_id: "script.force_close_garage" },
+      },
+    ],
+  },
+  {
+    id: "cal:dinner-standing",
+    start: offset(120),
+    end: offset(240),
+    kind: "calendar",
+    source: "Google",
+    color: "blue",
+    title: "Dinner with the neighbours",
+  },
+  {
+    id: "sun:set-standing",
+    start: at(19, 42),
+    kind: "sun",
+    source: "Sun",
+    title: "Sunset",
+    priority: "low",
+    automation: "Evening lights fade up",
+  },
+];

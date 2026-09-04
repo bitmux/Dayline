@@ -56,6 +56,7 @@ from .const import (
     OPT_SENTENCES,
     OPT_SHOW_SUN,
     OPT_SIMILARITY,
+    OPT_STANDING,
     OPT_SUN_PRIORITY,
     OPT_TITLE_NOISE,
     PRIORITIES,
@@ -203,7 +204,15 @@ class DaySpineOptionsFlow(OptionsFlow):
             self._opts = dict(self.config_entry.options)
         return self.async_show_menu(
             step_id="init",
-            menu_options=["labels", "calendars", "sentences", "recent", "sources", "tuning"],
+            menu_options=[
+                "labels",
+                "calendars",
+                "sentences",
+                "standing",
+                "recent",
+                "sources",
+                "tuning",
+            ],
         )
 
     def _save(self) -> ConfigFlowResult:
@@ -433,6 +442,88 @@ class DaySpineOptionsFlow(OptionsFlow):
                 }
             ),
         )
+
+    # -- rows that last as long as something is true ------------------------
+
+    async def async_step_standing(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Standing rows: true until they are not, rather than for five minutes.
+
+        The declarative half of this. The other half is `day_spine.show`, which
+        an automation calls when it has already worked out that something is
+        worth saying — anything with a decision in it belongs there, because an
+        automation can branch and a rule cannot.
+        """
+        items = self._opts.get(OPT_STANDING) or []
+        if user_input is not None:
+            choice = user_input["selection"]
+            if choice == DONE:
+                return self._save()
+            self._index = None if choice == ADD else int(choice)
+            return await self.async_step_standing_edit()
+
+        options = [
+            selector.SelectOptionDict(
+                value=str(i),
+                label="{} → {}".format(
+                    rule.get("template") or
+                    "{} is {}".format(
+                        rule.get("entity_id", "?"),
+                        ", ".join(rule.get("state") or []) or "?",
+                    ),
+                    rule.get("phrase") or "(no wording)",
+                ),
+            )
+            for i, rule in enumerate(items)
+        ]
+        options.append(selector.SelectOptionDict(value=ADD, label="➕  Add a row"))
+        options.append(selector.SelectOptionDict(value=DONE, label="✔  Done"))
+        return self.async_show_form(
+            step_id="standing",
+            data_schema=vol.Schema({vol.Required("selection", default=ADD): _options(options)}),
+        )
+
+    async def async_step_standing_edit(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        items = list(self._opts.get(OPT_STANDING) or [])
+        current = items[self._index] if self._index is not None else {}
+
+        if user_input is not None:
+            if user_input.get("delete") and self._index is not None:
+                items.pop(self._index)
+            else:
+                rule = {
+                    "entity_id": user_input.get("entity_id"),
+                    "state": user_input.get("state") or [],
+                    "template": (user_input.get("template") or "").strip() or None,
+                    "phrase": (user_input.get("phrase") or "").strip(),
+                    "priority": user_input.get("priority", "high"),
+                    "script": user_input.get("script"),
+                    "button": (user_input.get("button") or "").strip(),
+                }
+                if self._index is None:
+                    items.append(rule)
+                else:
+                    items[self._index] = rule
+            self._opts[OPT_STANDING] = items
+            return await self.async_step_standing()
+
+        schema: dict[Any, Any] = {}
+        _optional(schema, "entity_id", current.get("entity_id"), _entity(None))
+        schema[vol.Optional("state", default=current.get("state") or [])] = _words()
+        schema[vol.Optional("template", default=current.get("template") or "")] = (
+            selector.TemplateSelector()
+        )
+        schema[vol.Required("phrase", default=current.get("phrase", ""))] = selector.TextSelector()
+        schema[vol.Optional("priority", default=current.get("priority", "high"))] = _select(
+            PRIORITIES, "priority"
+        )
+        _optional(schema, "script", current.get("script"), _entity("script"))
+        schema[vol.Optional("button", default=current.get("button", ""))] = selector.TextSelector()
+        schema[vol.Optional("delete", default=False)] = selector.BooleanSelector()
+        return self.async_show_form(step_id="standing_edit", data_schema=vol.Schema(schema))
 
     # -- "what just happened" -----------------------------------------------
 

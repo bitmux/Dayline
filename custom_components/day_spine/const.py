@@ -18,6 +18,14 @@ OPT_SUN_PRIORITY = "sun_priority"
 OPT_SIMILARITY = "similarity"
 OPT_TITLE_NOISE = "title_noise"
 OPT_RECENT = "recent"  # [{entity_id, state, phrase}]
+# [{entity_id, state, phrase, priority, script, button}]
+#
+# The other half of "what just happened": a row that lasts as long as something
+# is true, rather than for five minutes after it changed. A garage door that
+# opened at 10:42 is not news at 3pm, it is a standing fact about the day, and
+# the difference between the two is the difference between a notification and a
+# thing you still have to deal with.
+OPT_STANDING = "standing"
 OPT_RECENT_TTL = "recent_ttl"
 OPT_RECENT_MAX = "recent_max"
 OPT_NOW_TEMPLATE = "now_template"
@@ -36,6 +44,14 @@ LABEL_CONTROL = "Dayline Control"
 # The binding from tag to script lives in an ordinary automation, which is Home
 # Assistant's job and not ours.
 EVENT_TAG = "dayline_tag"
+
+# --- services ----------------------------------------------------------------
+# The way in for anything Dayline has no opinion about. An automation that has
+# already decided something is worth saying can put a row on the spine itself,
+# with up to two buttons, without that shape having to be predicted here first.
+SERVICE_SHOW = "show"
+SERVICE_DISMISS = "dismiss"
+MAX_BUTTONS = 2
 
 PRIORITIES = ["high", "normal", "low"]
 ROLES = ["people", "schedule"]

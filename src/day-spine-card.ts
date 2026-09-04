@@ -7,6 +7,7 @@ import type {
   HassEntity,
   HomeAssistant,
   Priority,
+  SpineAction,
   SpineEntry,
   SpineRow,
   SpineSource,
@@ -29,6 +30,14 @@ const CAL_COLORS = ["blue", "cyan", "teal", "green", "violet", "magenta", "rose"
 /** `--cal` for a row, an all-day item or a pill; empty when it has no colour. */
 const calStyle = (name?: string): string =>
   name && CAL_COLORS.includes(name) ? `--cal: var(--cal-${name})` : "";
+
+/**
+ * How long a pressed button stays dimmed with no word back.
+ *
+ * Long enough for a garage door to finish moving and the feed to notice, short
+ * enough that a script which declined does not leave the row looking done.
+ */
+const PENDING_TIMEOUT = 20_000;
 
 const FONT_LINK_ID = "day-spine-card-fonts";
 const FONT_HREF =
@@ -497,19 +506,33 @@ export class DaySpineCard extends LitElement {
     </div>`;
   }
 
+  /**
+   * The buttons on a row: one for a chore, two for a choice.
+   *
+   * `actions` wins when the feed sent it and falls back to the single `action`
+   * every other source writes, so a to-do row and a row an automation pushed in
+   * are the same code path from here down. Only the first button carries the
+   * tick — a second button is "not now", and ticking both would make the row
+   * look like it agrees with itself either way.
+   */
   private _renderAction(e: SpineEntry): TemplateResult | typeof nothing {
-    if (!e.action) return nothing;
+    const buttons = e.actions?.length ? e.actions : e.action ? [e.action] : [];
+    if (!buttons.length) return nothing;
     const pending = this._pending.has(e.id);
-    return html`<button
-      class="act"
-      ?disabled=${pending}
-      @click=${(ev: Event) => {
-        ev.stopPropagation();
-        this._act(e);
-      }}
-    >
-      ${icon("check", 14)}${e.action.label}
-    </button>`;
+    return html`<div class="acts">
+      ${buttons.slice(0, 2).map(
+        (action, i) => html`<button
+          class="act ${i ? "act-alt" : ""}"
+          ?disabled=${pending}
+          @click=${(ev: Event) => {
+            ev.stopPropagation();
+            this._act(e, action);
+          }}
+        >
+          ${i ? nothing : icon("check", 14)}${action.label}
+        </button>`,
+      )}
+    </div>`;
   }
 
   private _renderMore(count: number): TemplateResult {
@@ -532,17 +555,28 @@ export class DaySpineCard extends LitElement {
 
   // ------------------------------------------------------------------ actions
 
-  private _act(e: SpineEntry): void {
-    const a = e.action!;
+  private _act(e: SpineEntry, action?: SpineAction): void {
+    const a = action ?? e.actions?.[0] ?? e.action;
+    if (!a) return;
     const [domain, service] = a.service.split(".");
     if (!domain || !service) return;
-    // Dim optimistically; the next feed poll is the source of truth.
+    // Dim optimistically; the feed is the source of truth.
     this._pending = new Set(this._pending).add(e.id);
-    this._hass?.callService(domain, service, a.data ?? {}, a.target).catch(() => {
-      const next = new Set(this._pending);
-      next.delete(e.id);
-      this._pending = next;
-    });
+    const clear = () => this._clearPending(e.id);
+    // ...but give up waiting for it. What the button runs is allowed to decline
+    // — a script that checks a camera before closing a door and finds someone
+    // standing there is working correctly — and when it does, nothing about the
+    // feed changes, so nothing would ever un-dim the row. A row that stays
+    // greyed out is the card claiming something happened that did not.
+    window.setTimeout(clear, PENDING_TIMEOUT);
+    this._hass?.callService(domain, service, a.data ?? {}, a.target).catch(clear);
+  }
+
+  private _clearPending(id: string): void {
+    if (!this._pending.has(id)) return;
+    const next = new Set(this._pending);
+    next.delete(id);
+    this._pending = next;
   }
 
   private _moreInfo(entityId: string): void {
@@ -630,6 +664,10 @@ export class DaySpineCard extends LitElement {
       const t = Date.parse(e.start);
       const end = e.end ? Date.parse(e.end) : NaN;
       if (e.kind === "event") recent.push(e);
+      // Standing rows are true now, whenever they began. They never sort into
+      // the past, because "the garage is open" struck through would be the card
+      // telling you it is closed.
+      else if (e.kind === "standing") overdue.push(e);
       else if (t > now) future.push(e);
       // Started and not finished. Several can be true at once — a class that runs
       // all afternoon, a slow cooker, and a call inside both — and each gets its

@@ -10,8 +10,10 @@ from typing import Any, Callable
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CoreState, Event, HomeAssistant, callback
 from homeassistant.helpers.event import (
+    TrackTemplate,
     async_track_point_in_time,
     async_track_state_change_event,
+    async_track_template_result,
 )
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.template import Template
@@ -32,6 +34,7 @@ from .const import (
     DOMAIN,
     EVENT_TAG,
     LABEL_CONTROL,
+    MAX_BUTTONS,
     LABEL_INCLUDE,
     OPT_CALENDAR_META,
     OPT_EXCLUDE,
@@ -44,6 +47,7 @@ from .const import (
     OPT_SENTENCES,
     OPT_SHOW_SUN,
     OPT_SIMILARITY,
+    OPT_STANDING,
     OPT_SUN_PRIORITY,
     OPT_TITLE_NOISE,
 )
@@ -53,9 +57,11 @@ from .merge import (
     attach_weather,
     dedupe,
     from_calendars,
+    from_standing,
     from_sun,
     from_todo,
     remaining_count,
+    standing_key,
     tags_seen,
 )
 
@@ -79,6 +85,14 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._recent: list[Entry] = []
         self._unsub_states = None
         self._unsub_registries = None
+        self._unsub_templates = None
+
+        # Standing-row templates: whether each is currently true, and since
+        # when. Home Assistant evaluates and tracks them; we only remember the
+        # moment one turned true, because a template has no last_changed of its
+        # own and a row has to sort somewhere.
+        self._template_on: dict[str, bool] = {}
+        self._template_since: dict[str, str] = {}
 
         # Resolved from labels, refreshed whenever a registry moves.
         self._calendar_ids: list[str] = []
@@ -93,6 +107,13 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._fired: set[str] = set()
         self._fired_day = ""
         self._unsub_fires: list[Callable[[], None]] = []
+
+        # Rows pushed in by `day_spine.show`. Persisted, because a row an
+        # automation put there is a claim about the house that a restart does
+        # not make untrue — and losing it silently is worse than the row itself
+        # ever was.
+        self._rows_store: Store = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.rows")
+        self._pushed: list[Entry] = []
 
         super().__init__(
             hass,
@@ -177,6 +198,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def async_setup(self) -> None:
         """Resolve the labels, remember what has already fired, start watching."""
         await self._load_fired()
+        await self._load_pushed()
         self._resolve()
         self._resubscribe()
         self._unsub_registries = labels.async_track_registries(
@@ -192,6 +214,9 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._unsub_registries:
             self._unsub_registries()
             self._unsub_registries = None
+        if self._unsub_templates:
+            self._unsub_templates.async_remove()
+            self._unsub_templates = None
         self._cancel_fires()
 
     @callback
@@ -246,6 +271,10 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.hass.async_create_task(self.async_refresh())
 
     @callback
+    def _standing(self) -> list[dict[str, Any]]:
+        return list(self._opts.get(OPT_STANDING) or [])
+
+    @callback
     def _resubscribe(self) -> None:
         if self._unsub_states:
             self._unsub_states()
@@ -256,10 +285,116 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if rule.get("entity_id")
         ]
         watched += self._watched_ids
+        # A standing row has to appear the moment its entity moves, so the
+        # entities those rules name are watched on the same fast path.
+        watched += [
+            rule["entity_id"]
+            for rule in self._standing()
+            if rule.get("entity_id") and not rule.get("template")
+        ]
         if watched:
             self._unsub_states = async_track_state_change_event(
                 self.hass, list(dict.fromkeys(watched)), self._on_state_change
             )
+        self._retrack_templates()
+
+    @callback
+    def _retrack_templates(self) -> None:
+        """Hand every template rule to Home Assistant to evaluate and watch.
+
+        `async_track_template_result` works out which entities a template
+        depends on and calls back only when its result actually changes — which
+        is the whole reason this is not a listener on the state machine and a
+        re-render every time anything anywhere moves. Using it means a template
+        rule costs about what an entity rule costs.
+        """
+        if self._unsub_templates:
+            self._unsub_templates.async_remove()
+            self._unsub_templates = None
+
+        tracked = []
+        for index, rule in enumerate(self._standing()):
+            raw = str(rule.get("template") or "").strip()
+            if not raw:
+                continue
+            tracked.append((standing_key(rule, index), TrackTemplate(Template(raw, self.hass), None)))
+        if not tracked:
+            self._template_on, self._template_since = {}, {}
+            return
+
+        keys = [key for key, _ in tracked]
+        # Forget results for rules that no longer exist, or "since" would be
+        # resurrected from a rule someone deleted a month ago.
+        self._template_on = {k: v for k, v in self._template_on.items() if k in keys}
+        self._template_since = {k: v for k, v in self._template_since.items() if k in keys}
+
+        @callback
+        def _updated(event, updates) -> None:
+            changed = False
+            for update in updates:
+                key = by_template.get(str(update.template.template))
+                if key is None:
+                    continue
+                if isinstance(update.result, Exception):
+                    # A template that cannot render is not a row that is false;
+                    # it is a rule that is broken. Say so once and leave the row
+                    # alone rather than silently dropping it off the card.
+                    _LOGGER.warning(
+                        "Standing rule template failed to render: %s", update.result
+                    )
+                    continue
+                if self._set_template(key, bool(update.result)):
+                    changed = True
+            if changed:
+                self.async_set_updated_data(self._compose())
+
+        by_template = {str(t.template.template): key for key, t in tracked}
+        info = async_track_template_result(
+            self.hass, [t for _, t in tracked], _updated
+        )
+        self._unsub_templates = info
+        info.async_refresh()
+
+    @callback
+    def _set_template(self, key: str, on: bool) -> bool:
+        """Record a template result, and when it turned true. Returns whether
+        anything actually moved."""
+        if self._template_on.get(key) == on:
+            return False
+        self._template_on[key] = on
+        if on:
+            self._template_since[key] = dt_util.now().isoformat()
+        else:
+            self._template_since.pop(key, None)
+        return True
+
+    def _standing_snapshot(self) -> dict[str, dict[str, Any]]:
+        """What each standing rule's condition looks like right now.
+
+        Entity rules read the state machine; template rules read what Home
+        Assistant last told us. Both come out in the same shape, which is what
+        lets `from_standing` stay pure and stay one code path.
+        """
+        out: dict[str, dict[str, Any]] = {}
+        for index, rule in enumerate(self._standing()):
+            key = standing_key(rule, index)
+            if rule.get("template"):
+                out[key] = {
+                    "state": "on" if self._template_on.get(key) else "off",
+                    "since": self._template_since.get(key),
+                    "name": rule.get("phrase") or key,
+                }
+                continue
+            entity_id = rule.get("entity_id")
+            state = self.hass.states.get(entity_id) if entity_id else None
+            if state is None:
+                continue
+            out[key] = {
+                "state": state.state,
+                "since": state.last_changed.isoformat() if state.last_changed else None,
+                "name": state.name,
+            }
+        return out
 
     @callback
     def _on_state_change(self, event: Event) -> None:
@@ -267,6 +402,17 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         old = event.data.get("old_state")
         if new is None or old is None or new.state == old.state:
             return
+
+        # Standing rows first, and deliberately before the "was it a person"
+        # gate below. A garage door you opened by hand is exactly as open as one
+        # the house opened, and a row that only appeared for automatic changes
+        # would be worse than no row at all.
+        if any(
+            rule.get("entity_id") == event.data["entity_id"] and not rule.get("template")
+            for rule in self._standing()
+        ):
+            self.async_set_updated_data(self._compose())
+
         # A parent context means something other than a person caused this.
         # Someone who flipped the switch themselves does not need telling.
         if new.context.parent_id is None:
@@ -439,6 +585,87 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._fired_day = today
             self._fired = set(stored.get("keys") or [])
 
+    async def _load_pushed(self) -> None:
+        stored = await self._rows_store.async_load() or {}
+        self._pushed = list(stored.get("rows") or [])
+
+    @callback
+    def _save_pushed(self) -> None:
+        self._rows_store.async_delay_save(lambda: {"rows": self._pushed}, 5)
+
+    # -- rows an automation put there ---------------------------------------
+
+    @callback
+    def async_show(self, data: dict[str, Any]) -> None:
+        """Put a row on the spine on behalf of an automation.
+
+        The general case behind every specific one. Dayline cannot anticipate
+        what is worth saying in someone else's house, and a config flow that
+        tried would be a worse version of the automation editor they already
+        have. So: an automation that has already decided says it, and gets the
+        same row shape everything else on the card gets.
+
+        Calling again with the same id replaces the row rather than stacking a
+        second copy, which is what makes this safe to call from an automation
+        that runs on every state change.
+        """
+        now = dt_util.now()
+        row_id = str(data.get("id") or "").strip() or f"auto:{abs(hash(data.get('message')))}"
+        seconds = data.get("duration")
+        expires = (
+            (now + timedelta(seconds=int(seconds))).isoformat() if seconds else None
+        )
+
+        buttons = []
+        for button in (data.get("buttons") or [])[:MAX_BUTTONS]:
+            script = button.get("script")
+            if not script:
+                continue
+            buttons.append(
+                {
+                    "label": button.get("label") or "Do it",
+                    "service": "script.turn_on",
+                    "target": {"entity_id": script},
+                }
+            )
+
+        entry: Entry = {
+            "id": f"push:{row_id}",
+            "start": str(data.get("start") or now.isoformat()),
+            "end": None,
+            "all_day": False,
+            "kind": "standing",
+            "source": "House",
+            "title": str(data.get("message") or "").strip() or "(no message)",
+            "automation": (str(data.get("sentence") or "").strip() or None),
+            "priority": data.get("priority") or "high",
+            "sticky": True,
+            "entity_id": data.get("entity_id"),
+            "expires": expires,
+        }
+        if buttons:
+            # One button stays in the singular field every other source writes,
+            # so nothing downstream has to learn a second shape for the common
+            # case. Two is where the plural earns itself.
+            entry["actions"] = buttons
+            entry["action"] = buttons[0]
+
+        self._pushed = [row for row in self._pushed if row["id"] != entry["id"]]
+        self._pushed.append(entry)
+        self._save_pushed()
+        self.async_set_updated_data(self._compose())
+
+    @callback
+    def async_dismiss(self, row_id: str) -> None:
+        """Take a pushed row off the spine. Unknown ids are not an error — an
+        automation tidying up after itself should not have to check first."""
+        wanted = f"push:{str(row_id).strip()}"
+        before = len(self._pushed)
+        self._pushed = [row for row in self._pushed if row["id"] != wanted]
+        if len(self._pushed) != before:
+            self._save_pushed()
+            self.async_set_updated_data(self._compose())
+
     @callback
     def _remember(self, key: str) -> None:
         today = dt_util.now().date().isoformat()
@@ -525,7 +752,25 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if (dt_util.parse_datetime(e["expires"]) or now) > now
         ][-cap:]
 
-        entries = sorted(self._base + self._recent, key=lambda e: e["start"])
+        # Pushed rows expire the same way the "what just happened" lines do,
+        # when they were given a duration at all. Most are not.
+        kept = [
+            row
+            for row in self._pushed
+            if not row.get("expires")
+            or (dt_util.parse_datetime(row["expires"]) or now) > now
+        ]
+        if len(kept) != len(self._pushed):
+            self._pushed = kept
+            self._save_pushed()
+
+        standing = from_standing(
+            self._standing(), self._standing_snapshot(), dt_util.start_of_local_day(now)
+        )
+        entries = sorted(
+            self._base + self._recent + standing + self._pushed,
+            key=lambda e: e["start"],
+        )
         left = remaining_count(entries, now)
 
         return {

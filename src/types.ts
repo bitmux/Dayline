@@ -1,7 +1,23 @@
 /** Priority governs what survives the density budget. It never affects sort order. */
 export type Priority = "high" | "normal" | "low";
 
-export type EntryKind = "calendar" | "sun" | "automation" | "todo" | "event" | "manual";
+export type EntryKind =
+  | "calendar"
+  | "sun"
+  | "automation"
+  | "todo"
+  | "event"
+  /**
+   * True for as long as something is true, rather than at a time.
+   *
+   * A door that is open, or a row an automation pushed in with
+   * `day_spine.show`. Distinct from `event` — which is the five-minute "what
+   * just happened" line — because these do not expire on their own and must not
+   * be drawn as history. They read as live: full-strength title, no
+   * strikethrough, never collapsed by the budget.
+   */
+  | "standing"
+  | "manual";
 
 /**
  * A service call the feed hands to the card, ready to fire.
@@ -74,6 +90,14 @@ export interface SpineEntry {
   /** ISO time after which the entry stops rendering. Used by the "what just happened" rows. */
   expires?: string | null;
   action?: SpineAction | null;
+  /**
+   * Up to two buttons, for rows that pose a choice rather than a chore.
+   *
+   * `action` stays the single-button case every other source writes, and the
+   * first of these mirrors into it, so nothing that only knows about `action`
+   * has to learn a second shape.
+   */
+  actions?: SpineAction[] | null;
   weather?: SpineWeather | null;
 }
 

@@ -2,6 +2,48 @@
 
 ## Unreleased
 
+**Rows that are not events.** A calendar event happens at a time; plenty of what
+is left of your day does not. The garage is open. There are now two ways to put
+that on the spine, split by whether a decision is involved.
+
+**Standing rows** (Configure → *While it's true*) are declarative: an entity and
+the states that count, or a template Home Assistant evaluates and tracks with its
+own `async_track_template_result`. The row exists for exactly as long as the
+condition does, sorts into the day at the moment the entity changed, and is
+sticky and high priority — so the density budget can never collapse it and its
+time passing never strikes it through. It counts toward "N left today", because
+it is.
+
+Its button always runs a **script**, never a service call. That is the point
+rather than a limitation: a script is Home Assistant's own name for a sequence
+that can check something first and decline, which is exactly what a button on a
+wall tablet must be allowed to do. A script that looks at a person detector
+before closing a door can refuse; `cover.close_cover` cannot.
+
+**`day_spine.show`** and **`day_spine.dismiss`** are the imperative half, and the
+first services this integration has had. Any automation can put a row on the
+spine with up to two buttons, a sage sentence, a priority and an optional
+duration. Calling `show` again with the same id replaces the row rather than
+stacking a copy, so it is safe from an automation that runs on every state
+change; dismissing an id that is not there is not an error. Pushed rows are
+persisted, because a claim an automation made about your house should survive a
+restart.
+
+Two buttons, not three. A row is one line of a timeline; a third makes it a
+dialog. Two is "do it" and "not now" — and the second is drawn quieter with no
+tick, because declining should not look as inviting as the thing being asked for.
+
+Together they answer the question Dayline could not otherwise answer honestly:
+**how does a script that declined tell you why?** It tells you itself, by calling
+`day_spine.show`. Dayline learns nothing about what happened inside a script —
+deliberately, the same way it never inspects what an automation does with a
+`#tag` — so the explanation is written by the only thing that actually knows.
+
+**Fixed: a pressed button could stay dimmed forever.** The optimistic dim waited
+for the feed to confirm, which never comes when the script declined and nothing
+about the house changed. It now gives up after twenty seconds, so a refusal
+leaves a row that still reads as open rather than one that looks done.
+
 **Calendars can carry a colour, which is the *who* axis.** The spine already
 answered what and when; a colour per calendar in Configure → Calendar wording
 now tints that calendar's pill in the legend and the dot beside each of its

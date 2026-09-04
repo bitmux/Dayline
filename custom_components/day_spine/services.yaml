@@ -1,0 +1,92 @@
+show:
+  name: Show a row
+  description: >-
+    Put a row on today's spine from an automation, with up to two buttons.
+    Calling again with the same id replaces the row rather than adding a second
+    one, so this is safe to call from an automation that runs often.
+  fields:
+    message:
+      name: Message
+      description: The line as it appears on the card. Plain words, no entity ids.
+      required: true
+      example: Garage has been open for 20 minutes
+      selector:
+        text:
+    id:
+      name: Id
+      description: >-
+        Your name for this row. Calling show again with the same id replaces it;
+        dismiss takes it away. Leave empty and one is derived from the message.
+      example: garage_open
+      selector:
+        text:
+    sentence:
+      name: What the house will do
+      description: >-
+        An optional second line, in sage, for what happens on its own. Say the
+        consequence, not the scene name.
+      example: Closing by itself at 11pm
+      selector:
+        text:
+    priority:
+      name: Priority
+      description: >-
+        High never collapses off the card, which is usually what you want for a
+        row an automation went to the trouble of pushing.
+      default: high
+      selector:
+        select:
+          options: [high, normal, low]
+    duration:
+      name: Duration
+      description: >-
+        Seconds before the row leaves on its own. Omit it and the row stays
+        until something dismisses it.
+      example: 900
+      selector:
+        number:
+          min: 1
+          max: 86400
+          unit_of_measurement: s
+          mode: box
+    start:
+      name: Start
+      description: >-
+        Where the row sorts into the day, as an ISO timestamp. Defaults to now.
+      example: "2026-09-04T10:42:00-05:00"
+      selector:
+        text:
+    entity_id:
+      name: Related entity
+      description: >-
+        Optional. What the row is about, so tapping it opens the right more-info
+        dialog when the card has interactive rows switched on.
+      selector:
+        entity:
+    buttons:
+      name: Buttons
+      description: >-
+        Up to two, each running a script. A script rather than a service call
+        because a button on the timeline should be allowed to check something
+        first and decline — which a direct service call cannot do.
+      example: |
+        - label: Close it
+          script: script.close_garage_safely
+        - label: Leave it open
+          script: script.dismiss_garage_row
+      selector:
+        object:
+
+dismiss:
+  name: Dismiss a row
+  description: >-
+    Take a pushed row off the spine. An id that is not there is not an error, so
+    an automation tidying up after itself does not have to check first.
+  fields:
+    id:
+      name: Id
+      description: The id given to day_spine.show.
+      required: true
+      example: garage_open
+      selector:
+        text:

@@ -21,6 +21,7 @@
           "labels": "Labels and tags — what Dayline is watching, and why",
           "calendars": "Calendar wording — pill names, priority, schedule calendars",
           "sentences": "Sentences — what the house does, in plain words",
+          "standing": "While it's true — rows that stay until something changes",
           "recent": "What just happened — better wording for automatic changes",
           "sources": "Weather and to-do — and the fallback calendar list",
           "tuning": "Tuning — sun, merging, timings, templates"
@@ -48,7 +49,9 @@
       "sentences": {
         "title": "Sentences",
         "description": "What the house will do, in plain words, matched against any text in an event's title. First match wins, so order is precedence.\n\nThis describes; it does not act. To make an event actually do something, put a `#tag` in its title instead — see “Labels and tags”.",
-        "data": { "selection": "Pick one to edit" }
+        "data": {
+          "selection": "Pick one to edit"
+        }
       },
       "sentence_edit": {
         "title": "Sentence",
@@ -64,7 +67,9 @@
       "recent": {
         "title": "What just happened",
         "description": "Short-lived lines explaining changes the house made on its own, and only when something other than a person caused the change.\n\nWhich entities can produce one is decided by the **{label}** label, not by this list. A labelled entity with no line here still gets a serviceable sentence built from its own name — this is where you write a better one.\n\nCurrently labelled:\n\n{watched}",
-        "data": { "selection": "Pick one to edit" }
+        "data": {
+          "selection": "Pick one to edit"
+        }
       },
       "recent_edit": {
         "title": "Explanation",
@@ -90,6 +95,27 @@
           "scan_minutes": "Check calendars every",
           "now_template": "“Now” subline template",
           "headline_template": "Headline template"
+        }
+      },
+      "standing": {
+        "title": "While it's true",
+        "description": "Rows that last as long as something is true, rather than for five minutes after it changed. A door that opened at 10:42 stops being news long before it stops being a problem.\n\nThese never expire and are never collapsed off the card. They leave when the condition does.\n\nFor anything with a decision in it — close the garage *unless the camera sees someone* — give the row a script and put the decision there. And for anything a rule cannot describe at all, call the `day_spine.show` action from an automation instead: an automation can branch, a rule cannot.",
+        "data": {
+          "selection": "Pick one to edit"
+        }
+      },
+      "standing_edit": {
+        "title": "Standing row",
+        "description": "Two ways to say when this applies, both of them Home Assistant's own. Either pick an **entity** and list the states that count — `open`, or `open, opening` — or write a **template** that renders true, which Home Assistant evaluates and watches for you. The template wins if you fill in both.\n\nA template rule can still name an entity: it is not used for the condition, but it tells the row when it began, so it sorts into the day where it actually happened rather than at the last restart.\n\nThe **script** is what the button runs. A script rather than a direct service call because a button on the timeline should be allowed to check something first and decline — a camera check before closing a door is the whole point, and a service call cannot refuse. What it decided is the script's to report: have it set a helper, and give that helper a row of its own.",
+        "data": {
+          "entity_id": "Entity",
+          "state": "States that count",
+          "template": "…or a template that renders true",
+          "phrase": "Say",
+          "priority": "Priority",
+          "script": "Button runs this script",
+          "button": "Button label",
+          "delete": "Delete this row"
         }
       }
     }

@@ -761,6 +761,27 @@ export const styles = css`
     cursor: default;
     opacity: 0.6;
   }
+  /* Two buttons wrap rather than squeeze: this card is often one narrow column,
+     and a truncated "Close it" is worse than a second line. */
+  .acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  /*
+   * The second button is the decline. Quieter on purpose — it carries no tick
+   * and no accent, because "not now" should not look as inviting as the thing
+   * the row is actually asking for.
+   */
+  .act-alt {
+    background: transparent;
+    border: 1px solid var(--ds-divider);
+    color: var(--color-neutral-500);
+  }
+  .act-alt:hover {
+    background: var(--ds-divider);
+    color: var(--color-neutral-300);
+  }
 
   /* ---------- overflow ---------- */
 
