@@ -187,8 +187,8 @@ dashboard is where people go to change how a dashboard looks; what the feed
 | `time_format` | `auto` | `auto` follows your Home Assistant locale; `12` or `24` overrides it |
 | `font_family` | — | A CSS font stack for the whole card, e.g. `Arial, sans-serif` |
 | `heading_font_family` | — | Overrides `font_family` for the day name and clock alone |
-| `show_sources` | `true` | The calendar pills, at the foot of the card |
-| `show_legend` | `true` | The explanatory footer. Turn it off once people stop needing it. |
+| `show_sources` | `true` | The calendar pills, inside the legend section. `show_legend: false` hides them too; this is the finer control for keeping the words without the pills. |
+| `show_legend` | `true` | The whole footer section — explanatory text *and* the calendar pills. Turn it off once people stop needing it. |
 | `legend` | — | Replace the footer text |
 | `interactive_rows` | `false` | Rows with an entity open more-info on tap |
 | `max_past` | `3` | Struck-through entries kept above "now" |
@@ -198,7 +198,7 @@ dashboard is where people go to change how a dashboard looks; what the feed
 | `recent_ttl` | `300` | Seconds a recent line lives if the feed did not set `expires` |
 | `show_weather` | `true` | Condition icon and temperature under the time, on upcoming entries |
 | `show_duration` | `true` | The duration chip on upcoming entries that have an end |
-| `use_ha_theme` | `false` | Take colors from the active HA theme instead of the Organic palette. Geometry and typefaces stay fixed either way. |
+| `use_ha_theme` | `false` | Take colors *and the card surface* from the active HA theme instead of the Organic palette — including a frosted theme's blur, shadow and border, so the card is made of the same material as everything around it. Geometry and typefaces stay fixed either way. |
 | `load_fonts` | `true` | Fetch Caprasimo and Figtree from Google Fonts. Set `false` on an offline tablet — the card falls back to Georgia and the system sans. |
 
 Live rows, overdue actionables and all-day entries are never collapsed by

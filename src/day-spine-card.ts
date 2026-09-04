@@ -213,9 +213,11 @@ export class DaySpineCard extends LitElement {
         ${rows.map((r) => this._renderRow(r))}
         ${hidden.length ? this._renderMore(hidden.length) : nothing}
       </div>
-      ${cfg.show_sources && sources.length ? this._renderSources(sources) : nothing}
       ${staleMessage ? this._renderFoot(staleMessage, true) : nothing}
-      ${cfg.show_legend ? this._renderFoot(cfg.legend ?? DEFAULT_LEGEND, false) : nothing}
+      ${cfg.show_legend
+        ? html`${cfg.show_sources && sources.length ? this._renderSources(sources) : nothing}
+            ${this._renderFoot(cfg.legend ?? DEFAULT_LEGEND, false)}`
+        : nothing}
     </div>`;
   }
 
@@ -254,7 +256,14 @@ export class DaySpineCard extends LitElement {
    *
    * Eight calendars overflowed a header built for three, and the pills are
    * reference material — you read them when something looks wrong, not every
-   * time you glance at the card. The bottom is where reference material goes.
+   * time you glance at the card. The bottom is where reference material goes,
+   * which makes them part of the legend rather than a thing sitting near it:
+   * `show_legend: false` takes them with it, and `show_sources` is the finer
+   * control for someone who wants the words but not the pills.
+   *
+   * The stale-source warning is deliberately not part of this. It is not
+   * reference material — it is the card telling you it is currently lying to
+   * you, and switching off the legend must not switch that off.
    */
   private _renderSources(sources: SpineSource[]): TemplateResult {
     return html`<div class="foot pills">

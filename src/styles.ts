@@ -64,9 +64,10 @@ export const styles = css`
    * Organic values as fallbacks so an incomplete theme degrades to this card's
    * own palette rather than to browser defaults.
    *
-   * Deliberately colors only. The spine's geometry and its two typefaces are the
-   * design; a theme that recolors the card still reads as this card, a theme that
-   * resizes it does not.
+   * Colors and the card surface — never the spine's geometry or its two
+   * typefaces, which are the design. A theme that recolors the card, or gives it
+   * the same glass and shadow as every other card on the dashboard, still reads
+   * as this card. A theme that resizes it does not.
    */
   .card.themed {
     --ds-bg: var(--ha-card-background, var(--card-background-color, #1a1714));
@@ -97,7 +98,26 @@ export const styles = css`
        would be the primary colour. */
     --ds-on-accent: var(--text-primary-color, #fff);
 
+    /*
+     * The surface itself, on the same terms every other card gets.
+     *
+     * This card draws its own container rather than wrapping ha-card, so it
+     * never saw these — which is why a frosted-glass theme came out the right
+     * colours and the wrong material. Home Assistant themes can only set custom
+     * properties, so honouring the four ha-card surface tokens is the whole of
+     * what "looks like the other cards" means; the blur in particular is
+     * --ha-card-backdrop-filter and nothing else.
+     *
+     * Every fallback is this card's existing look, so a theme that sets none of
+     * them changes nothing. A border defaulting to ha-card's own 1px would put
+     * a line around a card that has never had one.
+     */
     border-radius: var(--ha-card-border-radius, var(--radius-lg));
+    -webkit-backdrop-filter: var(--ha-card-backdrop-filter, none);
+    backdrop-filter: var(--ha-card-backdrop-filter, none);
+    box-shadow: var(--ha-card-box-shadow, none);
+    border: var(--ha-card-border-width, 0px) solid
+      var(--ha-card-border-color, transparent);
   }
 
   .card {

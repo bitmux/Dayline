@@ -74,6 +74,39 @@ mount("Mid-afternoon · the ordinary case", {
   sources: SOURCES,
 });
 
+// A frosted-glass theme: translucent card background plus a blur, both of which
+// reach us only as ha-card custom properties. The gradient behind it is there so
+// the blur has something to blur.
+const FROSTED_THEME = `
+  --card-background-color:rgba(40,36,48,0.55);
+  --ha-card-background:rgba(40,36,48,0.55);
+  --ha-card-backdrop-filter:blur(14px) saturate(140%);
+  --ha-card-box-shadow:0 8px 32px rgba(0,0,0,0.37);
+  --ha-card-border-width:1px;
+  --ha-card-border-color:rgba(255,255,255,0.18);
+  --ha-card-border-radius:20px;
+  --primary-text-color:#f4f1fa;    --secondary-text-color:#b9b2c9;
+  --divider-color:rgba(255,255,255,0.14);
+  --disabled-text-color:rgba(255,255,255,0.3);
+  --primary-color:#c68bff;         --accent-color:#8fd0a0;
+  --text-primary-color:#1a1420;    --error-color:rgba(255,120,90,0.25);
+  background:linear-gradient(135deg,#3a2a5e 0%,#7b4a6e 50%,#c4795a 100%);
+  padding:16px; border-radius:24px;`;
+
+mount(
+  "Frosted glass theme · ha-card surface tokens honoured",
+  {
+    entries: mock.ordinary,
+    headline: "3 September · 4 left today",
+    now: "Afternoon · house quiet, doors locked",
+    sources: SOURCES,
+  },
+  {},
+  { use_ha_theme: true },
+  false,
+  FROSTED_THEME,
+);
+
 mount("Eight calendars · pills wrap at the foot, clock in the header", {
   entries: mock.ordinary,
   headline: "3 September · 4 left today",

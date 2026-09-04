@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+**`use_ha_theme` now takes the card's *material*, not just its colours.** A
+frosted-glass theme came out the right colour and the wrong substance, because
+this card draws its own container instead of wrapping `ha-card` and so never saw
+the surface tokens every other card gets. It now honours
+`--ha-card-backdrop-filter`, `--ha-card-box-shadow`, `--ha-card-border-width`
+and `--ha-card-border-color` alongside the radius it already used. Every
+fallback is this card's existing look, so a theme that sets none of them changes
+nothing.
+
+**The calendar pills are part of the legend now**, not merely near it:
+`show_legend: false` takes them with it, and `show_sources` remains the finer
+control for keeping the words without the pills. The stale-source warning stays
+independent of both — it is the card telling you it is currently lying to you,
+and switching off the legend must not switch that off.
+
 **The card honours the sections grid, and says what size it wants.** It asks for
 the full width of one section and ten rows — it is a sidebar for the day, not a
 tile — and both are defaults you can drag rather than rules. Give it a fixed
@@ -20,8 +35,8 @@ because nobody is waiting to be shown what they asked never to see.
 **A clock in the header, and the source pills moved to the foot.** Eight
 calendars overflowed a header built for three. The pills are reference material
 — you read them when something looks wrong, not every time you glance at the
-card — so they now wrap at the bottom, above the legend, still tinting
-themselves when a source goes stale. `show_sources` governs them there.
+card — so they now wrap at the bottom, in the legend, still tinting themselves
+when a source goes stale.
 
 In their place, the time, in the card's heading face and sized so it cannot push
 the day down the page. It runs off the same clock as the now marker, so the two
