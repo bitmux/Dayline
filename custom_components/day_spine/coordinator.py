@@ -103,6 +103,32 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ),
         )
 
+    # -- what the labels resolved to ----------------------------------------
+    #
+    # Read by the options flow's status page. Exposed rather than reached for,
+    # because that page's whole job is to report these accurately.
+
+    @property
+    def calendar_ids(self) -> list[str]:
+        """Calendars on the spine."""
+        return list(self._calendar_ids)
+
+    @property
+    def calendar_source(self) -> str:
+        """How that list was arrived at: `label`, `config` or `all`."""
+        return self._calendar_source
+
+    @property
+    def control_ids(self) -> list[str]:
+        """Calendars whose `#tags` may act. Default deny: everything else shows
+        its tags and fires nothing."""
+        return sorted(self._control)
+
+    @property
+    def watched_ids(self) -> list[str]:
+        """Non-calendar entities labelled for explanation."""
+        return list(self._watched_ids)
+
     # -- options ------------------------------------------------------------
 
     @property

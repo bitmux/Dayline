@@ -172,7 +172,15 @@ export class DaySpineCard extends LitElement {
     const found = Object.keys(hass?.states ?? {}).find(
       (id) => id.startsWith("sensor.") && Array.isArray(hass?.states[id]?.attributes?.entries),
     );
-    return { type: "custom:day-spine-card", entity: found ?? "sensor.day_spine" };
+    // Written into the starting YAML rather than flipped in DEFAULTS, so that
+    // upgrading never silently restyles a card someone already placed, and so
+    // the line is visible and deletable by whoever wants the Organic palette
+    // back. A new card should look like the dashboard it was dropped onto.
+    return {
+      type: "custom:day-spine-card",
+      entity: found ?? "sensor.day_spine",
+      use_ha_theme: true,
+    };
   }
 
   // ------------------------------------------------------------------- render

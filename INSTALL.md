@@ -51,29 +51,150 @@ and restart Home Assistant.
 
 **Settings → Devices & services → Add integration → Dayline**.
 
-Setup asks four things, and only the first is required:
+Nothing on the setup form is required. Submit it untouched and every calendar in
+the instance goes on the spine — a real day on the wall in one click, which
+beats being interrogated before you have seen anything. Weather and a to-do list
+are the two optional pickers: the first adds the forecast to upcoming rows, the
+second adds actionable rows with a Done button.
 
-- **Calendars** — the ones that belong on the wall. Calendars you leave out are
-  never fetched, which is the point when you have twenty of them.
-- **Weather** — optional, adds the forecast to upcoming rows.
-- **To-do list** — optional, adds actionable rows with a Done button.
+Then narrow it with a label, below.
 
-That is enough to render, provided the card is installed too.
+## Labels and tags — where the settings went
+
+Dayline is configured almost entirely from outside its own config flow, by two
+**labels** you apply in Home Assistant's own UI and by `#tags` you type into your
+own calendar event titles.
+
+This is not minimalism for its own sake. A label lives on the thing it describes,
+takes effect without a restart, and is edited in the place you were already
+looking; a setting lives in a list somewhere else and goes stale the moment you
+add a calendar. And a `#tag` is the only place to put metadata on an event owned
+by someone else's calendar provider — Google will not store a Dayline field for
+you, but it will store the title you typed.
+
+So when you go looking for a setting and cannot find it, the answer is usually a
+label. **Settings → Areas, labels & zones → Labels** creates them; you apply one
+from an entity's settings dialog, or in bulk by ticking rows in
+**Settings → Devices & services → Entities** and choosing **Add label**.
+
+The integration's **Configure → Labels and tags** page says which entities
+currently carry each label, so you can check your work without leaving Home
+Assistant.
+
+### `Dayline` — what goes on the card
+
+Apply it to a **calendar** and that calendar joins the spine. As soon as any
+calendar carries it, the setup list stops being consulted entirely — adding a
+calendar next month is a label, not a trip through Configure.
+
+Apply it to **anything that is not a calendar** — a light, a lock, a media
+player — and it means the other thing: explain that entity when it changes on
+its own. You get a plain sentence built from the entity's own name
+("Porch light turned off"), and **Configure → What just happened** is where you
+write a better one.
+
+With no `Dayline` label anywhere, the setup list is used; with neither, every
+calendar is.
+
+### `Dayline Control` — what is allowed to act
+
+A `#tag` in an event title does nothing unless that calendar *also* carries
+`Dayline Control`.
+
+Default deny, deliberately. Subscribe to a school calendar and someone else's
+`#vacation` would otherwise be a remote control for your house. Without the
+second label the chip still renders — flat grey, meaning "this will do nothing"
+— because silence is what makes people decide a system is broken.
+
+### `#tags` — making an event do something
+
+Put a tag anywhere in the title:
+
+```
+Dinner out #Away
+Book club 7pm #Quiet
+Ski trip #Vacation
+```
+
+Matching is loose on purpose, because real tags are messy: any position, any
+case, trailing punctuation tolerated, so `#vacation!` reads as `vacation`. A
+leading letter is required, which keeps "Room #3" out of it. The tag is lifted
+out of the title before anything else reads it, so the card shows *Dinner out*
+with a chip beside it.
+
+When a tagged event starts, Dayline fires a `dayline_tag` event:
+
+```yaml
+event_type: dayline_tag
+data:
+  tag: Away
+  calendar: calendar.family
+  summary: Dinner out
+  start: "2026-09-03T18:15:00-05:00"
+  end: "2026-09-03T21:00:00-05:00"
+  all_day: false
+```
+
+and stops there. **Dayline never runs your automations, writes automations, or
+touches another integration's storage.** Binding a tag to an action is an
+ordinary automation, which is Home Assistant's job.
+
+The quickest way to write one is the shipped blueprint. **Settings → Automations
+& scenes → Blueprints → Import blueprint**, and paste:
+
+```
+https://github.com/bitmux/Dayline/blob/main/blueprints/automation/dayline/dayline_tag.yaml
+```
+
+It asks for a tag and for what to do, and the "what to do" is a full action
+selector — an Alarmo call, an `input_select.select_option` against a helper you
+already have, a `script.turn_on`, whatever your house actually uses. Dayline
+never guesses your entity names, which is why there is no "what sets house mode"
+setting: there could not be one that was right.
+
+The automation it writes is an ordinary automation. Open it and add conditions
+("unless someone is still home") whenever you outgrow the blueprint.
+
+Two rules worth knowing, both settled rather than incidental:
+
+- **A tag fires once, at the event's start. Nothing fires at the end, ever.**
+  Coming back is its own entry — `Return #Home from vacation` at 4pm — which
+  keeps the return visible on the spine instead of hiding it in a timer.
+- **An event already under way when Dayline first sees it fires immediately.**
+  That is what makes an all-day `#Away` work at all: its start is midnight, and
+  midnight is always behind us. What has already fired is remembered across
+  restarts, so a reload does not re-assert this morning's tags.
+
+Calendars are read every five minutes (Configure → Tuning). A tag added to an
+event that starts within the next minute or two may miss its moment.
+
+Chips say which of three things is true: **outline** for a tag that will fire,
+**filled** for one that has, **flat grey** for one that will do nothing.
+
+What a grey chip cannot tell you is whether anything is *bound* to the tag.
+Home Assistant offers no trustworthy way to ask "does an automation listen for
+this", and reading other integrations' stored configs to guess would be exactly
+the mistake that broke this card's own Lovelace registration. Grey means "this
+calendar is not allowed to fire" — never "nothing is listening".
 
 ### Changing what it says
 
-**Settings → Devices & services → Dayline → Configure.** Five sections:
+**Settings → Devices & services → Dayline → Configure.** Six sections:
 
-- **Sources** — which calendars, weather entity, to-do list.
-- **Calendars** — each calendar's pill label, default priority, and whether it
-  is a *schedule* calendar. Order matters: when two calendars carry the same
-  event worded differently, the first one listed supplies the wording.
+- **Labels and tags** — read-only. What is labelled right now, which calendars
+  may act, which tags have been seen today, and where to change each.
+- **Calendar wording** — each calendar's pill label, default priority, and
+  whether it is a *schedule* calendar. Order matters: when two calendars carry
+  the same event worded differently, the first one listed supplies the wording.
+  Which calendars appear here is the `Dayline` label's business, not this page's.
 - **Sentences** — what the house does, in plain words, matched against text in
-  an event's title. Added and edited one at a time. First match wins, so the
-  order of the list is the order of precedence.
-- **What just happened** — one line per entity per state. Only listed entities
-  can produce a line, and only when something other than a person caused the
-  change; someone who flipped the switch does not need telling.
+  an event's title. First match wins, so the order of the list is the order of
+  precedence. This *describes*; to make an event act, use a `#tag`.
+- **What just happened** — better wording for the automatic changes of entities
+  carrying the `Dayline` label. The label decides what is watched; this decides
+  how it reads.
+- **Weather and to-do** — the two entity pickers, plus the fallback calendar
+  list for anyone not using labels.
 - **Tuning** — sun rows, merge similarity, excluded titles, timings, and
   optional templates for the headline and the "Now" subline.
 
@@ -198,7 +319,7 @@ dashboard is where people go to change how a dashboard looks; what the feed
 | `recent_ttl` | `300` | Seconds a recent line lives if the feed did not set `expires` |
 | `show_weather` | `true` | Condition icon and temperature under the time, on upcoming entries |
 | `show_duration` | `true` | The duration chip on upcoming entries that have an end |
-| `use_ha_theme` | `false` | Take colors *and the card surface* from the active HA theme instead of the Organic palette — including a frosted theme's blur, shadow and border, so the card is made of the same material as everything around it. Geometry and typefaces stay fixed either way. |
+| `use_ha_theme` | `false`, but a newly added card starts with `true` in its YAML | Take colors *and the card surface* from the active HA theme instead of the Organic palette — including a frosted theme's blur, shadow and border, so the card is made of the same material as everything around it. Geometry and typefaces stay fixed either way. |
 | `load_fonts` | `true` | Fetch Caprasimo and Figtree from Google Fonts. Set `false` on an offline tablet — the card falls back to Georgia and the system sans. |
 
 Live rows, overdue actionables and all-day entries are never collapsed by

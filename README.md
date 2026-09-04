@@ -35,11 +35,17 @@ is logbook-oriented — it tells you what happened, not what is about to.
   sensor", for five minutes, so nobody has to wonder.
 - **Joins the hourly forecast** to upcoming entries — you are going to the fair,
   and it will be raining.
-- **Brings its own colours.** The Organic palette — warm dark ground, terracotta
-  now-marker, sage for anything the house does on its own — is the default and
-  is independent of your Home Assistant theme. Set `use_ha_theme: true` and it
-  takes its colours from the active theme instead; the geometry and typefaces
-  stay put either way, so it is the same card in either dress.
+- **Wears your theme, or brings its own.** A card you add starts with
+  `use_ha_theme: true`, taking its colours *and its surface* from the active
+  Home Assistant theme — a frosted theme's blur, shadow and border included, so
+  it is made of the same material as the cards beside it. Delete that line for
+  the Organic palette: warm dark ground, terracotta now-marker, sage for
+  anything the house does on its own. The geometry and typefaces stay put
+  either way, so it is the same card in either dress.
+- **Configured with labels, not forms.** The `Dayline` label puts a calendar on
+  the spine; `Dayline Control` lets that calendar's `#tags` act; a `#tag` in an
+  event title fires an event you bind to anything you like with the shipped
+  blueprint. See [INSTALL.md](INSTALL.md#labels-and-tags--where-the-settings-went).
 - **Never hides anything silently.** What the density budget collapses is
   counted on a `+N more today` row. A stale calendar tints its own pill and says
   so in the footer. The card states what it does not know.

@@ -1,8 +1,20 @@
 """Setup and options UI.
 
 Two principles here. Setup asks the fewest questions that can produce a working
-card — pick your calendars and you are done. Everything else is an option you
-find later, once you know you want it.
+card — none of them required — and everything else is an option you find later,
+once you know you want it.
+
+The third principle arrived with labels, and it moved most of this file's job
+somewhere else. What Dayline watches, and what it is allowed to act on, are not
+settings any more: they are the `Dayline` and `Dayline Control` labels, applied
+in Home Assistant's own UI, and what a tagged event *does* is an ordinary
+automation. None of those belong in a config flow, and duplicating them here
+would give two answers to one question.
+
+So the steps that remain are the ones a label genuinely cannot express — the
+pill wording, the sentences, the dials — and the first thing in the menu is not
+a setting at all. It is a page that says what is currently labelled, and where
+to go to change it.
 
 The lists (sentences, watched entities) are edited one item at a time through a
 pick-or-add step rather than a textarea of delimited lines. A textarea would be
@@ -24,6 +36,8 @@ from .const import (
     CONF_CALENDARS,
     CONF_TODO,
     CONF_WEATHER,
+    LABEL_CONTROL,
+    LABEL_INCLUDE,
     DEFAULT_RECENT_MAX,
     DEFAULT_RECENT_TTL,
     DEFAULT_SCAN_MINUTES,
@@ -50,6 +64,32 @@ from .const import (
 ADD = "__add__"
 DONE = "__done__"
 
+# How the calendar list was arrived at, said in a sentence rather than a word,
+# because "config" on its own does not tell anyone what to do next.
+_HOW = {
+    "label": f"the **{LABEL_INCLUDE}** label — the list below is whatever carries it",
+    "config": (
+        "the list picked during setup, because nothing carries the "
+        f"**{LABEL_INCLUDE}** label yet"
+    ),
+    "all": (
+        "nothing — every calendar in this instance is on the spine, because "
+        f"neither the **{LABEL_INCLUDE}** label nor the setup list has been used"
+    ),
+}
+
+
+def _names(hass: Any, entity_ids: list[str]) -> str:
+    """A markdown bullet list of friendly names, or an honest dash."""
+    if not entity_ids:
+        return "— none"
+    lines = []
+    for entity_id in entity_ids:
+        state = hass.states.get(entity_id)
+        name = (state.name if state else None) or entity_id
+        lines.append(f"- {name} (`{entity_id}`)")
+    return "\n".join(lines)
+
 
 def _entity(domain: str, multiple: bool = False) -> selector.EntitySelector:
     return selector.EntitySelector(
@@ -75,7 +115,14 @@ def _words() -> selector.SelectSelector:
 
 
 class DaySpineConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Setup: the shortest path to a card that renders."""
+    """Setup: the shortest path to a card that renders.
+
+    Nothing here is required any more. Submitting the form untouched gives you
+    every calendar in the instance, which is a real day on the wall in one
+    click, and the `Dayline` label is how you narrow it afterwards — at which
+    point this list stops being consulted at all. It stays only as the fallback
+    for someone who would rather answer a question than apply a label.
+    """
 
     VERSION = 1
 
@@ -83,9 +130,9 @@ class DaySpineConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         if user_input is not None:
-            calendars = user_input[CONF_CALENDARS]
+            calendars = user_input.get(CONF_CALENDARS) or []
             return self.async_create_entry(
-                title=user_input.get("name") or "Day Spine",
+                title=user_input.get("name") or "Dayline",
                 data={
                     CONF_CALENDARS: calendars,
                     CONF_WEATHER: user_input.get(CONF_WEATHER),
@@ -121,8 +168,10 @@ class DaySpineConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Optional("name", default="Day Spine"): selector.TextSelector(),
-                    vol.Required(CONF_CALENDARS): _entity("calendar", multiple=True),
+                    vol.Optional("name", default="Dayline"): selector.TextSelector(),
+                    vol.Optional(CONF_CALENDARS, default=[]): _entity(
+                        "calendar", multiple=True
+                    ),
                     vol.Optional(CONF_WEATHER): _entity("weather"),
                     vol.Optional(CONF_TODO): _entity("todo"),
                 }
@@ -153,27 +202,96 @@ class DaySpineOptionsFlow(OptionsFlow):
             self._opts = dict(self.config_entry.options)
         return self.async_show_menu(
             step_id="init",
-            menu_options=["sources", "calendars", "sentences", "recent", "tuning"],
+            menu_options=["labels", "calendars", "sentences", "recent", "sources", "tuning"],
         )
 
     def _save(self) -> ConfigFlowResult:
         return self.async_create_entry(title="", data=self._opts)
+
+    # -- what is labelled, and where to change it ---------------------------
+
+    def _coordinator(self) -> Any:
+        """The running feed, or None if the entry is not loaded.
+
+        Only ever read for display. An options flow that could not open because
+        the integration was mid-reload would be a poor trade for a status page.
+        """
+        return (self.hass.data.get(DOMAIN) or {}).get(self.config_entry.entry_id)
+
+    def _resolved_calendars(self) -> list[str]:
+        """What the feed is actually reading — labelled, configured, or all."""
+        coordinator = self._coordinator()
+        if coordinator is not None and coordinator.calendar_ids:
+            return coordinator.calendar_ids
+        return list(self.config_entry.data.get(CONF_CALENDARS) or [])
+
+    def _labelled_calendars(self) -> list[str]:
+        """Only the ones a label put there.
+
+        Distinct from `_resolved_calendars` on purpose: under the every-calendar
+        fallback that returns the whole instance, and treating those as things
+        someone chose would seed wording for calendars nobody has ever named.
+        """
+        coordinator = self._coordinator()
+        if coordinator is not None and coordinator.calendar_source == "label":
+            return coordinator.calendar_ids
+        return []
+
+    async def async_step_labels(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """A page that answers "why is this on my card", and nothing else.
+
+        Deliberately read-only. Every fact on it is owned by the label registry
+        or by an automation, and offering to change it from here would mean
+        writing someone else's settings from inside ours — the mistake that made
+        the card's own Lovelace registration fail. It tells you what is true and
+        where the switch is.
+        """
+        if user_input is not None:
+            return await self.async_step_init()
+
+        coordinator = self._coordinator()
+        calendars = self._resolved_calendars()
+        source = getattr(coordinator, "calendar_source", "config")
+        control = getattr(coordinator, "control_ids", [])
+        watched = getattr(coordinator, "watched_ids", [])
+        seen = list((getattr(coordinator, "data", None) or {}).get("tags_seen") or [])
+
+        return self.async_show_form(
+            step_id="labels",
+            data_schema=vol.Schema({}),
+            description_placeholders={
+                "include": LABEL_INCLUDE,
+                "control": LABEL_CONTROL,
+                "how": _HOW.get(source, source),
+                "calendars": _names(self.hass, calendars),
+                "controls": _names(self.hass, control),
+                "watched": _names(self.hass, watched),
+                "tags": ", ".join(f"#{tag}" for tag in seen) or "— none seen today",
+                "scan": str(
+                    self.config_entry.options.get(OPT_SCAN_MINUTES, DEFAULT_SCAN_MINUTES)
+                ),
+            },
+        )
 
     # -- which entities feed the card ---------------------------------------
 
     async def async_step_sources(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         data = dict(self.config_entry.data)
         if user_input is not None:
-            calendars = user_input[CONF_CALENDARS]
-            # Keep metadata for calendars that survived, seed it for new ones,
-            # and drop it for removed ones so stale labels cannot linger.
+            calendars = user_input.get(CONF_CALENDARS) or []
+            # Keep metadata for anything still in play — configured here *or*
+            # carrying the label — seed it for new arrivals, and drop the rest
+            # so stale wording cannot linger. Pruning by this list alone was
+            # right when this list was the only way in; it would now throw away
+            # the pill wording of every labelled calendar.
+            keep = set(calendars) | set(self._labelled_calendars())
             meta = self._opts.get(OPT_CALENDAR_META) or {}
             self._opts[OPT_CALENDAR_META] = {
                 entity_id: meta.get(
                     entity_id,
                     {"label": self._friendly(entity_id), "priority": "normal", "role": "people"},
                 )
-                for entity_id in calendars
+                for entity_id in keep
             }
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
@@ -186,7 +304,7 @@ class DaySpineOptionsFlow(OptionsFlow):
             return self._save()
 
         schema: dict[Any, Any] = {
-            vol.Required(CONF_CALENDARS, default=data.get(CONF_CALENDARS, [])): _entity(
+            vol.Optional(CONF_CALENDARS, default=data.get(CONF_CALENDARS, [])): _entity(
                 "calendar", multiple=True
             )
         }
@@ -197,18 +315,31 @@ class DaySpineOptionsFlow(OptionsFlow):
     # -- per-calendar label, priority, role ---------------------------------
 
     async def async_step_calendars(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        calendars: list[str] = self.config_entry.data.get(CONF_CALENDARS, [])
+        """Wording and priority for the calendars actually on the spine.
+
+        Reads the resolved list, not the configured one. Under labels those are
+        different sets, and iterating the configured one meant a calendar you
+        had labelled could never be given a pill name — the one thing on this
+        page a label cannot say for you.
+        """
+        calendars = self._resolved_calendars()
         meta = self._opts.get(OPT_CALENDAR_META) or {}
 
         if user_input is not None:
-            self._opts[OPT_CALENDAR_META] = {
-                entity_id: {
-                    "label": user_input.get(f"{entity_id}__label") or self._friendly(entity_id),
-                    "priority": user_input.get(f"{entity_id}__priority", "normal"),
-                    "role": user_input.get(f"{entity_id}__role", "people"),
+            # Merged, not replaced: a calendar that is between labels today
+            # should not lose the sentence someone wrote for it last month.
+            updated = dict(meta)
+            updated.update(
+                {
+                    entity_id: {
+                        "label": user_input.get(f"{entity_id}__label") or self._friendly(entity_id),
+                        "priority": user_input.get(f"{entity_id}__priority", "normal"),
+                        "role": user_input.get(f"{entity_id}__role", "people"),
+                    }
+                    for entity_id in calendars
                 }
-                for entity_id in calendars
-            }
+            )
+            self._opts[OPT_CALENDAR_META] = updated
             return self._save()
 
         schema: dict[Any, Any] = {}
@@ -227,7 +358,10 @@ class DaySpineOptionsFlow(OptionsFlow):
         return self.async_show_form(
             step_id="calendars",
             data_schema=vol.Schema(schema),
-            description_placeholders={"count": str(len(calendars))},
+            description_placeholders={
+                "count": str(len(calendars)),
+                "label": LABEL_INCLUDE,
+            },
         )
 
     # -- the sentence map ---------------------------------------------------
@@ -298,6 +432,13 @@ class DaySpineOptionsFlow(OptionsFlow):
     # -- "what just happened" -----------------------------------------------
 
     async def async_step_recent(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Better words for a change the house made on its own.
+
+        No longer how you *choose* what gets explained — the `Dayline` label on
+        any non-calendar entity does that, and gets a serviceable sentence built
+        from the entity's own name. This list is for the ones where that
+        sentence is not good enough, which is most of the ones that matter.
+        """
         items = self._opts.get(OPT_RECENT) or []
         if user_input is not None:
             choice = user_input["selection"]
@@ -318,6 +459,10 @@ class DaySpineOptionsFlow(OptionsFlow):
         return self.async_show_form(
             step_id="recent",
             data_schema=vol.Schema({vol.Required("selection", default=ADD): _options(options)}),
+            description_placeholders={
+                "label": LABEL_INCLUDE,
+                "watched": _names(self.hass, list(getattr(self._coordinator(), "watched_ids", []))),
+            },
         )
 
     async def async_step_recent_edit(

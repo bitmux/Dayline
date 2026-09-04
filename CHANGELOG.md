@@ -2,6 +2,47 @@
 
 ## Unreleased
 
+**The integration's settings caught up with the labels.** Most of what this
+config flow used to ask has not been a setting since labels arrived, and the
+stale version of a question is worse than no question — two places claiming to
+answer the same thing, one of them wrong.
+
+- **Nothing on the setup form is required now.** Submit it untouched and every
+  calendar in the instance is on the spine. The calendar picker survives as the
+  fallback for anyone who would rather answer a question than apply a label, and
+  it says so.
+- **A new first page, "Labels and tags", that is not a setting at all.** It
+  reports what carries `Dayline`, what carries `Dayline Control`, what tags
+  today's events used, and where each of those is changed — read-only, because
+  every fact on it is owned by the label registry or by an automation, and
+  offering to write those from inside our own settings is the mistake that broke
+  this card's Lovelace registration.
+- **Fixed: a labelled calendar could never be given a pill name.** The
+  per-calendar wording page iterated the *configured* list, which under labels is
+  a different set — usually empty. It reads the resolved list now, and merges
+  rather than replaces, so a calendar between labels does not lose the wording
+  someone wrote for it.
+- **Fixed: editing the fallback list discarded every labelled calendar's
+  wording.** Pruning metadata to that list was right when it was the only way in.
+- The remaining pages say what they are for. "Sentences" notes that it describes
+  rather than acts, and points at `#tags` for the other thing. "What just
+  happened" notes that the `Dayline` label decides what is watched and this only
+  decides how it reads. "Tuning" notes that the poll interval is also how
+  promptly a tag can fire.
+
+**Labels, tags and the blueprint are documented.** `INSTALL.md` gains a "Labels
+and tags — where the settings went" section: both labels and what each means on
+a calendar versus anything else, `#tag` syntax and matching, the `dayline_tag`
+payload, importing the blueprint, the two firing rules, the five-minute caveat,
+and what the three chip states do and do not tell you — including that grey means
+"not allowed to fire", never "nothing is listening", because Home Assistant
+offers no honest way to ask the second question.
+
+**A card you add now starts with `use_ha_theme: true`.** It is written into the
+starting YAML rather than changed in the defaults, so upgrading never silently
+restyles a card you already placed, and the line is visible and deletable by
+anyone who wants the Organic palette back.
+
 **`use_ha_theme` now takes the card's *material*, not just its colours.** A
 frosted-glass theme came out the right colour and the wrong substance, because
 this card draws its own container instead of wrapping `ha-card` and so never saw

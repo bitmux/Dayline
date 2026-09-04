@@ -3,10 +3,10 @@
     "step": {
       "user": {
         "title": "Dayline",
-        "description": "Pick the calendars that belong on the wall. Calendars you leave out are never fetched — that is the point. You can add weather and a to-do list now or later.",
+        "description": "Nothing here is required. Submit as-is and every calendar in this instance goes on the spine, so you get a real day immediately.\n\nTo narrow it, apply the **Dayline** label to the calendars you want under [Settings → Areas & labels](/config/labels) — labelled calendars replace this list entirely, take effect without a restart, and mean adding a calendar next month never involves Dayline at all. The list below is only the fallback for anyone who would rather answer a question than apply a label.",
         "data": {
           "name": "Name",
-          "calendars": "Calendars",
+          "calendars": "Calendars (optional — the Dayline label is the better way)",
           "weather_entity": "Weather (optional)",
           "todo_entity": "To-do list (optional)"
         }
@@ -18,30 +18,36 @@
       "init": {
         "title": "Dayline",
         "menu_options": {
-          "sources": "Sources — which calendars, weather, to-do list",
-          "calendars": "Calendars — labels, priority, schedule calendars",
+          "labels": "Labels and tags — what Dayline is watching, and why",
+          "calendars": "Calendar wording — pill names, priority, schedule calendars",
           "sentences": "Sentences — what the house does, in plain words",
-          "recent": "What just happened — short-lived explanations",
+          "recent": "What just happened — better wording for automatic changes",
+          "sources": "Weather and to-do — and the fallback calendar list",
           "tuning": "Tuning — sun, merging, timings, templates"
         }
       },
+      "labels": {
+        "title": "Labels and tags",
+        "description": "Most of what Dayline does is not configured here. It is decided by two labels you apply in [Settings → Areas & labels](/config/labels) and by `#tags` you type into your own calendar event titles — so it lives where the thing itself lives, and changes without a restart.\n\n**Want a calendar on the card?** Give it the **{include}** label.\nRight now the spine comes from {how}:\n\n{calendars}\n\n**Want an event to *do* something?** Put a `#tag` in its title — `Dinner out #Away` — and give that calendar the **{control}** label as well. Without the second label the chip still shows and nothing fires; that is deliberate, so a `#vacation` in a school calendar you subscribe to cannot touch your house.\n\nAllowed to act:\n\n{controls}\n\nThen bind the tag to whatever you like with the **Dayline tag** blueprint (Settings → Automations → Blueprints → Import, `https://github.com/bitmux/Dayline/blob/main/blueprints/automation/dayline/dayline_tag.yaml`). The binding is an ordinary automation you can open and extend, so “unless someone is still home” is yours to write. Dayline fires the `dayline_tag` event and stops there.\n\nTags seen on today's events: {tags}\n\n**Want to be told when something changes on its own?** Give that entity the **{include}** label too — the same label, because on anything that is not a calendar it means the other thing. It gets a plain sentence from its own name; write a better one under “What just happened”.\n\nExplained when they change:\n\n{watched}\n\nA tag fires once, at its event's start — never at the end. Calendars are read every {scan} minutes, so a tag added to an event starting in the next minute or two may not fire.",
+        "data": {}
+      },
       "sources": {
-        "title": "Sources",
-        "description": "Removing a calendar also forgets its label and priority.",
+        "title": "Weather and to-do",
+        "description": "The weather entity supplies the hourly forecast joined onto upcoming entries; the to-do list supplies the sticky rows with a Done button. One of each — these are genuine choices, not something a label can answer.\n\nThe calendar list below is the fallback only. If anything carries the **Dayline** label, this list is not consulted at all.",
         "data": {
-          "calendars": "Calendars",
+          "calendars": "Fallback calendars",
           "weather_entity": "Weather",
           "todo_entity": "To-do list"
         }
       },
       "calendars": {
-        "title": "Calendars",
-        "description": "The label is what the pill on the card says; calendars sharing a label share a pill. Order matters: when two calendars carry the same event worded differently, the first one listed supplies the wording.\n\nSet the role to “schedule” for a calendar that drives automations rather than describing people's plans — its events become House rows and each event's description becomes the sage sentence.",
+        "title": "Calendar wording",
+        "description": "The {count} calendars currently on the spine. This is the one thing about a calendar a label cannot say for you.\n\nThe label is what the pill in the legend says; calendars sharing a label share a pill. Order matters: when two calendars carry the same event worded differently, the first listed supplies the wording.\n\nSet the role to “schedule” for a calendar that drives automations rather than describing people's plans — its events become House rows and each event's description becomes the sage sentence.\n\nTo add or remove a calendar, apply or remove the **{label}** label rather than editing anything here.",
         "data": {}
       },
       "sentences": {
         "title": "Sentences",
-        "description": "What the house will do, in plain words, matched against any text in an event's title. First match wins, so order is precedence.",
+        "description": "What the house will do, in plain words, matched against any text in an event's title. First match wins, so order is precedence.\n\nThis describes; it does not act. To make an event actually do something, put a `#tag` in its title instead — see “Labels and tags”.",
         "data": { "selection": "Pick one to edit" }
       },
       "sentence_edit": {
@@ -57,12 +63,12 @@
       },
       "recent": {
         "title": "What just happened",
-        "description": "Short-lived lines explaining changes the house made on its own. Only listed entities can ever produce one, and only when something other than a person caused the change.",
+        "description": "Short-lived lines explaining changes the house made on its own, and only when something other than a person caused the change.\n\nWhich entities can produce one is decided by the **{label}** label, not by this list. A labelled entity with no line here still gets a serviceable sentence built from its own name — this is where you write a better one.\n\nCurrently labelled:\n\n{watched}",
         "data": { "selection": "Pick one to edit" }
       },
       "recent_edit": {
         "title": "Explanation",
-        "description": "One sentence per entity per state. Plain words, no entity ids.",
+        "description": "One sentence per entity per state. Plain words, no entity ids. The entity still needs the **Dayline** label for this to ever fire.",
         "data": {
           "entity_id": "Entity",
           "state": "When it changes to",
@@ -72,7 +78,7 @@
       },
       "tuning": {
         "title": "Tuning",
-        "description": "Similarity is how much of two titles must match before they are treated as one event — 0.8 is strict. Lower it if duplicates slip through, raise it if unrelated events start merging.\n\nLeave the templates empty for sensible defaults.",
+        "description": "Similarity is how much of two titles must match before they are treated as one event — 0.8 is strict. Lower it if duplicates slip through, raise it if unrelated events start merging.\n\n“Check calendars every” is also how promptly a `#tag` can fire: a tag added to an event starting sooner than that may miss its moment.\n\nLeave the templates empty for sensible defaults.",
         "data": {
           "show_sun": "Show sunrise and sunset",
           "sun_priority": "Sun priority",
