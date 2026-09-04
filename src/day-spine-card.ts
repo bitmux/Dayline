@@ -22,6 +22,7 @@ const FONT_HREF =
 
 const DEFAULTS = {
   show_all_day: true,
+  max_all_day: 4,
   show_sources: true,
   show_legend: true,
   interactive_rows: false,
@@ -57,6 +58,9 @@ export class DaySpineCard extends LitElement {
   @state() private _stateObj?: HassEntity;
   @state() private _now = Date.now();
   @state() private _expanded = false;
+  /** Separate from `_expanded` on purpose: opening the day's frame and opening
+   *  the day's list are different questions, asked at opposite ends of the card. */
+  @state() private _alldayExpanded = false;
   /** Entry ids whose action was just pressed, dimmed until the feed confirms. */
   @state() private _pending = new Set<string>();
 
@@ -72,6 +76,7 @@ export class DaySpineCard extends LitElement {
     }
     this._config = { ...DEFAULTS, ...config };
     this._expanded = false;
+    this._alldayExpanded = false;
     this._applyFonts();
   }
 
@@ -284,9 +289,32 @@ export class DaySpineCard extends LitElement {
     </div>`;
   }
 
+  /**
+   * The day's frame, capped.
+   *
+   * All-day entries used to be exempt from the density budget — they are the
+   * day's frame, and a frame of one or two lines is cheap. Eight of them is not
+   * a frame, it is two-thirds of a phone, with the actual day scrolling in the
+   * sliver underneath.
+   *
+   * Capped rather than made scrollable. A second scroll region directly above
+   * the spine's own is genuinely bad on touch — two competing scrollers, one of
+   * them a few lines tall — and the card already has a `+N more` idiom that
+   * people have met at the bottom. Nothing is hidden silently either way.
+   */
   private _renderAllDay(items: SpineEntry[]): TemplateResult {
+    const cap = Math.max(1, this._config.max_all_day);
+    // An entry that can be acted on, or whose tag is about to fire, is not
+    // frame — it is the day happening. Those keep their place at the front
+    // rather than queueing behind eight birthdays.
+    const live = items.filter((e) => e.action || e.tag_state === "will_fire");
+    const rest = items.filter((e) => !live.includes(e));
+    const ordered = [...live, ...rest];
+    const hidden = this._alldayExpanded ? 0 : Math.max(0, ordered.length - cap);
+    const shown = hidden ? ordered.slice(0, cap) : ordered;
+
     return html`<div class="allday">
-      ${items.map((e) => {
+      ${shown.map((e) => {
         // An all-day `#Away` is the common case for a tag, not an edge one, so
         // the chips ride along through all three of these shapes.
         const ttl = html`${e.title}${this._renderTags(e)}`;
@@ -305,6 +333,14 @@ export class DaySpineCard extends LitElement {
           </div>
         </div>`;
       })}
+      ${hidden || this._alldayExpanded
+        ? html`<button
+            class="more-btn allday-more"
+            @click=${() => (this._alldayExpanded = !this._alldayExpanded)}
+          >
+            ${this._alldayExpanded ? "Show fewer" : `+${hidden} more all day`}
+          </button>`
+        : nothing}
     </div>`;
   }
 

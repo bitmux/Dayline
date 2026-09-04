@@ -298,6 +298,7 @@ dashboard is where people go to change how a dashboard looks; what the feed
 |---|---|---|
 | `entity` | — | The merged feed sensor. Required. |
 | `show_all_day` | `true` | The all-day region |
+| `max_all_day` | `4` | All-day entries drawn before the rest collapse behind a `+N more all day` line, expandable in place. Anything with a Done button or a tag about to fire is pulled to the front rather than collapsed. Set it to `20` to show every one, as before. The frame is also capped at two fifths of the card's height and scrolls past that, so it can never squeeze the day itself off the card |
 | `show_clock` | `true` | The clock in the header |
 | `show_day` | `true` | The big day name |
 | `show_headline` | `true` | The line under the day name |

@@ -74,6 +74,14 @@ export interface DaySpineCardConfig {
   type: string;
   entity: string;
   show_all_day?: boolean;
+  /**
+   * Most all-day entries drawn before the rest collapse behind a `+N more`
+   * line. The all-day frame is the day's header, and a header that eats
+   * two-thirds of a phone is not a header any more.
+   *
+   * Set high to keep the old behaviour of showing every one.
+   */
+  max_all_day?: number;
   show_sources?: boolean;
   show_legend?: boolean;
   /** The big day name in the header. */

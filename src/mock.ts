@@ -260,3 +260,53 @@ export const overlapping: SpineEntry[] = [
     priority: "high",
   },
 ];
+
+/**
+ * Eight all-day events and almost nothing else — a real production day, and the
+ * case that showed the all-day frame eating two-thirds of a phone with the
+ * actual day scrolling in the sliver underneath.
+ *
+ * The tagged one and the actionable one are deliberately last in this list, so
+ * the harness proves they are pulled forward past the birthdays rather than
+ * collapsing behind them.
+ */
+export const manyAllDay: SpineEntry[] = [
+  ...["Kid birthday", "Trash day", "Payday", "Library books due", "Anniversary", "Rent due"].map(
+    (title, i): SpineEntry => ({
+      id: `cal:allday-${i}`,
+      start: at(0),
+      all_day: true,
+      kind: "calendar",
+      source: i % 2 ? "Google" : "CalDAV",
+      title,
+    }),
+  ),
+  {
+    id: "cal:vacation",
+    start: at(0),
+    all_day: true,
+    kind: "calendar",
+    source: "Google",
+    title: "Ski trip",
+    tags: ["Away"],
+    tag_state: "will_fire",
+  },
+  {
+    id: "todo:bins-many",
+    start: at(0),
+    all_day: true,
+    kind: "todo",
+    source: "Tasks",
+    title: "Bins to the curb",
+    sticky: true,
+    action: { label: "Done", service: "todo.update_item", target: { entity_id: "todo.household" } },
+  },
+  {
+    id: "cal:dinner-many",
+    start: offset(90),
+    end: offset(210),
+    kind: "calendar",
+    source: "Google",
+    title: "Dinner with the neighbours",
+  },
+];

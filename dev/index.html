@@ -131,6 +131,36 @@ mount(
   "height:460px",
 );
 
+// Byron's production day, 4 September: eight all-day events and one visible
+// spine row. Fixed height, because the whole complaint was about a phone.
+mount(
+  "Eight all-day events · frame capped, tagged and actionable pulled forward",
+  {
+    entries: mock.manyAllDay,
+    headline: "4 September · 1 left today",
+    now: "Afternoon · house quiet, doors locked",
+    sources: SOURCES,
+  },
+  {},
+  {},
+  false,
+  "height:460px",
+);
+
+mount(
+  "Eight all-day events · max_all_day raised, old behaviour intact",
+  {
+    entries: mock.manyAllDay,
+    headline: "4 September · 1 left today",
+    now: "Afternoon · house quiet, doors locked",
+    sources: SOURCES,
+  },
+  {},
+  { max_all_day: 20 },
+  false,
+  "height:460px",
+);
+
 mount("Empty day · sun and now marker remain", {
   entries: mock.emptyDay,
   headline: "Nothing scheduled.",

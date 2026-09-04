@@ -231,6 +231,21 @@ export const styles = css`
 
   /* ---------- all-day ---------- */
 
+  /*
+   * The count cap in the card does the real work; this is the safety net under
+   * it. On a short card at phone width even four all-day rows can leave the
+   * spine a couple of pixels tall, and expanding the frame deliberately should
+   * not be able to swallow the day either.
+   *
+   * So the frame may never take more than two fifths of the card. Past that it
+   * scrolls — which is the nested scroller worth avoiding as a primary
+   * mechanism, and exactly right as a last resort, because by then the
+   * alternative is a spine with no room to exist.
+   *
+   * The percentage resolves against the card only when the card has a definite
+   * height. Under rows:auto it resolves to none, which is correct: nothing is
+   * being crushed there, the card simply grows.
+   */
   .allday {
     display: flex;
     flex-direction: column;
@@ -238,6 +253,12 @@ export const styles = css`
     padding: 12px 14px;
     border-radius: var(--radius-md);
     background: var(--ds-raised);
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: 40%;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    overscroll-behavior: contain;
   }
   .allday-item {
     display: flex;
@@ -255,6 +276,12 @@ export const styles = css`
     flex: 1;
     min-width: 0;
   }
+  /* Indented to the text column, so it reads as the end of the list rather
+     than another entry with a missing icon. */
+  .allday-more {
+    margin-left: 28px;
+    font-size: 13.5px;
+  }
 
   /* ---------- spine ---------- */
 
@@ -270,7 +297,14 @@ export const styles = css`
   .spine {
     display: flex;
     flex-direction: column;
-    min-height: 0;
+    /*
+     * A floor, not the zero it used to be. Zero let the all-day frame and the
+     * legend squeeze the day itself down to a few pixels on a short card —
+     * a timeline card showing no timeline. The frame above shrinks and scrolls
+     * before this gives, because the day is the point and everything else on
+     * the card is context for it.
+     */
+    min-height: 72px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--ds-rail-past) transparent;

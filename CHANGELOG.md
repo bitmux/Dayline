@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+**The all-day frame no longer eats the day.** Eight all-day events on one real
+day took the top two-thirds of the card, leaving a single spine row visible
+underneath — a timeline card showing almost no timeline. All-day entries used to
+be exempt from the density budget on the grounds that they are the day's frame;
+that was written when a frame was one or two lines, and eight lines is not a
+frame.
+
+- `max_all_day` (default `4`) collapses the rest behind a `+N more all day`
+  line that expands in place — the same idiom as `+N more today` at the foot,
+  rather than a second scroll region competing with the spine's on touch. Set it
+  to `20` for the old behaviour.
+- Anything with a Done button, or a tag about to fire, is pulled to the front
+  instead of queueing behind eight birthdays. An `#Away` that is going to act is
+  not frame; it is the day happening.
+- **And a floor under the spine, which is the deeper fix.** On a short card at
+  phone width the header, the frame and the legend could squeeze the day itself
+  down to thirteen pixels. The frame now takes at most two fifths of the card
+  and shrinks before the spine does; the spine keeps a floor of 72px. A card
+  with `rows: auto` still grows to its content, so nothing changes there.
+
 **The integration's settings caught up with the labels.** Most of what this
 config flow used to ask has not been a setting since labels arrived, and the
 stale version of a question is worse than no question — two places claiming to
