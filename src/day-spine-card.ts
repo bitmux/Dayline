@@ -32,6 +32,13 @@ const DEFAULTS = {
   recent_ttl: 300,
   load_fonts: true,
   show_clock: true,
+  show_day: true,
+  show_headline: true,
+  show_sun: true,
+  show_past: true,
+  show_tags: true,
+  show_progress: true,
+  time_format: "auto" as "auto" | "12" | "24",
   show_weather: true,
   use_ha_theme: false,
   show_duration: true,
@@ -140,6 +147,23 @@ export class DaySpineCard extends LitElement {
     return 6;
   }
 
+  /**
+   * How this card asks to be sized in a sections dashboard.
+   *
+   * A full-width column by default, and tall, because that is what it is for —
+   * a day read at a glance from across the room, not a tile. But every one of
+   * these is a default the user can drag, which is why `columns` is 12 rather
+   * than `"full"`: `"full"` would enforce the width and take the choice away,
+   * and someone who wants this at half width is not wrong, only unusual.
+   *
+   * `rows: "auto"` is available to them too and is worth knowing about: the
+   * card sizes to its content, which grows and shrinks through the day, so the
+   * things underneath it move around. Fixed height is the recommendation.
+   */
+  public getGridOptions(): Record<string, unknown> {
+    return { columns: 12, rows: 10, min_columns: 6, min_rows: 4 };
+  }
+
   public static getStubConfig(hass?: HomeAssistant): DaySpineCardConfig {
     // The sensor is named after the config entry's title, so an integration set
     // up as "Dayline" produces `sensor.dayline` and one left at the default
@@ -198,8 +222,8 @@ export class DaySpineCard extends LitElement {
   private _renderHeader(day: string, sub: string): TemplateResult {
     return html`<div class="hdr">
       <div class="hdr-day">
-        <div class="day">${day}</div>
-        ${sub ? html`<div class="sub">${sub}</div>` : nothing}
+        ${this._config.show_day ? html`<div class="day">${day}</div>` : nothing}
+        ${sub && this._config.show_headline ? html`<div class="sub">${sub}</div>` : nothing}
       </div>
       ${this._renderClock()}
     </div>`;
@@ -318,7 +342,7 @@ export class DaySpineCard extends LitElement {
    * them yet — a chip that looked live would be claiming something untrue.
    */
   private _renderTags(e: SpineEntry): TemplateResult | typeof nothing {
-    if (!e.tags?.length) return nothing;
+    if (!e.tags?.length || !this._config.show_tags) return nothing;
     // Inert unless the feed says otherwise. A chip that claims the house is
     // about to act should have to earn it; one that stays quiet is only ever
     // under-promising.
@@ -389,7 +413,8 @@ export class DaySpineCard extends LitElement {
    * The progress bar on a running event: it fills left to right toward the end
    * time on the right, with the time left riding the middle of the line.
    */
-  private _renderProgress(row: SpineRow): TemplateResult {
+  private _renderProgress(row: SpineRow): TemplateResult | typeof nothing {
+    if (!this._config.show_progress) return nothing;
     const pct = Math.round((row.progress ?? 0) * 100);
     return html`<div class="prog">
       <div class="prog-track" role="progressbar" aria-valuenow=${pct} aria-valuemin="0" aria-valuemax="100">
@@ -502,6 +527,7 @@ export class DaySpineCard extends LitElement {
     return entries.filter((e) => {
       if (!e?.start || !e?.title) return false;
       if (e.kind === "event" && !this._config.recent_events) return false;
+      if (e.kind === "sun" && !this._config.show_sun) return false;
       const expires = e.expires
         ? Date.parse(e.expires)
         : e.kind === "event"
@@ -541,13 +567,18 @@ export class DaySpineCard extends LitElement {
       else past.push(e);
     }
 
+    // Switched off is not the same as collapsed: entries the config has hidden
+    // are gone, not counted on the `+N more` row, because nobody is waiting to
+    // be shown something they asked never to see.
+    const shownPast = cfg.show_past ? past : [];
+
     // The budget is computed whether or not the card is expanded, so the overflow
     // row can still say how many entries it is holding open.
-    let budgetedPast = past;
-    if (past.length > cfg.max_past) {
+    let budgetedPast = shownPast;
+    if (shownPast.length > cfg.max_past) {
       // Keep the most recent. Recent events are counted separately — they are the
       // freshest thing on the card and the shortest-lived.
-      budgetedPast = past.slice(past.length - cfg.max_past);
+      budgetedPast = shownPast.slice(shownPast.length - cfg.max_past);
     }
 
     // Future: high priority is never collapsed; low goes first.
@@ -567,10 +598,10 @@ export class DaySpineCard extends LitElement {
     }
 
     const hidden = [
-      ...past.filter((e) => !budgetedPast.includes(e)),
+      ...shownPast.filter((e) => !budgetedPast.includes(e)),
       ...future.filter((e) => !budgetedFuture.includes(e)),
     ];
-    const keptPast = this._expanded ? past : budgetedPast;
+    const keptPast = this._expanded ? shownPast : budgetedPast;
     const keptFuture = this._expanded ? future : budgetedFuture;
 
     // Everything before the marker, back in time order. Live rows are never
@@ -661,6 +692,9 @@ export class DaySpineCard extends LitElement {
       hour: "numeric",
       minute: "2-digit",
       timeZone: this._tz,
+      // Undefined rather than a guess: leaving it out is what lets the locale
+      // decide, which is right nearly always and is why `auto` is the default.
+      hour12: this._config.time_format === "auto" ? undefined : this._config.time_format === "12",
     }).format(new Date(ms));
     return stripMeridiem ? out.replace(/\s*[APap][.\s]*[Mm][.\s]*$/, "").trim() : out;
   }

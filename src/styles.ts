@@ -51,6 +51,12 @@ export const styles = css`
      * @media query would never fire.
      */
     container-type: inline-size;
+    /*
+     * Fill whatever the dashboard gives us. In a sections view that is the
+     * height the user dragged; anywhere else the parent is auto and this
+     * resolves to auto, which is the old behaviour exactly.
+     */
+    height: 100%;
   }
 
   /*
@@ -103,6 +109,10 @@ export const styles = css`
     gap: var(--space-6);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    height: 100%;
+    box-sizing: border-box;
+    /* The corners are the design; content must not square them off. */
+    overflow: hidden;
   }
 
   /* ---------- header ---------- */
@@ -228,9 +238,22 @@ export const styles = css`
 
   /* ---------- spine ---------- */
 
+  /*
+   * The spine is what gives when the card is shorter than its day. Header,
+   * all-day frame and footer are fixed points a person navigates by; the middle
+   * is the part that is honestly a list, so the middle is what scrolls.
+   *
+   * min-height:0 because a flex child will not shrink below its content
+   * without it, and the overflow would leave the card instead of entering the
+   * scroller — which looks exactly like a broken layout.
+   */
   .spine {
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--ds-rail-past) transparent;
   }
   .row {
     display: flex;

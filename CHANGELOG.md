@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+**The card honours the sections grid, and says what size it wants.** It asks for
+the full width of one section and ten rows — it is a sidebar for the day, not a
+tile — and both are defaults you can drag rather than rules. Give it a fixed
+height and it fills exactly that: the spine scrolls inside while the header, the
+all-day frame and the footer stay where you left them. `rows: auto` works too,
+but the day grows and shrinks through the day and everything below the card
+moves with it, so fixed height is the recommendation.
+
+**Nine more card options, because a dashboard is where people go to change how a
+dashboard looks.** `show_clock`, `show_day`, `show_headline`, `show_past`,
+`show_sun`, `show_tags`, `show_progress`, and `time_format` (`auto`, `12` or
+`24`) join the existing toggles. Hiding something is not the same as collapsing
+it: switched-off entries are gone, not counted on the `+N more today` row,
+because nobody is waiting to be shown what they asked never to see.
+
 **A clock in the header, and the source pills moved to the foot.** Eight
 calendars overflowed a header built for three. The pills are reference material
 — you read them when something looks wrong, not every time you glance at the

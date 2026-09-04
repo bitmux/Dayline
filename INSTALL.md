@@ -152,13 +152,42 @@ entity: sensor.day_spine
 > (Ctrl/Cmd-Shift-R). On a YAML dashboard nothing is registered for you: add
 > that URL to your own `resources:`, type **module**.
 
-Every key below is optional except `entity`.
+### Size and placement
+
+**This card is designed to be a full-width column, run at its full height — a
+sidebar for the day, not a tile.** In a sections dashboard it asks for the whole
+width of one section and ten rows, and you can drag both from the card's own
+layout controls.
+
+Height is worth a deliberate choice. **Fixed height is the recommendation**: the
+card fills what you give it, and the spine scrolls inside while the header,
+the all-day frame and the footer stay put. `rows: auto` also works, but the day
+grows and shrinks through the day, so everything below the card moves with it.
+
+If the height you pick is shorter than the day, nothing is lost — the spine
+scrolls, and the density budget below decides what is worth showing first.
+
+### Options
+
+Every key below is optional except `entity`. They live on the card because the
+dashboard is where people go to change how a dashboard looks; what the feed
+*says* is configured in the integration.
 
 | Key | Default | What it does |
 |---|---|---|
 | `entity` | — | The merged feed sensor. Required. |
 | `show_all_day` | `true` | The all-day region |
-| `show_sources` | `true` | The calendar pills |
+| `show_clock` | `true` | The clock in the header |
+| `show_day` | `true` | The big day name |
+| `show_headline` | `true` | The line under the day name |
+| `show_past` | `true` | Entries whose time has passed. Off makes the card purely forward-looking. |
+| `show_sun` | `true` | Sunrise and sunset rows |
+| `show_tags` | `true` | The `#tag` chips beside event titles |
+| `show_progress` | `true` | The progress bar on entries currently running |
+| `time_format` | `auto` | `auto` follows your Home Assistant locale; `12` or `24` overrides it |
+| `font_family` | — | A CSS font stack for the whole card, e.g. `Arial, sans-serif` |
+| `heading_font_family` | — | Overrides `font_family` for the day name and clock alone |
+| `show_sources` | `true` | The calendar pills, at the foot of the card |
 | `show_legend` | `true` | The explanatory footer. Turn it off once people stop needing it. |
 | `legend` | — | Replace the footer text |
 | `interactive_rows` | `false` | Rows with an entity open more-info on tap |

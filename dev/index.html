@@ -82,6 +82,22 @@ mount("Eight calendars · pills wrap at the foot, clock in the header", {
   stale_message: "Soccer club calendar is not updating. Anything on it is missing from today.",
 });
 
+// A sections-view card with a fixed row count: the spine has to scroll inside
+// rather than the content escaping the card's rounded corners.
+mount(
+  "Fixed height · 420px, as a sections grid cell",
+  {
+    entries: mock.busy,
+    headline: "9 left today",
+    now: "Afternoon · house quiet, doors locked",
+    sources: SOURCES,
+  },
+  {},
+  {},
+  false,
+  "height:460px",
+);
+
 mount("Empty day · sun and now marker remain", {
   entries: mock.emptyDay,
   headline: "Nothing scheduled.",

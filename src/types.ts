@@ -76,6 +76,23 @@ export interface DaySpineCardConfig {
   show_all_day?: boolean;
   show_sources?: boolean;
   show_legend?: boolean;
+  /** The big day name in the header. */
+  show_day?: boolean;
+  /** The line under the day name — "4 left today", or whatever the feed says. */
+  show_headline?: boolean;
+  /** Sunrise and sunset rows. The feed can also drop them; this hides them per card. */
+  show_sun?: boolean;
+  /** Entries whose time has passed. Off makes the card purely forward-looking. */
+  show_past?: boolean;
+  /** The `#tag` chips beside event titles. */
+  show_tags?: boolean;
+  /** The progress bar on entries that are currently running. */
+  show_progress?: boolean;
+  /**
+   * Clock format. `auto` follows the Home Assistant locale, which is almost
+   * always what you want; the other two are for when it isn't.
+   */
+  time_format?: "auto" | "12" | "24";
   interactive_rows?: boolean;
   max_past?: number;
   max_future?: number;
