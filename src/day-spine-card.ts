@@ -31,6 +31,7 @@ const DEFAULTS = {
   recent_events: true,
   recent_ttl: 300,
   load_fonts: true,
+  show_clock: true,
   show_weather: true,
   use_ha_theme: false,
   show_duration: true,
@@ -158,14 +159,14 @@ export class DaySpineCard extends LitElement {
     const loading = !s || s.state === "unavailable" || s.state === "unknown";
 
     const attrs = s?.attributes ?? {};
-    const dayName = new Intl.DateTimeFormat(this._locale, { weekday: "long" }).format(
-      new Date(this._now),
-    );
+    const dayName = new Intl.DateTimeFormat(this._locale, {
+      weekday: "long",
+      timeZone: this._tz,
+    }).format(new Date(this._now));
 
     if (loading) {
       return html`<div class="card ${cfg.use_ha_theme ? "themed" : ""}">
-        ${this._renderHeader(dayName, attrs.headline ?? "…", this._sources(attrs, []))}
-        ${this._renderSkeleton()}
+        ${this._renderHeader(dayName, attrs.headline ?? "…")} ${this._renderSkeleton()}
         ${cfg.show_legend ? this._renderFoot(cfg.legend ?? DEFAULT_LEGEND, false) : nothing}
       </div>`;
     }
@@ -182,33 +183,63 @@ export class DaySpineCard extends LitElement {
     const staleMessage: string | undefined = attrs.stale_message || undefined;
 
     return html`<div class="card ${cfg.use_ha_theme ? "themed" : ""}">
-      ${this._renderHeader(dayName, attrs.headline ?? "", sources)}
+      ${this._renderHeader(dayName, attrs.headline ?? "")}
       ${cfg.show_all_day && allDay.length ? this._renderAllDay(allDay) : nothing}
       <div class="spine">
         ${rows.map((r) => this._renderRow(r))}
         ${hidden.length ? this._renderMore(hidden.length) : nothing}
       </div>
+      ${cfg.show_sources && sources.length ? this._renderSources(sources) : nothing}
       ${staleMessage ? this._renderFoot(staleMessage, true) : nothing}
       ${cfg.show_legend ? this._renderFoot(cfg.legend ?? DEFAULT_LEGEND, false) : nothing}
     </div>`;
   }
 
-  private _renderHeader(day: string, sub: string, sources: SpineSource[]): TemplateResult {
+  private _renderHeader(day: string, sub: string): TemplateResult {
     return html`<div class="hdr">
-      <div>
+      <div class="hdr-day">
         <div class="day">${day}</div>
         ${sub ? html`<div class="sub">${sub}</div>` : nothing}
       </div>
-      ${this._config.show_sources && sources.length
-        ? html`<div class="pills">
-            ${sources.map(
-              (src) =>
-                html`<span class="pill ${src.stale ? "stale" : ""}" title=${src.stale ? "Not updating" : ""}
-                  >${src.label}</span
-                >`,
-            )}
-          </div>`
-        : nothing}
+      ${this._renderClock()}
+    </div>`;
+  }
+
+  /**
+   * The time, in the header where the source pills used to be.
+   *
+   * Driven by the same `_now` as the marker on the spine, so the two can never
+   * disagree — a clock that says 6:14 beside a marker sitting at 6:15 would
+   * undermine the one thing this card is for. That also means it steps on the
+   * minute rather than ticking seconds, which is the design and not a shortcut.
+   */
+  private _renderClock(): TemplateResult | typeof nothing {
+    if (!this._config.show_clock) return nothing;
+    const full = this._fmt(this._now, false);
+    const bare = this._fmt(this._now, true);
+    // Whatever the locale appends after the digits — "PM" in en-US, nothing at
+    // all in a 24-hour locale. Set smaller so the numbers stay the loud part.
+    const meridiem = full.startsWith(bare) ? full.slice(bare.length).trim() : "";
+    return html`<div class="clock">
+      ${bare}${meridiem ? html`<span class="mer">${meridiem}</span>` : nothing}
+    </div>`;
+  }
+
+  /**
+   * The source pills, at the foot of the card rather than the head.
+   *
+   * Eight calendars overflowed a header built for three, and the pills are
+   * reference material — you read them when something looks wrong, not every
+   * time you glance at the card. The bottom is where reference material goes.
+   */
+  private _renderSources(sources: SpineSource[]): TemplateResult {
+    return html`<div class="foot pills">
+      ${sources.map(
+        (src) =>
+          html`<span class="pill ${src.stale ? "stale" : ""}" title=${src.stale ? "Not updating" : ""}
+            >${src.label}</span
+          >`,
+      )}
     </div>`;
   }
 
@@ -440,10 +471,29 @@ export class DaySpineCard extends LitElement {
     return this._hass?.locale?.language ?? this._hass?.language ?? navigator.language;
   }
 
+  /**
+   * The instance's timezone, so the card shows the house's day rather than the
+   * browser's. Only formatting uses it — every comparison in here is between
+   * absolute instants, which no timezone can change.
+   */
+  private get _tz(): string | undefined {
+    return this._hass?.config?.time_zone;
+  }
+
   /** True when the entry began on an earlier day than the one being shown. */
   private _startedEarlier(e: SpineEntry): boolean {
-    const start = new Date(Date.parse(e.start));
-    return start.toDateString() !== new Date(this._now).toDateString() && start.getTime() < this._now;
+    const start = Date.parse(e.start);
+    return this._dayKey(start) !== this._dayKey(this._now) && start < this._now;
+  }
+
+  /** Which calendar day an instant falls on, in the instance's timezone. */
+  private _dayKey(ms: number): string {
+    return new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone: this._tz,
+    }).format(new Date(ms));
   }
 
   /** Drop entries that have aged out, and event rows the config has switched off. */
@@ -596,7 +646,7 @@ export class DaySpineCard extends LitElement {
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
     if (end.toDateString() === tomorrow.toDateString()) return `${time} tomorrow`;
-    return `${time} ${new Intl.DateTimeFormat(this._locale, { weekday: "short" }).format(end)}`;
+    return `${time} ${new Intl.DateTimeFormat(this._locale, { weekday: "short", timeZone: this._tz }).format(end)}`;
   }
 
   private _prio(e: SpineEntry): Priority {
@@ -610,6 +660,7 @@ export class DaySpineCard extends LitElement {
     const out = new Intl.DateTimeFormat(this._locale, {
       hour: "numeric",
       minute: "2-digit",
+      timeZone: this._tz,
     }).format(new Date(ms));
     return stripMeridiem ? out.replace(/\s*[APap][.\s]*[Mm][.\s]*$/, "").trim() : out;
   }

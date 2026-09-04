@@ -85,6 +85,11 @@ export interface DaySpineCardConfig {
   recent_ttl?: number;
   load_fonts?: boolean;
   /**
+   * The clock in the header. On by default — a card about today should say what
+   * time it is, and the header had room once the source pills moved down.
+   */
+  show_clock?: boolean;
+  /**
    * A CSS `font-family` for the whole card, written exactly as you would in
    * CSS: `Arial, sans-serif`.
    *
@@ -121,6 +126,9 @@ export interface HassEntity {
 export interface HomeAssistant {
   states: Record<string, HassEntity>;
   locale?: { language: string };
+  /** The instance's own settings. `time_zone` is what makes the card show the
+   *  house's day rather than the browser's. */
+  config?: { time_zone?: string };
   language?: string;
   callService(
     domain: string,

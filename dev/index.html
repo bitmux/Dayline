@@ -61,11 +61,25 @@ function mount(label, attributes, opts = {}, config = {}, narrow = false, style 
 
 const SOURCES = [{ label: "Google" }, { label: "CalDAV" }];
 
+// Eight calendars is a real household, and what overflowed the old header.
+const MANY_SOURCES = [
+  "Admin", "Wife", "Kid", "Family", "School district", "Soccer club",
+  "Holidays in United States", "House schedule",
+].map((label) => ({ label, stale: label === "Soccer club" }));
+
 mount("Mid-afternoon · the ordinary case", {
   entries: mock.ordinary,
   headline: "2 September · everyone home by 6",
   now: "Afternoon · house quiet, doors locked",
   sources: SOURCES,
+});
+
+mount("Eight calendars · pills wrap at the foot, clock in the header", {
+  entries: mock.ordinary,
+  headline: "3 September · 4 left today",
+  now: "Afternoon · house quiet, doors locked",
+  sources: MANY_SOURCES,
+  stale_message: "Soccer club calendar is not updating. Anything on it is missing from today.",
 });
 
 mount("Empty day · sun and now marker remain", {

@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+**A clock in the header, and the source pills moved to the foot.** Eight
+calendars overflowed a header built for three. The pills are reference material
+— you read them when something looks wrong, not every time you glance at the
+card — so they now wrap at the bottom, above the legend, still tinting
+themselves when a source goes stale. `show_sources` governs them there.
+
+In their place, the time, in the card's heading face and sized so it cannot push
+the day down the page. It runs off the same clock as the now marker, so the two
+can never disagree, which means it steps on the minute rather than ticking
+seconds. `show_clock: false` removes it.
+
+While in there: times, the day name and the same-day test now all use the
+instance's own timezone rather than the browser's, so a tablet whose clock has
+wandered still shows the house's day. Only display was ever affected —
+every comparison in the card is between absolute instants.
+
 **Pick your own font.** `font_family: Arial, sans-serif` on the card, written
 exactly as you would in CSS, replaces both typefaces; `heading_font_family`
 overrides the day name alone. Pair either with `load_fonts: false` to stop

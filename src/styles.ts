@@ -113,6 +113,35 @@ export const styles = css`
     justify-content: space-between;
     gap: var(--space-4);
   }
+  /* The day name is what gives way when the card is narrow, never the clock. */
+  .hdr-day {
+    min-width: 0;
+  }
+
+  /*
+   * The clock. Bounded above so it cannot grow past the two lines beside it and
+   * push the day down the page — the whole reason this card exists is what is
+   * under the header, and the header is not allowed to eat it.
+   *
+   * Tabular figures because a proportional 1 is narrower than a 0, and a clock
+   * that shifts sideways every minute is the sort of thing you cannot un-see.
+   */
+  .clock {
+    font-family: var(--font-heading);
+    font-size: clamp(26px, 8.5cqw, 40px);
+    line-height: 1;
+    color: var(--color-neutral-300);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    flex: none;
+  }
+  .clock .mer {
+    font-size: 0.4em;
+    margin-left: 0.16em;
+    letter-spacing: 0.06em;
+    color: var(--color-neutral-500);
+  }
   .day {
     font-family: var(--font-heading);
     font-weight: 400;
@@ -125,10 +154,12 @@ export const styles = css`
     color: var(--color-neutral-500);
     margin-top: 4px;
   }
+  /* At the foot of the card now, and wrapping: eight calendars overflowed a
+     header built for three. */
   .pills {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
-    flex: none;
   }
   .pill {
     font: 600 10px/1 ui-monospace, Menlo, monospace;
