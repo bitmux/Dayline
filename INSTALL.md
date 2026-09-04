@@ -263,6 +263,12 @@ a tick, because "not now" should not look as inviting as the thing the row is
 asking for. There is no third: a row is one line of a timeline, and a third
 button makes it a dialog.
 
+In YAML the four button fields are flat — `confirm_label`, `confirm_action`,
+`cancel_label`, `cancel_action` — because a section in an action editor groups
+fields visually and nothing more, the same way `light.turn_on` takes
+`brightness` from inside its collapsed section. Filling them in from the UI
+gets this right for you.
+
 Calling `show` again with the same **id** *replaces* the row rather than stacking
 a copy, so it is safe from an automation that runs on every state change.
 

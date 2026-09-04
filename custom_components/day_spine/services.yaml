@@ -80,6 +80,12 @@ show:
         dialog when the card has interactive rows switched on.
       selector:
         entity:
+    # Sections group fields in the editor and nothing more — the data Home
+    # Assistant sends is flat, exactly as `light.turn_on` takes `brightness`
+    # from inside its `additional_fields` section. So these names have to be
+    # unique across the whole action, not just within their section. Called
+    # `label` and `action` they collided, the UI sent one of each at the top
+    # level, and every call from the editor failed schema validation.
     confirm:
       name: Confirm button
       description: >-
@@ -87,13 +93,13 @@ show:
         a button on a dashboard can do.
       collapsed: true
       fields:
-        label:
+        confirm_label:
           name: Label
           description: What the button says.
           example: Close it
           selector:
             text:
-        action:
+        confirm_action:
           name: Action
           description: >-
             What pressing it does. Perform an action, open a more-info dialog,
@@ -108,13 +114,13 @@ show:
         usually day_spine.dismiss with this row's id.
       collapsed: true
       fields:
-        label:
+        cancel_label:
           name: Label
           description: What the button says.
           example: Leave it open
           selector:
             text:
-        action:
+        cancel_action:
           name: Action
           description: What pressing it does.
           selector:

@@ -21,10 +21,17 @@ PLATFORMS = [Platform.SENSOR]
 # in a hundred times — perform an action, open more-info, navigate, open a URL.
 # Validating it loosely on purpose: this is HA's schema, it grows, and rejecting
 # a key we have not heard of would break on their release rather than ours.
+#
+# The pair arrives flat — `confirm_label`, `confirm_action` — because a section
+# in services.yaml is a visual grouping and nothing else; Home Assistant sends
+# the fields inside one at the top level. The nested `confirm: {label, action}`
+# spelling is still accepted for anyone who wrote it by hand before that was
+# understood, but nothing produces it any more.
+_ACTION = vol.Any(dict, None)
 _BUTTON = vol.Schema(
     {
         vol.Optional("label"): cv.string,
-        vol.Optional("action"): vol.Any(dict, None),
+        vol.Optional("action"): _ACTION,
     }
 )
 
@@ -38,6 +45,10 @@ SHOW_SCHEMA = vol.Schema(
         vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=1)),
         vol.Optional("start"): cv.string,
         vol.Optional("entity_id"): cv.entity_id,
+        vol.Optional("confirm_label"): cv.string,
+        vol.Optional("confirm_action"): _ACTION,
+        vol.Optional("cancel_label"): cv.string,
+        vol.Optional("cancel_action"): _ACTION,
         vol.Optional("confirm"): _BUTTON,
         vol.Optional("cancel"): _BUTTON,
     }

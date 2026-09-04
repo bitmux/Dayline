@@ -491,8 +491,8 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         buttons = [
             button
             for button in (
-                _button(data.get("confirm"), "Do it"),
-                _button(data.get("cancel"), "Not now"),
+                _button(_spec(data, "confirm"), "Do it"),
+                _button(_spec(data, "cancel"), "Not now"),
             )
             if button
         ]
@@ -706,6 +706,25 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         verb = "calendars are" if len(bad) > 1 else "calendar is"
         them = "them" if len(bad) > 1 else "it"
         return f"{names} {verb} not updating. Anything on {them} is missing from today."
+
+
+def _spec(data: dict[str, Any], which: str) -> dict[str, Any] | None:
+    """Pull one button out of the call, whichever way it was written.
+
+    A section in `services.yaml` groups fields in the editor and nothing more —
+    what arrives is flat, the same way `light.turn_on` takes `brightness` from
+    inside its `additional_fields` section. So the editor sends
+    `confirm_label` and `confirm_action` at the top level, and the nested
+    `confirm: {label, action}` shape only ever came from hand-written YAML
+    following our own early documentation. Both are read; neither is required.
+    """
+    nested = data.get(which)
+    spec = dict(nested) if isinstance(nested, dict) else {}
+    if data.get(f"{which}_label") is not None:
+        spec["label"] = data[f"{which}_label"]
+    if data.get(f"{which}_action") is not None:
+        spec["action"] = data[f"{which}_action"]
+    return spec or None
 
 
 def _button(spec: dict[str, Any] | None, fallback: str) -> dict[str, Any] | None:

@@ -15,7 +15,11 @@ a URL. They are called *confirm* and *cancel* because that is what two buttons o
 one row nearly always are, but nothing enforces it and one button is perfectly
 normal. The second is drawn quieter and without a tick, because "not now" should
 not look as inviting as the thing being asked for. There is no third: a row is
-one line of a timeline, and a third button makes it a dialog.
+one line of a timeline, and a third button makes it a dialog. In YAML the four
+fields are flat — `confirm_label`, `confirm_action`, `cancel_label`,
+`cancel_action` — because an action editor's sections group fields visually and
+nothing more; what Home Assistant sends is flat, and two sections both offering
+a `label` collided badly enough that every call built in the UI was rejected.
 
 Calling `show` again with the same id replaces the row rather than stacking a
 copy, so it is safe from an automation that runs on every state change.

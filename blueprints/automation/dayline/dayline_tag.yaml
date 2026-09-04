@@ -21,6 +21,12 @@ blueprint:
     Calendars are read every five minutes, so a tag added to an event that
     starts within the next few minutes may not fire at all.
   domain: automation
+  # What this was written and tested against. Nothing in it needs a version this
+  # new — the plural `triggers:`/`actions:` keys below want 2024.10 — but a
+  # blueprint that half-works is worse than one Home Assistant declines to
+  # import, and this is the version anyone getting it from us is running.
+  homeassistant:
+    min_version: "2026.8.3"
   source_url: https://github.com/bitmux/Dayline/blob/main/blueprints/automation/dayline/dayline_tag.yaml
   input:
     tag:
