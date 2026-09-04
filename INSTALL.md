@@ -183,8 +183,8 @@ calendar is not allowed to fire" — never "nothing is listening".
 
 - **Labels and tags** — read-only. What is labelled right now, which calendars
   may act, which tags have been seen today, and where to change each.
-- **Calendar wording** — each calendar's pill label, default priority, and
-  whether it is a *schedule* calendar. Order matters: when two calendars carry
+- **Calendar wording** — each calendar's pill label, colour, default priority,
+  and whether it is a *schedule* calendar. Order matters: when two calendars carry
   the same event worded differently, the first one listed supplies the wording.
   Which calendars appear here is the `Dayline` label's business, not this page's.
 - **Sentences** — what the house does, in plain words, matched against text in
@@ -197,6 +197,35 @@ calendar is not allowed to fire" — never "nothing is listening".
   list for anyone not using labels.
 - **Tuning** — sun rows, merge similarity, excluded titles, timings, and
   optional templates for the headline and the "Now" subline.
+
+### Calendar colour — the *who* axis
+
+The spine already answers *what* and *when*. Colour answers *who*: pick one per
+calendar in **Configure → Calendar wording**, and it tints that calendar's pill
+in the legend and the dot beside each of its entries.
+
+**Home Assistant does not pass a calendar's own colour through.** Your CalDAV
+server almost certainly stores one — `{http://apple.com/ns/ical/}calendar-color`
+is a de facto standard that Radicale, Baikal, Nextcloud, SOGo and Fastmail all
+serve, and Google has `backgroundColor` on its calendarList entries — but a
+Home Assistant calendar entity has no colour field anywhere, and neither does
+the event data `calendar.get_events` returns. There is nothing to read, so the
+colour is chosen here instead. (It was never quite the calendar's colour anyway:
+in Google it lives on *your subscription*, so two people sharing a calendar
+already see different colours.)
+
+Seven to choose from — blue, cyan, teal, green, violet, magenta, rose — plus
+*default*, which means no colour of its own.
+
+Terracotta and sage are deliberately not on the list. They already mean
+something on this card: terracotta is **now**, sage is **the house acting on its
+own**. A calendar wearing either would be making a claim about the day rather
+than about whose day it is.
+
+The colour reaches the legend pill, the ring on an upcoming entry's dot, a
+muted version of the past dot, and the icon on an all-day row. It deliberately
+never touches the now marker, a running entry, or a sage sentence — where a
+colour already means something, meaning wins over identity.
 
 ### Schedule calendars
 

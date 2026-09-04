@@ -42,7 +42,7 @@
       },
       "calendars": {
         "title": "Calendar wording",
-        "description": "The {count} calendars currently on the spine. This is the one thing about a calendar a label cannot say for you.\n\nThe label is what the pill in the legend says; calendars sharing a label share a pill. Order matters: when two calendars carry the same event worded differently, the first listed supplies the wording.\n\nSet the role to “schedule” for a calendar that drives automations rather than describing people's plans — its events become House rows and each event's description becomes the sage sentence.\n\nTo add or remove a calendar, apply or remove the **{label}** label rather than editing anything here.",
+        "description": "The {count} calendars currently on the spine. This is the one thing about a calendar a label cannot say for you.\n\nThe label is what the pill in the legend says; calendars sharing a label share a pill. Order matters: when two calendars carry the same event worded differently, the first listed supplies the wording — and its colour.\n\nColour answers *who*, since the spine already answers what and when: it tints the calendar's pill and the dot beside each of its entries. Home Assistant does not pass a calendar's own colour through from CalDAV or Google — there is no field for it on a calendar entity — so this is where it is chosen. Terracotta and sage are not on the list: they already mean “now” and “the house acting on its own”.\n\nSet the role to “schedule” for a calendar that drives automations rather than describing people's plans — its events become House rows and each event's description becomes the sage sentence.\n\nTo add or remove a calendar, apply or remove the **{label}** label rather than editing anything here.",
         "data": {}
       },
       "sentences": {
@@ -106,6 +106,18 @@
       "options": {
         "people": "People — plans and appointments",
         "schedule": "Schedule — drives the house"
+      }
+    },
+    "color": {
+      "options": {
+        "default": "Default — no colour of its own",
+        "blue": "Blue",
+        "cyan": "Cyan",
+        "teal": "Teal",
+        "green": "Green",
+        "violet": "Violet",
+        "magenta": "Magenta",
+        "rose": "Rose"
       }
     }
   }

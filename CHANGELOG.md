@@ -2,6 +2,47 @@
 
 ## Unreleased
 
+**Calendars can carry a colour, which is the *who* axis.** The spine already
+answered what and when; a colour per calendar in Configure → Calendar wording
+now tints that calendar's pill in the legend and the dot beside each of its
+entries, so a glance tells you whose day you are looking at.
+
+Home Assistant gives us nothing to inherit here. Your CalDAV server almost
+certainly stores a colour — `{http://apple.com/ns/ical/}calendar-color` is a de
+facto standard across Radicale, Baikal, Nextcloud, SOGo and Fastmail, and Google
+has `backgroundColor` on its calendarList entries — but a Home Assistant
+calendar entity has no colour field, and neither does the data `get_events`
+returns. So it is chosen rather than read. (It was never really the calendar's
+colour anyway: in Google it belongs to your subscription, and two people sharing
+a calendar already see different ones.)
+
+Seven colours, no colour wheel. Names rather than hex, so a value survives a
+re-theme and so the card can resolve to shades already checked against both the
+Organic palette and a Home Assistant theme, light or dark. Terracotta and sage
+are not among them: they already mean **now** and **the house acting on its
+own**, and colour that means two things means neither. For the same reason the
+colour reaches the pill, the ring on an upcoming dot, a muted past dot and an
+all-day row's icon — and never the now marker, a running entry, or a sage
+sentence.
+
+**The now marker survives your theme.** Under `use_ha_theme` every accent shade
+collapses to the single `--primary-color`, which made the one mark that must
+never be mistaken for anything else the same colour as everything else the theme
+touched. It is now derived rather than deferred: the marker starts from the
+theme's *own* text colour — readable against that theme's card by construction —
+and mixes terracotta in, in oklab so the midpoint stays a colour someone would
+choose.
+
+Pinning a fixed terracotta would have been worse than the problem. On a warm
+background behind translucent cards, terracotta text on near-terracotta ground
+is unreadable, and a theme's background is not ours to predict. Deriving means
+contrast comes from the theme and identity comes from us. Measured on a
+deliberately hostile orange-glass theme, the marker reads at 2.93:1 where that
+theme's own body text manages 3.07:1 and the old deferred-to-primary behaviour
+managed 2.59:1 — no worse than the theme is on itself, and better than what it
+replaces. On the frosted and light themes it lands at 6.7:1 and 8.7:1, above
+both.
+
 **The all-day frame no longer eats the day.** Eight all-day events on one real
 day took the top two-thirds of the card, leaving a single spine row visible
 underneath — a timeline card showing almost no timeline. All-day entries used to

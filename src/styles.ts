@@ -44,6 +44,40 @@ export const styles = css`
        --primary-color, and anything drawn accent-on-accent disappears. */
     --ds-on-accent: var(--color-accent-200);
 
+    /*
+     * Calendar identity — the *who* axis, since the spine already answers what
+     * and when.
+     *
+     * Deliberately not theme-dependent. These are identities, not roles: the
+     * calendar that is teal should stay teal when the dashboard changes clothes,
+     * the way a highlighter does not change colour with the paper. They are also
+     * only ever drawn as a filled dot, a ring, or a small swatch — never as text
+     * on a background — so they need to be distinguishable, not readable, which
+     * is what lets one set work on light and dark ground alike.
+     *
+     * Hues near 25deg and 85deg are absent on purpose: terracotta already means
+     * *now* and sage already means *the house acting on its own*.
+     */
+    --cal-blue: #6aa9f0;
+    --cal-cyan: #4fc3d9;
+    --cal-teal: #45bfa5;
+    --cal-green: #7bc86c;
+    --cal-violet: #a98cf0;
+    --cal-magenta: #d987d3;
+    --cal-rose: #ef8098;
+
+    /*
+     * Now. The one mark on the card that must never be mistaken for anything
+     * else, and the only colour with a job important enough to survive a
+     * re-theme.
+     *
+     * Here it is simply the accent scale. The themed block is where the work
+     * is — see --ds-now-seed there.
+     */
+    --ds-now: var(--color-accent-500);
+    --ds-now-text: var(--color-accent-400);
+    --ds-now-halo: rgba(198, 113, 57, 0.22);
+
     display: block;
     /*
      * The fluid floor has to key off the card's own width, not the viewport: on a
@@ -97,6 +131,33 @@ export const styles = css`
     /* The theme's own answer to "text on the primary colour", because ours
        would be the primary colour. */
     --ds-on-accent: var(--text-primary-color, #fff);
+
+    /*
+     * Now, under someone else's theme — tilted toward terracotta rather than
+     * pinned to it.
+     *
+     * Deferring to --primary-color like the rest of the accent scale loses the
+     * distinction entirely: the marker becomes the same colour as every other
+     * themed thing on the card, and "where am I in the day" stops being
+     * answerable at a glance. But a fixed terracotta is worse in the other
+     * direction — on a warm background behind translucent cards, terracotta
+     * text on near-terracotta ground is unreadable, and a theme's background is
+     * not ours to predict.
+     *
+     * So each of these starts from the theme's own text colour, which is
+     * readable against that theme's card by construction, and mixes our hue in.
+     * Contrast comes from the theme; identity comes from us. On a light theme
+     * the mix lands as a dark burnt orange, on a dark one as a warm peach, and
+     * on an orange one it keeps roughly half the lightness distance the theme's
+     * own text has — never the zero distance a pinned hex would give.
+     *
+     * oklab because mixing through sRGB darkens and greys the midpoint; the
+     * whole value of this is that the midpoint stays a colour someone chose.
+     */
+    --ds-now-seed: #e07b39;
+    --ds-now: color-mix(in oklab, var(--ds-now-seed) 72%, var(--primary-text-color, #f9f4ed));
+    --ds-now-text: color-mix(in oklab, var(--ds-now-seed) 42%, var(--primary-text-color, #f9f4ed));
+    --ds-now-halo: color-mix(in oklab, var(--ds-now-seed) 30%, transparent);
 
     /*
      * The surface itself, on the same terms every other card gets.
@@ -192,15 +253,38 @@ export const styles = css`
     gap: 6px;
   }
   .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     font: 600 10px/1 ui-monospace, Menlo, monospace;
     padding: 5px 8px;
     border-radius: 999px;
     background: var(--ds-divider);
     color: var(--color-neutral-400);
   }
+  /*
+   * The key. Without it the coloured dots up the spine are decoration; with it
+   * they are an index, and the legend is where you go to read it.
+   *
+   * A swatch rather than tinting the pill's own text: the colours are chosen to
+   * be told apart at dot size on any ground, not to be legible as 10px type,
+   * and asking them to be both would mean a duller set that is worse at the one
+   * job colour has here.
+   */
+  .pill .swatch {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--cal, transparent);
+    flex: none;
+  }
   .pill.stale {
     background: var(--ds-alert);
     color: var(--color-accent-200);
+  }
+  /* A stale pill is making a different point, and the colour would compete. */
+  .pill.stale .swatch {
+    background: var(--color-accent-300);
   }
 
   /* A #tag a person typed into an event title, in the three states the feed
@@ -268,7 +352,7 @@ export const styles = css`
     color: var(--color-neutral-300);
   }
   .allday-item .icon {
-    color: var(--color-accent-2-400);
+    color: var(--cal, var(--color-accent-2-400));
     flex: none;
     margin-top: 1px;
   }
@@ -362,6 +446,14 @@ export const styles = css`
   .row.past .rail {
     background: var(--ds-rail-past);
   }
+  /*
+   * A past dot keeps a trace of whose it was, muted well down. Identity still
+   * helps when you are scanning back up the morning, but past has to keep
+   * reading as past — full strength here would make the finished half of the
+   * day louder than the half still to come.
+   *
+   * With no --cal this mixes the grey with itself, which is the grey.
+   */
   .row.past .rail::after {
     content: "";
     position: absolute;
@@ -370,7 +462,7 @@ export const styles = css`
     width: 10px;
     height: 10px;
     border-radius: 999px;
-    background: var(--ds-dot-past);
+    background: color-mix(in srgb, var(--cal, var(--ds-dot-past)) 45%, var(--ds-dot-past));
   }
   .row.past .c {
     padding: 10px 0 16px;
@@ -532,19 +624,26 @@ export const styles = css`
   }
 
   /* now */
+  /*
+   * The now marker draws from --ds-now rather than the accent scale directly.
+   * That indirection is the whole point: in themed mode every accent shade
+   * collapses to the single --primary-color, and the one mark on the card that
+   * must never be mistaken for anything else would become the same colour as
+   * everything else the theme touches. See the --ds-now block on :host.
+   */
   .row.now .t {
     font-family: var(--font-heading);
     font-weight: 400;
     font-size: 20px;
-    color: var(--color-accent-400);
+    color: var(--ds-now-text);
     padding-top: 8px;
   }
   .row.now .rail {
-    background: linear-gradient(var(--ds-rail-past) 0 20px, var(--color-accent-500) 20px 100%);
+    background: linear-gradient(var(--ds-rail-past) 0 20px, var(--ds-now) 20px 100%);
   }
   /* Something is already running above the marker — do not break the run. */
   .row.now.after-live .rail {
-    background: var(--color-accent-500);
+    background: var(--ds-now);
   }
   .row.now .rail::after {
     content: "";
@@ -554,8 +653,8 @@ export const styles = css`
     width: 18px;
     height: 18px;
     border-radius: 999px;
-    background: var(--color-accent-500);
-    box-shadow: 0 0 0 5px rgba(198, 113, 57, 0.22);
+    background: var(--ds-now);
+    box-shadow: 0 0 0 5px var(--ds-now-halo);
   }
   .row.now .c {
     padding: 6px 0 18px;
@@ -563,7 +662,7 @@ export const styles = css`
   .now-l {
     font-size: 15px;
     font-weight: 700;
-    color: var(--color-accent-300);
+    color: var(--ds-now-text);
   }
   .now-s {
     font-size: 14px;
@@ -579,6 +678,13 @@ export const styles = css`
   .row.future .rail {
     background: var(--color-accent-800);
   }
+  /*
+   * The ring is where a calendar's colour lands on a future row. It is the one
+   * mark on the spine that is not already saying something else: terracotta is
+   * *now*, sage on the sub-line is *the house acting on its own*, and grey is
+   * *done*. Falls back to the sage ring, so an uncoloured calendar looks exactly
+   * as it always did.
+   */
   .row.future .rail::after {
     content: "";
     position: absolute;
@@ -588,7 +694,7 @@ export const styles = css`
     height: 12px;
     border-radius: 999px;
     background: var(--ds-bg);
-    border: 3px solid var(--color-accent-2-500);
+    border: 3px solid var(--cal, var(--color-accent-2-500));
     box-sizing: border-box;
   }
   .row.future .c {

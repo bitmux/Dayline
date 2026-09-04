@@ -33,6 +33,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CALENDAR_COLORS,
     CONF_CALENDARS,
     CONF_TODO,
     CONF_WEATHER,
@@ -335,6 +336,7 @@ class DaySpineOptionsFlow(OptionsFlow):
                         "label": user_input.get(f"{entity_id}__label") or self._friendly(entity_id),
                         "priority": user_input.get(f"{entity_id}__priority", "normal"),
                         "role": user_input.get(f"{entity_id}__role", "people"),
+                        "color": user_input.get(f"{entity_id}__color", "default"),
                     }
                     for entity_id in calendars
                 }
@@ -354,6 +356,9 @@ class DaySpineOptionsFlow(OptionsFlow):
             schema[
                 vol.Optional(f"{entity_id}__role", default=current.get("role", "people"))
             ] = _select(ROLES, "role")
+            schema[
+                vol.Optional(f"{entity_id}__color", default=current.get("color", "default"))
+            ] = _select(CALENDAR_COLORS, "color")
 
         return self.async_show_form(
             step_id="calendars",

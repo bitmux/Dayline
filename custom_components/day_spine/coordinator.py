@@ -569,14 +569,24 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         the pill goes stale if either of them is down."""
         names: list[str] = []
         bad: set[str] = set()
+        colors: dict[str, str] = {}
         for entity_id, meta in self._meta().items():
             name = meta.get("label") or entity_id
             if name not in names:
                 names.append(name)
+            # First calendar listed under a shared label supplies the colour, as
+            # it already supplies the wording. Two calendars deliberately given
+            # one pill are one thing to the reader, so they get one colour.
+            color = meta.get("color")
+            if color and color != "default" and name not in colors:
+                colors[name] = color
             state = self.hass.states.get(entity_id)
             if state is None or state.state in UNAVAILABLE:
                 bad.add(name)
-        return [{"label": name, "stale": name in bad} for name in names]
+        return [
+            {"label": name, "stale": name in bad, **({"color": colors[name]} if name in colors else {})}
+            for name in names
+        ]
 
     def _stale_message(self) -> str:
         bad = [s["label"] for s in self._sources() if s["stale"]]

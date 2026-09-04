@@ -16,6 +16,20 @@ const DEFAULT_LEGEND =
   "Past entries stay, struck through, so the day reads as a whole. " +
   "Sage lines are what the house will do on its own.";
 
+/**
+ * The calendar palette, as names the feed may use.
+ *
+ * A whitelist rather than a passthrough. The feed is ours, but this value ends
+ * up inside a `style` attribute, and anything that reaches a stylesheet from
+ * data should have to be on a list first. An unknown name simply gets no
+ * colour, which is the same as not setting one.
+ */
+const CAL_COLORS = ["blue", "cyan", "teal", "green", "violet", "magenta", "rose"];
+
+/** `--cal` for a row, an all-day item or a pill; empty when it has no colour. */
+const calStyle = (name?: string): string =>
+  name && CAL_COLORS.includes(name) ? `--cal: var(--cal-${name})` : "";
+
 const FONT_LINK_ID = "day-spine-card-fonts";
 const FONT_HREF =
   "https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&display=swap";
@@ -282,8 +296,12 @@ export class DaySpineCard extends LitElement {
     return html`<div class="foot pills">
       ${sources.map(
         (src) =>
-          html`<span class="pill ${src.stale ? "stale" : ""}" title=${src.stale ? "Not updating" : ""}
-            >${src.label}</span
+          html`<span
+            class="pill ${src.stale ? "stale" : ""}"
+            style=${calStyle(src.color)}
+            title=${src.stale ? "Not updating" : ""}
+          >
+            ${src.color ? html`<i class="swatch"></i>` : nothing}${src.label}</span
           >`,
       )}
     </div>`;
@@ -318,7 +336,7 @@ export class DaySpineCard extends LitElement {
         // An all-day `#Away` is the common case for a tag, not an edge one, so
         // the chips ride along through all three of these shapes.
         const ttl = html`${e.title}${this._renderTags(e)}`;
-        return html`<div class="allday-item">
+        return html`<div class="allday-item" style=${calStyle(e.color)}>
           ${icon("calendar-days", 18)}
           <div class="allday-body">
             ${this._startedEarlier(e) && e.end
@@ -376,6 +394,7 @@ export class DaySpineCard extends LitElement {
 
     return html`<div
       class=${classes}
+      style=${calStyle(e?.color)}
       role=${tappable ? "button" : nothing}
       tabindex=${tappable ? 0 : nothing}
       @click=${tappable ? () => this._moreInfo(e!.entity_id!) : nothing}

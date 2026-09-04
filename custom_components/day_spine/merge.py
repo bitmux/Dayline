@@ -211,6 +211,12 @@ def from_calendars(
                 "sticky": bool(rule.get("sticky", False)),
                 "entity_id": entity_id,
             }
+            # Which calendar this came from, as a colour the card can draw.
+            # Omitted when unset, like tags, so the common case costs nothing on
+            # a payload that is re-sent to every open browser.
+            color = meta.get("color")
+            if color and color != "default":
+                entry["color"] = color
             # Omitted rather than empty: this payload is re-sent to every open
             # browser on each refresh, and most events will never carry a tag.
             if tags:

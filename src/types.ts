@@ -45,6 +45,18 @@ export interface SpineEntry {
    * house is about to do.
    */
   tags?: string[];
+  /**
+   * Which calendar this came from, as a palette name the card resolves.
+   *
+   * Colour answers *who* — the spine already answers what and when. It reaches
+   * the dot beside the entry and the pill in the legend, and deliberately
+   * nothing else: terracotta means *now* and sage means *the house acting on
+   * its own*, and a calendar borrowing either would be lying about the day.
+   *
+   * Home Assistant has no colour on a calendar entity, so this never comes from
+   * CalDAV or Google however green they are at the source. The feed supplies it.
+   */
+  color?: string;
 
   /**
    * What those tags will do, decided by the feed.
@@ -68,6 +80,8 @@ export interface SpineEntry {
 export interface SpineSource {
   label: string;
   stale?: boolean;
+  /** Palette name, matching the `color` on that calendar's entries. */
+  color?: string;
 }
 
 export interface DaySpineCardConfig {

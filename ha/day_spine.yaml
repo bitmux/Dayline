@@ -37,6 +37,15 @@ template:
       #   priority: high   never collapses off the card
       #            normal  collapses by distance from now
       #            low     collapses first
+      #
+      #   color:    blue cyan teal green violet magenta rose
+      #
+      # Colour answers *who*, since the spine already answers what and when: it
+      # tints this calendar's pill and the dot beside each of its entries. Home
+      # Assistant does not carry a calendar's own colour through from CalDAV or
+      # Google — a calendar entity has no field for it — so it is chosen here.
+      # Terracotta and sage are absent on purpose: they already mean "now" and
+      # "the house acting on its own".
       - variables:
           # `role: schedule` marks a calendar that drives automations rather than
           # describing people's plans. Its events become House rows, and each
@@ -52,10 +61,10 @@ template:
           #   conditions:
           #     - "{{ trigger.calendar_event.summary == 'Morning' }}"
           calendars:
-            calendar.family: { label: "Google", priority: "normal" }
-            calendar.school: { label: "CalDAV", priority: "high" }
+            calendar.family: { label: "Google", priority: "normal", color: "blue" }
+            calendar.school: { label: "CalDAV", priority: "high", color: "teal" }
             calendar.house_schedule: { label: "House", role: "schedule" }
-            # calendar.wife_work: { label: "Google", priority: "low" }
+            # calendar.wife_work: { label: "Google", priority: "low", color: "violet" }
 
           # ------------------------------------------------------------ EDIT ME
           # The sentence map. Keyed by any text that appears in an event's title
@@ -208,7 +217,8 @@ template:
                                     if is_schedule else s.hit.get('automation'),
                       'priority': s.hit.get('priority', meta.get('priority', 'normal')),
                       'sticky': s.hit.get('sticky', false),
-                      'entity_id': entity
+                      'entity_id': entity,
+                      'color': meta.get('color')
                   }] %}
                 {% endif %}
               {% endfor %}
@@ -404,10 +414,15 @@ template:
           # One pill per label. Two calendars sharing a label share a pill, and
           # the pill goes stale if either of them is down.
           source_list: >
-            {% set ns = namespace(labels=[], bad=[]) %}
+            {% set ns = namespace(labels=[], bad=[], colors={}) %}
             {% for entity, meta in calendars.items() %}
               {% if meta.label not in ns.labels %}
                 {% set ns.labels = ns.labels + [meta.label] %}
+              {% endif %}
+              {# First calendar under a shared label supplies the colour, as it
+                 already supplies the wording. #}
+              {% if meta.get('color') and meta.label not in ns.colors %}
+                {% set ns.colors = dict(ns.colors, **{meta.label: meta.color}) %}
               {% endif %}
               {% if states(entity) in ['unavailable', 'unknown']
                     and meta.label not in ns.bad %}
@@ -417,7 +432,8 @@ template:
             {% set out = namespace(pills=[]) %}
             {% for label in ns.labels %}
               {% set out.pills = out.pills
-                 + [{'label': label, 'stale': label in ns.bad}] %}
+                 + [{'label': label, 'stale': label in ns.bad,
+                     'color': ns.colors.get(label)}] %}
             {% endfor %}
             {{ out.pills }}
 

@@ -466,3 +466,72 @@ def test_the_window_still_folds_what_it_should_at_scale() -> None:
     assert len(kept) == 500
     folded = [e for e in kept if e["title"] == "Event number 250"]
     assert folded[0]["source"] == "Google + CalDAV"
+
+
+# ---------------------------------------------------------------------------
+# calendar colour — the "who" axis
+# ---------------------------------------------------------------------------
+
+
+def test_a_calendars_colour_rides_along_on_its_entries():
+    c = cfg(
+        calendar_meta={
+            "calendar.family": {"label": "Google", "color": "blue"},
+            "calendar.wife": {"label": "CalDAV", "color": "teal"},
+        }
+    )
+    out = from_calendars(
+        c,
+        {
+            "calendar.family": [ev("2026-09-02T15:50:00-05:00", "School run")],
+            "calendar.wife": [ev("2026-09-02T18:00:00-05:00", "Night shift")],
+        },
+        DAY_START,
+    )
+    assert [e["color"] for e in out] == ["blue", "teal"]
+
+
+def test_no_colour_means_no_key_at_all():
+    """Omitted rather than empty. This payload is re-sent to every open browser
+    on each refresh, and most people will never colour a calendar."""
+    out = from_calendars(
+        cfg(calendar_meta={"calendar.family": {"label": "Google"}}),
+        {"calendar.family": [ev("2026-09-02T15:50:00-05:00", "School run")]},
+        DAY_START,
+    )
+    assert "color" not in out[0]
+
+
+def test_the_default_choice_is_not_a_colour():
+    """`default` is what the dropdown starts on, not a palette entry — it has to
+    mean the same as never having chosen."""
+    out = from_calendars(
+        cfg(calendar_meta={"calendar.family": {"label": "Google", "color": "default"}}),
+        {"calendar.family": [ev("2026-09-02T15:50:00-05:00", "School run")]},
+        DAY_START,
+    )
+    assert "color" not in out[0]
+
+
+def test_a_deduped_event_keeps_the_first_calendars_colour():
+    """Wording follows the first calendar listed, and colour is wording: one row
+    cannot be two colours, and the alternative is that it changes depending on
+    which copy happened to sort first."""
+    c = cfg(
+        calendar_meta={
+            "calendar.family": {"label": "Google", "color": "blue"},
+            "calendar.wife": {"label": "CalDAV", "color": "teal"},
+        }
+    )
+    out = from_calendars(
+        c,
+        {
+            "calendar.family": [ev("2026-09-02T19:00:00-05:00", "Dinner with the neighbours")],
+            "calendar.wife": [ev("2026-09-02T19:00:00-05:00", "Dinner with the neighbours")],
+        },
+        DAY_START,
+    )
+    kept = dedupe(c, out)
+    assert len(kept) == 1
+    assert kept[0]["color"] == "blue"
+    assert kept[0]["source"] == "Google + CalDAV"

@@ -40,6 +40,28 @@ EVENT_TAG = "dayline_tag"
 PRIORITIES = ["high", "normal", "low"]
 ROLES = ["people", "schedule"]
 
+# --- calendar colours --------------------------------------------------------
+# Colour answers *who*, now that the spine already answers what and when.
+#
+# A fixed vocabulary rather than a colour wheel, and names rather than hex, for
+# three reasons. The card resolves a name to a value it has already checked
+# against both the Organic palette and a Home Assistant theme, light or dark —
+# a green picked against Thunderbird's white background has no obligation to be
+# legible on either. Hues near the card's own two meanings are left out
+# entirely: terracotta already means *now* and sage already means *the house
+# acting on its own*, and a calendar that borrowed either would be lying.
+# And a name survives a re-theme; a hex does not.
+CALENDAR_COLORS = [
+    "default",
+    "blue",
+    "cyan",
+    "teal",
+    "green",
+    "violet",
+    "magenta",
+    "rose",
+]
+
 DEFAULT_SIMILARITY = 0.8
 DEFAULT_TITLE_NOISE = [
     "a",

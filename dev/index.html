@@ -59,13 +59,19 @@ function mount(label, attributes, opts = {}, config = {}, narrow = false, style 
   document.body.appendChild(col);
 }
 
-const SOURCES = [{ label: "Google" }, { label: "CalDAV" }];
+const SOURCES = [
+  { label: "Google", color: "blue" },
+  { label: "CalDAV", color: "teal" },
+];
 
 // Eight calendars is a real household, and what overflowed the old header.
+// One of each colour, plus an uncoloured one, so the palette can be compared
+// side by side and the fallback is visible in the same row.
 const MANY_SOURCES = [
-  "Admin", "Wife", "Kid", "Family", "School district", "Soccer club",
-  "Holidays in United States", "House schedule",
-].map((label) => ({ label, stale: label === "Soccer club" }));
+  ["Admin", "blue"], ["Wife", "teal"], ["Kid", "violet"], ["Family", "green"],
+  ["School district", "cyan"], ["Soccer club", "rose"],
+  ["Holidays in United States", "magenta"], ["House schedule", undefined],
+].map(([label, color]) => ({ label, color, stale: label === "Soccer club" }));
 
 mount("Mid-afternoon · the ordinary case", {
   entries: mock.ordinary,
@@ -105,6 +111,66 @@ mount(
   { use_ha_theme: true },
   false,
   FROSTED_THEME,
+);
+
+// The case that kills a pinned terracotta: a warm orange ground showing through
+// translucent cards. A fixed accent here would put terracotta text on
+// near-terracotta, so --ds-now has to be derived from the theme's own text
+// colour rather than chosen in advance.
+const ORANGE_GLASS = `
+  --card-background-color:rgba(120,52,18,0.42);
+  --ha-card-background:rgba(120,52,18,0.42);
+  --ha-card-backdrop-filter:blur(14px) saturate(140%);
+  --ha-card-box-shadow:0 8px 32px rgba(0,0,0,0.3);
+  --ha-card-border-width:1px;
+  --ha-card-border-color:rgba(255,255,255,0.2);
+  --ha-card-border-radius:20px;
+  --primary-text-color:#fff6ec;    --secondary-text-color:#e8cdb4;
+  --divider-color:rgba(255,255,255,0.16);
+  --disabled-text-color:rgba(255,255,255,0.32);
+  --primary-color:#ffb066;         --accent-color:#ffd39b;
+  --text-primary-color:#3a1d08;    --error-color:rgba(255,120,90,0.25);
+  background:linear-gradient(135deg,#c2410c 0%,#ea7317 55%,#f59e0b 100%);
+  padding:16px; border-radius:24px;`;
+
+mount(
+  "Orange glass theme · the now marker must survive a warm ground",
+  {
+    entries: mock.ordinary,
+    headline: "4 September · 4 left today",
+    now: "Afternoon · house quiet, doors locked",
+    sources: SOURCES,
+  },
+  {},
+  { use_ha_theme: true },
+  false,
+  ORANGE_GLASS,
+);
+
+// A light theme: the same derivation has to land dark rather than pale.
+const LIGHT_THEME = `
+  --card-background-color:#ffffff;  --ha-card-background:#ffffff;
+  --ha-card-box-shadow:0 2px 8px rgba(0,0,0,0.12);
+  --ha-card-border-radius:16px;
+  --primary-text-color:#1c1b1f;     --secondary-text-color:#5f5c66;
+  --divider-color:#e3e1e6;          --disabled-text-color:#b5b2bb;
+  --primary-color:#3b6fd4;          --accent-color:#7a9b5e;
+  --text-primary-color:#ffffff;     --error-color:#ffd9d6;
+  --secondary-background-color:#f4f2f7;
+  background:#e8e6ec; padding:16px; border-radius:24px;`;
+
+mount(
+  "Light theme · the derived now colour lands dark, not pale",
+  {
+    entries: mock.ordinary,
+    headline: "4 September · 4 left today",
+    now: "Afternoon · house quiet, doors locked",
+    sources: SOURCES,
+  },
+  {},
+  { use_ha_theme: true },
+  false,
+  LIGHT_THEME,
 );
 
 mount("Eight calendars · pills wrap at the foot, clock in the header", {
