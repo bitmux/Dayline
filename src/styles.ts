@@ -78,6 +78,14 @@ export const styles = css`
     --ds-now-text: var(--color-accent-400);
     --ds-now-halo: rgba(198, 113, 57, 0.22);
 
+    /*
+     * Levels, for rows an automation pushed in and marked. Red is reserved
+     * entirely for this: nothing else on the card is red, which is the only
+     * reason red still means anything by the time you need it.
+     */
+    --ds-level-alert: #e5645f;
+    --ds-level-info: #7fb2d9;
+
     display: block;
     /*
      * The fluid floor has to key off the card's own width, not the viewport: on a
@@ -158,6 +166,11 @@ export const styles = css`
     --ds-now: color-mix(in oklab, var(--ds-now-seed) 72%, var(--primary-text-color, #f9f4ed));
     --ds-now-text: color-mix(in oklab, var(--ds-now-seed) 42%, var(--primary-text-color, #f9f4ed));
     --ds-now-halo: color-mix(in oklab, var(--ds-now-seed) 30%, transparent);
+
+    /* A theme that has named its own error and info colours has said something
+       more useful than our two guesses; take it. */
+    --ds-level-alert: var(--error-color, #e5645f);
+    --ds-level-info: var(--info-color, #7fb2d9);
 
     /*
      * The surface itself, on the same terms every other card gets.
@@ -699,6 +712,36 @@ export const styles = css`
   }
   .row.future .c {
     padding: 10px 0 16px;
+  }
+
+  /*
+   * A level takes over the row's dot and its icon, and nothing else — not the
+   * title, not the rail. The row still has to read as part of one day; a red
+   * band across it would make the timeline stop being a timeline at the point
+   * it matters most.
+   */
+  .row.lvl-alert .rail::after,
+  .row.lvl-info .rail::after {
+    background: var(--lvl);
+    border-color: var(--lvl);
+  }
+  .row.lvl-alert .ttl .icon,
+  .row.lvl-info .ttl .icon {
+    color: var(--lvl);
+    flex: none;
+    margin-right: 6px;
+    vertical-align: -2px;
+  }
+  .row.lvl-alert {
+    --lvl: var(--ds-level-alert);
+  }
+  .row.lvl-info {
+    --lvl: var(--ds-level-info);
+  }
+  /* Alert gets the halo the now marker has. It is the only other thing on the
+     card allowed to interrupt you. */
+  .row.lvl-alert .rail::after {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--ds-level-alert) 22%, transparent);
   }
 
   /* last row — the rail fades out rather than stopping hard */

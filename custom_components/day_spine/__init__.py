@@ -9,18 +9,22 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.start import async_at_started
 
-from .const import DOMAIN, MAX_BUTTONS, PRIORITIES, SERVICE_DISMISS, SERVICE_SHOW
+from .const import DOMAIN, LEVELS, PRIORITIES, SERVICE_DISMISS, SERVICE_SHOW
 from .coordinator import DaySpineCoordinator
 
 PLATFORMS = [Platform.SENSOR]
 
-# Up to two, because a row is one line of a timeline and a third button turns it
-# into a dialog. Two is "do it" and "not now", which is the shape of almost every
-# decision worth putting in front of someone walking past a wall tablet.
+# A button, in Home Assistant's own `tap_action` vocabulary rather than ours.
+#
+# The `ui_action` selector is what every card editor uses for "what does this
+# button do", so the shape it produces is the shape people have already filled
+# in a hundred times — perform an action, open more-info, navigate, open a URL.
+# Validating it loosely on purpose: this is HA's schema, it grows, and rejecting
+# a key we have not heard of would break on their release rather than ours.
 _BUTTON = vol.Schema(
     {
-        vol.Required("label"): cv.string,
-        vol.Required("script"): cv.entity_domain("script"),
+        vol.Optional("label"): cv.string,
+        vol.Optional("action"): vol.Any(dict, None),
     }
 )
 
@@ -28,12 +32,14 @@ SHOW_SCHEMA = vol.Schema(
     {
         vol.Required("message"): cv.string,
         vol.Optional("id"): cv.string,
+        vol.Optional("level", default="normal"): vol.In(LEVELS),
         vol.Optional("sentence"): cv.string,
         vol.Optional("priority", default="high"): vol.In(PRIORITIES),
         vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=1)),
         vol.Optional("start"): cv.string,
         vol.Optional("entity_id"): cv.entity_id,
-        vol.Optional("buttons"): vol.All(cv.ensure_list, vol.Length(max=MAX_BUTTONS), [_BUTTON]),
+        vol.Optional("confirm"): _BUTTON,
+        vol.Optional("cancel"): _BUTTON,
     }
 )
 

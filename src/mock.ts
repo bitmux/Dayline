@@ -351,11 +351,12 @@ export const manyAllDay: SpineEntry[] = [
  */
 export const standing: SpineEntry[] = [
   {
-    id: "standing:cover.garage",
+    id: "push:garage_open",
     start: at(10, 42),
     kind: "standing",
     source: "House",
     title: "Garage is open",
+    level: "info",
     priority: "high",
     sticky: true,
     entity_id: "cover.garage",
@@ -365,11 +366,7 @@ export const standing: SpineEntry[] = [
         service: "script.turn_on",
         target: { entity_id: "script.close_garage_safely" },
       },
-      {
-        label: "Leave it",
-        service: "script.turn_on",
-        target: { entity_id: "script.dayline_dismiss_garage" },
-      },
+      { label: "Leave it", service: "day_spine.dismiss", data: { id: "garage_open" } },
     ],
   },
   {
@@ -379,14 +376,12 @@ export const standing: SpineEntry[] = [
     source: "House",
     title: "Garage did not close — someone is in the driveway",
     automation: "Trying again when the camera is clear",
+    level: "alert",
     priority: "high",
     sticky: true,
     actions: [
-      {
-        label: "Close anyway",
-        service: "script.turn_on",
-        target: { entity_id: "script.force_close_garage" },
-      },
+      { label: "Close anyway", service: "cover.close_cover", target: { entity_id: "cover.garage" } },
+      { label: "Show me", more_info: "camera.driveway" },
     ],
   },
   {

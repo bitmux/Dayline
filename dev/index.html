@@ -227,9 +227,11 @@ mount(
   "height:460px",
 );
 
-// The garage case: a standing row with two buttons, and the row an automation
-// pushed in with day_spine.show when the script declined to close it.
-mount("Standing rows · two buttons, and a script that declined", {
+// The garage case, entirely from automations: one row day_spine.show pushed
+// when the door opened, and the alert row its script pushed when it declined to
+// close. Buttons call whatever HA can call — a script, a cover service, a
+// more-info dialog.
+mount("Pushed rows · alert and info levels, two buttons each", {
   entries: mock.standing,
   headline: "4 September · 4 left today",
   now: "Afternoon · house quiet, garage open",

@@ -18,14 +18,6 @@ OPT_SUN_PRIORITY = "sun_priority"
 OPT_SIMILARITY = "similarity"
 OPT_TITLE_NOISE = "title_noise"
 OPT_RECENT = "recent"  # [{entity_id, state, phrase}]
-# [{entity_id, state, phrase, priority, script, button}]
-#
-# The other half of "what just happened": a row that lasts as long as something
-# is true, rather than for five minutes after it changed. A garage door that
-# opened at 10:42 is not news at 3pm, it is a standing fact about the day, and
-# the difference between the two is the difference between a notification and a
-# thing you still have to deal with.
-OPT_STANDING = "standing"
 OPT_RECENT_TTL = "recent_ttl"
 OPT_RECENT_MAX = "recent_max"
 OPT_NOW_TEMPLATE = "now_template"
@@ -51,7 +43,13 @@ EVENT_TAG = "dayline_tag"
 # with up to two buttons, without that shape having to be predicted here first.
 SERVICE_SHOW = "show"
 SERVICE_DISMISS = "dismiss"
-MAX_BUTTONS = 2
+
+# How a pushed row carries itself. `normal` is the default and looks like the
+# rest of the card; the other two are for rows that are not simply another
+# thing on the list. Two, not a scale — every extra level costs the reader a
+# distinction to learn, and "is this a problem" is the only one that reliably
+# earns its keep.
+LEVELS = ["normal", "info", "alert"]
 
 PRIORITIES = ["high", "normal", "low"]
 ROLES = ["people", "schedule"]

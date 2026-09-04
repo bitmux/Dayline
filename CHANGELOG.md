@@ -2,42 +2,47 @@
 
 ## Unreleased
 
-**Rows that are not events.** A calendar event happens at a time; plenty of what
-is left of your day does not. The garage is open. There are now two ways to put
-that on the spine, split by whether a decision is involved.
+**Any automation can put a row on the spine.** `day_spine.show` and
+`day_spine.dismiss` are the first services this integration has had. A row takes
+a message, an optional sage second line, a level, a priority, an optional
+duration, and up to two buttons — and every field is a selector, so it is filled
+in from the automation editor like any other action, with no YAML to write.
 
-**Standing rows** (Configure → *While it's true*) are declarative: an entity and
-the states that count, or a template Home Assistant evaluates and tracks with its
-own `async_track_template_result`. The row exists for exactly as long as the
-condition does, sorts into the day at the moment the entity changed, and is
-sticky and high priority — so the density budget can never collapse it and its
-time passing never strikes it through. It counts toward "N left today", because
-it is.
+**The buttons do anything a dashboard button can.** Each takes a label and Home
+Assistant's own action picker — the same control a button card gives you — so a
+Dayline button can perform an action, open a more-info dialog, navigate, or open
+a URL. They are called *confirm* and *cancel* because that is what two buttons on
+one row nearly always are, but nothing enforces it and one button is perfectly
+normal. The second is drawn quieter and without a tick, because "not now" should
+not look as inviting as the thing being asked for. There is no third: a row is
+one line of a timeline, and a third button makes it a dialog.
 
-Its button always runs a **script**, never a service call. That is the point
-rather than a limitation: a script is Home Assistant's own name for a sequence
-that can check something first and decline, which is exactly what a button on a
-wall tablet must be allowed to do. A script that looks at a person detector
-before closing a door can refuse; `cover.close_cover` cannot.
+Calling `show` again with the same id replaces the row rather than stacking a
+copy, so it is safe from an automation that runs on every state change.
+Dismissing an id that is not there is deliberately not an error. Rows persist, so
+a restart does not silently drop a claim an automation made about your house.
 
-**`day_spine.show`** and **`day_spine.dismiss`** are the imperative half, and the
-first services this integration has had. Any automation can put a row on the
-spine with up to two buttons, a sage sentence, a priority and an optional
-duration. Calling `show` again with the same id replaces the row rather than
-stacking a copy, so it is safe from an automation that runs on every state
-change; dismissing an id that is not there is not an error. Pushed rows are
-persisted, because a claim an automation made about your house should survive a
-restart.
+**Levels: `alert` and `info`.** A pushed row can mark itself. Alert draws its dot
+and icon in red with a halo, and **nothing else on this card is red** — which is
+the only reason red still means anything by the time you need it. The level
+reaches the dot and an icon and stops there; the row still has to read as part of
+one day, and a red band across it would make the timeline stop being a timeline
+exactly where it matters most. The icon is not decoration: colour alone would
+leave the distinction invisible to anyone who cannot see red, on the one row
+where "is this a problem" is the entire message.
 
-Two buttons, not three. A row is one line of a timeline; a third makes it a
-dialog. Two is "do it" and "not now" — and the second is drawn quieter with no
-tick, because declining should not look as inviting as the thing being asked for.
-
-Together they answer the question Dayline could not otherwise answer honestly:
+Together these answer the question Dayline could not otherwise answer honestly:
 **how does a script that declined tell you why?** It tells you itself, by calling
-`day_spine.show`. Dayline learns nothing about what happened inside a script —
+`day_spine.show`. Dayline learns nothing about what happens inside a script —
 deliberately, the same way it never inspects what an automation does with a
-`#tag` — so the explanation is written by the only thing that actually knows.
+`#tag` — so the explanation is written by the only thing that knows.
+
+**Withdrawn before release: the declarative "While it's true" rules.** A brief
+options section let you say *this entity in these states means this row*. It
+worked, and it was the wrong home for it: the interesting cases all have a
+decision in them, an automation can branch and a config page cannot, and having
+both meant two places to look for the same answer. The services do the same job
+with the editor people already know. Nothing shipped, so nothing breaks.
 
 **Fixed: a pressed button could stay dimmed forever.** The optimistic dim waited
 for the feed to confirm, which never comes when the script declined and nothing

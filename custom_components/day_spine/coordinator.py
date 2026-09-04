@@ -10,10 +10,8 @@ from typing import Any, Callable
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CoreState, Event, HomeAssistant, callback
 from homeassistant.helpers.event import (
-    TrackTemplate,
     async_track_point_in_time,
     async_track_state_change_event,
-    async_track_template_result,
 )
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.template import Template
@@ -34,7 +32,6 @@ from .const import (
     DOMAIN,
     EVENT_TAG,
     LABEL_CONTROL,
-    MAX_BUTTONS,
     LABEL_INCLUDE,
     OPT_CALENDAR_META,
     OPT_EXCLUDE,
@@ -47,7 +44,6 @@ from .const import (
     OPT_SENTENCES,
     OPT_SHOW_SUN,
     OPT_SIMILARITY,
-    OPT_STANDING,
     OPT_SUN_PRIORITY,
     OPT_TITLE_NOISE,
 )
@@ -57,11 +53,9 @@ from .merge import (
     attach_weather,
     dedupe,
     from_calendars,
-    from_standing,
     from_sun,
     from_todo,
     remaining_count,
-    standing_key,
     tags_seen,
 )
 
@@ -85,14 +79,6 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._recent: list[Entry] = []
         self._unsub_states = None
         self._unsub_registries = None
-        self._unsub_templates = None
-
-        # Standing-row templates: whether each is currently true, and since
-        # when. Home Assistant evaluates and tracks them; we only remember the
-        # moment one turned true, because a template has no last_changed of its
-        # own and a row has to sort somewhere.
-        self._template_on: dict[str, bool] = {}
-        self._template_since: dict[str, str] = {}
 
         # Resolved from labels, refreshed whenever a registry moves.
         self._calendar_ids: list[str] = []
@@ -214,9 +200,6 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._unsub_registries:
             self._unsub_registries()
             self._unsub_registries = None
-        if self._unsub_templates:
-            self._unsub_templates.async_remove()
-            self._unsub_templates = None
         self._cancel_fires()
 
     @callback
@@ -271,10 +254,6 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.hass.async_create_task(self.async_refresh())
 
     @callback
-    def _standing(self) -> list[dict[str, Any]]:
-        return list(self._opts.get(OPT_STANDING) or [])
-
-    @callback
     def _resubscribe(self) -> None:
         if self._unsub_states:
             self._unsub_states()
@@ -296,105 +275,6 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._unsub_states = async_track_state_change_event(
                 self.hass, list(dict.fromkeys(watched)), self._on_state_change
             )
-        self._retrack_templates()
-
-    @callback
-    def _retrack_templates(self) -> None:
-        """Hand every template rule to Home Assistant to evaluate and watch.
-
-        `async_track_template_result` works out which entities a template
-        depends on and calls back only when its result actually changes — which
-        is the whole reason this is not a listener on the state machine and a
-        re-render every time anything anywhere moves. Using it means a template
-        rule costs about what an entity rule costs.
-        """
-        if self._unsub_templates:
-            self._unsub_templates.async_remove()
-            self._unsub_templates = None
-
-        tracked = []
-        for index, rule in enumerate(self._standing()):
-            raw = str(rule.get("template") or "").strip()
-            if not raw:
-                continue
-            tracked.append((standing_key(rule, index), TrackTemplate(Template(raw, self.hass), None)))
-        if not tracked:
-            self._template_on, self._template_since = {}, {}
-            return
-
-        keys = [key for key, _ in tracked]
-        # Forget results for rules that no longer exist, or "since" would be
-        # resurrected from a rule someone deleted a month ago.
-        self._template_on = {k: v for k, v in self._template_on.items() if k in keys}
-        self._template_since = {k: v for k, v in self._template_since.items() if k in keys}
-
-        @callback
-        def _updated(event, updates) -> None:
-            changed = False
-            for update in updates:
-                key = by_template.get(str(update.template.template))
-                if key is None:
-                    continue
-                if isinstance(update.result, Exception):
-                    # A template that cannot render is not a row that is false;
-                    # it is a rule that is broken. Say so once and leave the row
-                    # alone rather than silently dropping it off the card.
-                    _LOGGER.warning(
-                        "Standing rule template failed to render: %s", update.result
-                    )
-                    continue
-                if self._set_template(key, bool(update.result)):
-                    changed = True
-            if changed:
-                self.async_set_updated_data(self._compose())
-
-        by_template = {str(t.template.template): key for key, t in tracked}
-        info = async_track_template_result(
-            self.hass, [t for _, t in tracked], _updated
-        )
-        self._unsub_templates = info
-        info.async_refresh()
-
-    @callback
-    def _set_template(self, key: str, on: bool) -> bool:
-        """Record a template result, and when it turned true. Returns whether
-        anything actually moved."""
-        if self._template_on.get(key) == on:
-            return False
-        self._template_on[key] = on
-        if on:
-            self._template_since[key] = dt_util.now().isoformat()
-        else:
-            self._template_since.pop(key, None)
-        return True
-
-    def _standing_snapshot(self) -> dict[str, dict[str, Any]]:
-        """What each standing rule's condition looks like right now.
-
-        Entity rules read the state machine; template rules read what Home
-        Assistant last told us. Both come out in the same shape, which is what
-        lets `from_standing` stay pure and stay one code path.
-        """
-        out: dict[str, dict[str, Any]] = {}
-        for index, rule in enumerate(self._standing()):
-            key = standing_key(rule, index)
-            if rule.get("template"):
-                out[key] = {
-                    "state": "on" if self._template_on.get(key) else "off",
-                    "since": self._template_since.get(key),
-                    "name": rule.get("phrase") or key,
-                }
-                continue
-            entity_id = rule.get("entity_id")
-            state = self.hass.states.get(entity_id) if entity_id else None
-            if state is None:
-                continue
-            out[key] = {
-                "state": state.state,
-                "since": state.last_changed.isoformat() if state.last_changed else None,
-                "name": state.name,
-            }
-        return out
 
     @callback
     def _on_state_change(self, event: Event) -> None:
@@ -402,16 +282,6 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         old = event.data.get("old_state")
         if new is None or old is None or new.state == old.state:
             return
-
-        # Standing rows first, and deliberately before the "was it a person"
-        # gate below. A garage door you opened by hand is exactly as open as one
-        # the house opened, and a row that only appeared for automatic changes
-        # would be worse than no row at all.
-        if any(
-            rule.get("entity_id") == event.data["entity_id"] and not rule.get("template")
-            for rule in self._standing()
-        ):
-            self.async_set_updated_data(self._compose())
 
         # A parent context means something other than a person caused this.
         # Someone who flipped the switch themselves does not need telling.
@@ -616,18 +486,14 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             (now + timedelta(seconds=int(seconds))).isoformat() if seconds else None
         )
 
-        buttons = []
-        for button in (data.get("buttons") or [])[:MAX_BUTTONS]:
-            script = button.get("script")
-            if not script:
-                continue
-            buttons.append(
-                {
-                    "label": button.get("label") or "Do it",
-                    "service": "script.turn_on",
-                    "target": {"entity_id": script},
-                }
+        buttons = [
+            button
+            for button in (
+                _button(data.get("confirm"), "Do it"),
+                _button(data.get("cancel"), "Not now"),
             )
+            if button
+        ]
 
         entry: Entry = {
             "id": f"push:{row_id}",
@@ -639,6 +505,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "title": str(data.get("message") or "").strip() or "(no message)",
             "automation": (str(data.get("sentence") or "").strip() or None),
             "priority": data.get("priority") or "high",
+            "level": data.get("level") or "normal",
             "sticky": True,
             "entity_id": data.get("entity_id"),
             "expires": expires,
@@ -764,12 +631,8 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._pushed = kept
             self._save_pushed()
 
-        standing = from_standing(
-            self._standing(), self._standing_snapshot(), dt_util.start_of_local_day(now)
-        )
         entries = sorted(
-            self._base + self._recent + standing + self._pushed,
-            key=lambda e: e["start"],
+            self._base + self._recent + self._pushed, key=lambda e: e["start"]
         )
         left = remaining_count(entries, now)
 
@@ -841,3 +704,45 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         verb = "calendars are" if len(bad) > 1 else "calendar is"
         them = "them" if len(bad) > 1 else "it"
         return f"{names} {verb} not updating. Anything on {them} is missing from today."
+
+
+def _button(spec: dict[str, Any] | None, fallback: str) -> dict[str, Any] | None:
+    """Turn one `ui_action` into something the card can carry out.
+
+    `ui_action` is the selector every Home Assistant card editor uses for "what
+    does this button do", so what arrives here is the shape people have already
+    filled in a hundred times, and a Dayline button ends up as capable as a
+    button on any dashboard — not the script-only thing it started as.
+
+    Translated rather than passed through, because the card should not have to
+    learn Home Assistant's action schema to press a button. Anything unknown
+    yields no button at all: a control that does nothing is worse than an
+    absent one.
+    """
+    if not spec:
+        return None
+    action = spec.get("action") or {}
+    label = str(spec.get("label") or "").strip() or fallback
+    kind = action.get("action")
+
+    if kind in ("perform-action", "call-service"):
+        # `call-service` is the old spelling, still what older blueprints and
+        # hand-written YAML produce.
+        service = action.get("perform_action") or action.get("service")
+        if not service:
+            return None
+        out: dict[str, Any] = {"label": label, "service": str(service)}
+        if action.get("target"):
+            out["target"] = action["target"]
+        if action.get("data"):
+            out["data"] = action["data"]
+        return out
+
+    if kind == "more-info":
+        entity = (action.get("target") or {}).get("entity_id") or action.get("entity")
+        return {"label": label, "more_info": entity} if entity else None
+    if kind == "navigate" and action.get("navigation_path"):
+        return {"label": label, "navigate": str(action["navigation_path"])}
+    if kind == "url" and action.get("url_path"):
+        return {"label": label, "url": str(action["url_path"])}
+    return None

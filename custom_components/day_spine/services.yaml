@@ -9,30 +9,47 @@ show:
       name: Message
       description: The line as it appears on the card. Plain words, no entity ids.
       required: true
-      example: Garage has been open for 20 minutes
+      example: Garage did not close — someone is in the driveway
       selector:
         text:
     id:
       name: Id
       description: >-
-        Your name for this row. Calling show again with the same id replaces it;
-        dismiss takes it away. Leave empty and one is derived from the message.
+        Your name for this row. Calling show again with the same id replaces it,
+        and dismiss takes it away. Leave it empty and one is derived from the
+        message.
       example: garage_open
       selector:
         text:
+    level:
+      name: Level
+      description: >-
+        Normal looks like everything else on the card. Info is quieter, for
+        something worth knowing. Alert is for something wrong — it draws in red
+        with a warning icon, and nothing else on this card is red.
+      default: normal
+      selector:
+        select:
+          options:
+            - label: Normal
+              value: normal
+            - label: Information
+              value: info
+            - label: Alert
+              value: alert
     sentence:
       name: What the house will do
       description: >-
         An optional second line, in sage, for what happens on its own. Say the
         consequence, not the scene name.
-      example: Closing by itself at 11pm
+      example: Trying again when the camera is clear
       selector:
         text:
     priority:
       name: Priority
       description: >-
-        High never collapses off the card, which is usually what you want for a
-        row an automation went to the trouble of pushing.
+        High never collapses off the card, which is usually right for a row an
+        automation went to the trouble of pushing.
       default: high
       selector:
         select:
@@ -63,19 +80,45 @@ show:
         dialog when the card has interactive rows switched on.
       selector:
         entity:
-    buttons:
-      name: Buttons
+    confirm:
+      name: Confirm button
       description: >-
-        Up to two, each running a script. A script rather than a service call
-        because a button on the timeline should be allowed to check something
-        first and decline — which a direct service call cannot do.
-      example: |
-        - label: Close it
-          script: script.close_garage_safely
-        - label: Leave it open
-          script: script.dismiss_garage_row
-      selector:
-        object:
+        The affirmative one — the thing the row is asking for. It can do anything
+        a button on a dashboard can do.
+      collapsed: true
+      fields:
+        label:
+          name: Label
+          description: What the button says.
+          example: Close it
+          selector:
+            text:
+        action:
+          name: Action
+          description: >-
+            What pressing it does. Perform an action, open a more-info dialog,
+            navigate, or open a URL — the same choices a button card gives you.
+          selector:
+            ui_action:
+    cancel:
+      name: Cancel button
+      description: >-
+        The second, quieter one — "not now". Leave it out for a row that only
+        offers one thing. It can call any action too; dismissing the row is
+        usually day_spine.dismiss with this row's id.
+      collapsed: true
+      fields:
+        label:
+          name: Label
+          description: What the button says.
+          example: Leave it open
+          selector:
+            text:
+        action:
+          name: Action
+          description: What pressing it does.
+          selector:
+            ui_action:
 
 dismiss:
   name: Dismiss a row

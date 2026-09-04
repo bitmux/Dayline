@@ -29,9 +29,18 @@ export type EntryKind =
  */
 export interface SpineAction {
   label: string;
-  service: string; // "domain.service"
+  /** "domain.service" — the common case, and all the feed's own rows use. */
+  service?: string;
   target?: Record<string, unknown>;
   data?: Record<string, unknown>;
+  /**
+   * The rest of Home Assistant's `tap_action` vocabulary, for buttons an
+   * automation supplied through `day_spine.show`. The feed translates HA's
+   * action schema into these, so the card never has to learn it.
+   */
+  more_info?: string;
+  navigate?: string;
+  url?: string;
 }
 
 /** The hourly forecast covering an entry's start, joined on by the feed. */
@@ -89,6 +98,15 @@ export interface SpineEntry {
   sticky?: boolean;
   /** ISO time after which the entry stops rendering. Used by the "what just happened" rows. */
   expires?: string | null;
+  /**
+   * How the row carries itself, for rows an automation pushed in.
+   *
+   * `alert` is the only red on the card, which is what makes it worth having;
+   * `info` is quieter than normal. Everything the feed generates itself stays
+   * `normal`, because a card where most things are urgent has no way left to
+   * say that one of them is.
+   */
+  level?: "normal" | "info" | "alert";
   action?: SpineAction | null;
   /**
    * Up to two buttons, for rows that pose a choice rather than a chore.

@@ -227,112 +227,90 @@ muted version of the past dot, and the icon on an all-day row. It deliberately
 never touches the now marker, a running entry, or a sage sentence — where a
 colour already means something, meaning wins over identity.
 
-## Rows that are not events
+## Rows an automation puts there
 
 A calendar event happens at a time. Plenty of what is left of your day does not:
-the garage is open, the dishwasher is done, someone should look at the water
-softener. There are two ways to put those on the spine, and which one you want
-depends on whether a *decision* is involved.
+the garage is open, the dishwasher finished, a script declined to do something.
+Any automation can put those on the spine, and take them away again.
 
-### Standing rows — declarative, for things that are simply true
+Both are ordinary Home Assistant actions, filled in from the UI like anything
+else — every field is a selector, so there is no YAML to write.
 
-**Configure → While it's true.** Name an entity and the states that count, write
-the sentence, and the row exists for exactly as long as that is the case:
-
-| | |
-|---|---|
-| Entity | `cover.garage` |
-| States that count | `open`, `opening` |
-| Say | Garage is open |
-| Button runs this script | `script.close_garage_safely` |
-| Button label | Close it |
-
-It sorts into the day at the moment the entity changed, so it reads
-*10:42 AM · Garage is open* rather than appearing at the top with no history. It
-is sticky and high priority, which together mean the density budget can never
-collapse it and its time passing never strikes it through — it leaves when the
-door shuts, and not before. It also counts toward "N left today", because it is.
-
-For conditions a state cannot express, write a **template** instead. Home
-Assistant evaluates and tracks it with its own `async_track_template_result`, so
-it costs about what an entity rule costs and you are not learning a second
-condition language:
-
-```jinja
-{{ is_state('cover.garage','open')
-   and (now() - states.cover.garage.last_changed).total_seconds() > 1200 }}
-```
-
-A template rule can still name an entity. That is not used for the condition —
-it tells the row when it began, so it sorts where it actually happened rather
-than at the last restart.
-
-**The button always runs a script, never a service call directly.** That is the
-point rather than a limitation: a script is Home Assistant's own name for "a
-sequence that can check something first and decline", which is exactly what a
-button on a wall tablet needs to be allowed to do. `script.close_garage_safely`
-can look at a Frigate person detector and refuse; `cover.close_cover` cannot.
-
-**How a script says it refused: it says so itself.** Dayline calls the script and
-learns nothing about what happened inside it — deliberately, the same way it
-never inspects what an automation does with a `#tag`. So have the failing branch
-call `day_spine.show`, below. That composes: no special case in the card, no
-guessing, and the explanation is written by the thing that actually knows.
-
-The card stops dimming a pressed button after 20 seconds whether or not anything
-came back, so a script that declined leaves a row that still reads as open.
-
-### `day_spine.show` — imperative, for anything with a decision in it
-
-Any automation or script can put a row on the spine, with up to two buttons:
-
-```yaml
-- action: day_spine.show
-  data:
-    id: garage_refused
-    message: Garage did not close — someone is in the driveway
-    sentence: Trying again when the camera is clear
-    priority: high
-    buttons:
-      - label: Close anyway
-        script: script.force_close_garage
-      - label: Leave it open
-        script: script.dayline_dismiss_garage
-```
-
-Calling `show` again with the same `id` **replaces** the row rather than stacking
-a second copy, so this is safe from an automation that runs on every state
-change. `day_spine.dismiss` with the same `id` takes it away, and an id that is
-not there is not an error — an automation tidying up after itself should not have
-to check first.
+### `day_spine.show`
 
 | Field | |
 |---|---|
-| `message` | Required. The line on the card |
-| `id` | Your name for the row. Omit and one is derived from the message |
-| `sentence` | Optional second line, in sage, for what happens on its own |
-| `priority` | `high` (default), `normal`, `low` |
-| `duration` | Seconds until it leaves on its own. Omit and it stays |
-| `start` | Where it sorts into the day. Defaults to now |
-| `entity_id` | Optional. What the row is about, for the more-info dialog |
-| `buttons` | Up to two, each `{label, script}` |
+| **Message** | Required. The line on the card |
+| **Id** | Your name for the row. Omit and one is derived from the message |
+| **Level** | *Normal*, *Information*, or *Alert* |
+| **What the house will do** | Optional second line, in sage |
+| **Priority** | *High* (default) never collapses off the card |
+| **Duration** | Seconds until it leaves on its own. Omit and it stays |
+| **Start** | Where it sorts into the day. Defaults to now |
+| **Related entity** | Optional. What the row is about, for the more-info dialog |
+| **Confirm button** | A label and an action |
+| **Cancel button** | A label and an action |
 
-Two buttons, not three. A row is one line of a timeline; a third button makes it
-a dialog. Two is "do it" and "not now", which is the shape of nearly every
-decision worth putting in front of someone walking past. The second button is
-drawn quieter and carries no tick, because declining should not look as inviting
-as the thing the row is asking for.
+The two buttons are collapsible sections in the action editor. Each takes a
+label and an **action picker** — the same control a button card gives you, so a
+Dayline button can do anything a dashboard button can: perform an action, open a
+more-info dialog, navigate somewhere, or open a URL.
+
+They are only called *confirm* and *cancel* because that is what two buttons on
+one row nearly always are. Nothing enforces it — both can call any action, and a
+row with one button is perfectly normal. The second is drawn quieter and without
+a tick, because "not now" should not look as inviting as the thing the row is
+asking for. There is no third: a row is one line of a timeline, and a third
+button makes it a dialog.
+
+Calling `show` again with the same **id** *replaces* the row rather than stacking
+a copy, so it is safe from an automation that runs on every state change.
+
+### `day_spine.dismiss`
+
+Takes the **id** and removes the row. An id that is not there is not an error, so
+an automation tidying up after itself does not have to check first. This is the
+usual thing to put behind a cancel button.
 
 Pushed rows are persisted, so a restart does not silently drop a claim an
 automation made about your house.
 
-### Which one
+### Levels
 
-Use a **standing row** when the condition is a fact you could point at — a state,
-or a template over states. Use **`day_spine.show`** when getting to the row
-required thinking: a branch, a retry count, a threshold that depends on the time
-of day. An automation can branch; a rule cannot, and a rule that tried would be a
-worse version of the automation editor you already have.
+*Normal* looks like everything else. *Information* is quieter. *Alert* draws the
+row's dot and icon in red with a halo — and **nothing else on this card is red**,
+which is the only reason red still means something by the time you need it. The
+level reaches the dot and an icon and stops there: the row still has to read as
+part of one day, and a red band across it would make the timeline stop being a
+timeline exactly where it matters most. The icon is not decoration either —
+colour alone would leave the distinction invisible to anyone who cannot see red,
+on the one row where "is this a problem" is the whole message.
+
+### The garage, end to end
+
+Two automations and a script, none of them knowing anything about Dayline beyond
+the two actions.
+
+**When it opens** — an automation triggered on `cover.garage` becoming `open`
+calls `day_spine.show`: message *Garage is open*, id `garage_open`, level
+*Information*, confirm button *Close it* performing `script.turn_on` on your safe
+script, cancel button *Leave it* performing `day_spine.dismiss` with id
+`garage_open`.
+
+**When it closes** — the same automation on the other trigger calls
+`day_spine.dismiss` with id `garage_open`.
+
+**When the script declines** — the branch of `script.close_garage_safely` that
+finds a person in the camera calls `day_spine.show` itself: level *Alert*,
+message *Garage did not close — someone is in the driveway*, and a **Show me**
+button whose action is more-info on the camera.
+
+That last part is the whole design. **Dayline learns nothing about what happens
+inside your script** — deliberately, the same way it never inspects what an
+automation does with a `#tag` — so the explanation is written by the only thing
+that actually knows. The card also stops dimming a pressed button after twenty
+seconds whether or not anything came back, so a script that declined leaves a row
+that still reads as unfinished.
 
 ### Schedule calendars
 

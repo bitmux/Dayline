@@ -396,6 +396,7 @@ export class DaySpineCard extends LitElement {
       row.firstLive ? "live-start" : "",
       row.afterLive ? "after-live" : "",
       tappable ? "tappable" : "",
+      e?.level && e.level !== "normal" ? `lvl-${e.level}` : "",
       e && this._pending.has(e.id) ? "done" : "",
     ]
       .filter(Boolean)
@@ -450,7 +451,7 @@ export class DaySpineCard extends LitElement {
       default: {
         const dur = this._config.show_duration ? this._duration(e!) : null;
         return html`<div class="ttl">
-            ${e!.title}${this._renderTags(e!)}${dur
+            ${this._renderLevel(e!)}${e!.title}${this._renderTags(e!)}${dur
               ? html`<span class="dur">${dur}</span>`
               : nothing}
           </div>
@@ -460,6 +461,19 @@ export class DaySpineCard extends LitElement {
           ${this._renderAction(e!)}`;
       }
     }
+  }
+
+  /**
+   * The mark on a row an automation pushed in at a level of its own.
+   *
+   * An icon as well as a colour, deliberately. Colour alone would leave the
+   * distinction invisible to anyone who cannot see red, on the one row where
+   * "is this a problem" is the entire message.
+   */
+  private _renderLevel(e: SpineEntry): TemplateResult | typeof nothing {
+    if (e.level === "alert") return html`${icon("triangle-alert", 15)}`;
+    if (e.level === "info") return html`${icon("info", 15)}`;
+    return nothing;
   }
 
   /**
@@ -558,6 +572,20 @@ export class DaySpineCard extends LitElement {
   private _act(e: SpineEntry, action?: SpineAction): void {
     const a = action ?? e.actions?.[0] ?? e.action;
     if (!a) return;
+
+    // The three that are not service calls happen immediately and change
+    // nothing about the day, so none of them dims the row.
+    if (a.more_info) return this._moreInfo(a.more_info);
+    if (a.url) return void window.open(a.url, "_blank", "noopener");
+    if (a.navigate) {
+      history.pushState(null, "", a.navigate);
+      // How every Home Assistant card asks the frontend to route: the event,
+      // not the URL bar, is what the dashboard is listening to.
+      window.dispatchEvent(new CustomEvent("location-changed"));
+      return;
+    }
+
+    if (!a.service) return;
     const [domain, service] = a.service.split(".");
     if (!domain || !service) return;
     // Dim optimistically; the feed is the source of truth.
