@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import partial
 from typing import Any, Callable
 
@@ -499,7 +499,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         entry: Entry = {
             "id": f"push:{row_id}",
-            "start": str(data.get("start") or now.isoformat()),
+            "start": _when(data.get("start"), now),
             "end": None,
             "all_day": False,
             "kind": "standing",
@@ -748,3 +748,38 @@ def _button(spec: dict[str, Any] | None, fallback: str) -> dict[str, Any] | None
     if kind == "url" and action.get("url_path"):
         return {"label": label, "url": str(action["url_path"])}
     return None
+
+
+def _when(raw: Any, now: datetime) -> str:
+    """Where a pushed row sorts into the day.
+
+    Parsed and re-emitted rather than passed through. Whatever someone typed into
+    a text field reaches the card as a string it has to `Date.parse`, and a value
+    that parses differently there than here — or does not parse at all — puts the
+    row at the wrong time of day, which is the one thing a timeline cannot get
+    away with. A naive timestamp is read as the instance's own local time, which
+    is what someone typing one means.
+    """
+    text = str(raw or "").strip()
+    if not text:
+        return now.isoformat()
+    parsed = dt_util.parse_datetime(text)
+    if parsed is None:
+        # A bare date is the trap worth catching by name. `Date.parse` in the
+        # browser reads a date-only ISO string as *UTC* midnight while reading a
+        # date-and-time one as local — so "2026-09-04" would land the row on the
+        # evening of the third, with the wrong meridiem, on any instance west of
+        # Greenwich. Start of the local day is what someone typing a date means.
+        day = dt_util.parse_date(text)
+        if day is not None:
+            return dt_util.start_of_local_day(
+                datetime(day.year, day.month, day.day)
+            ).isoformat()
+    if parsed is None:
+        _LOGGER.warning(
+            "day_spine.show: could not read start %r, using now instead", text
+        )
+        return now.isoformat()
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+    return parsed.isoformat()
