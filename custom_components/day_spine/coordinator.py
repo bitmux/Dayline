@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from datetime import timedelta
 from functools import partial
@@ -264,13 +265,6 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if rule.get("entity_id")
         ]
         watched += self._watched_ids
-        # A standing row has to appear the moment its entity moves, so the
-        # entities those rules name are watched on the same fast path.
-        watched += [
-            rule["entity_id"]
-            for rule in self._standing()
-            if rule.get("entity_id") and not rule.get("template")
-        ]
         if watched:
             self._unsub_states = async_track_state_change_event(
                 self.hass, list(dict.fromkeys(watched)), self._on_state_change
@@ -480,7 +474,15 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         that runs on every state change.
         """
         now = dt_util.now()
-        row_id = str(data.get("id") or "").strip() or f"auto:{abs(hash(data.get('message')))}"
+        # A digest rather than hash(): Python salts string hashing per process,
+        # so the id a row was saved under would not be the id it got back after a
+        # restart — the row would resurrect as a duplicate and no dismiss would
+        # ever match it.
+        message = str(data.get("message") or "")
+        row_id = (
+            str(data.get("id") or "").strip()
+            or "auto:" + hashlib.sha1(message.encode()).hexdigest()[:10]
+        )
         seconds = data.get("duration")
         expires = (
             (now + timedelta(seconds=int(seconds))).isoformat() if seconds else None
