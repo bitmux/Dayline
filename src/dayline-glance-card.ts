@@ -55,13 +55,14 @@ type ResolvedConfig = DaylineGlanceCardConfig & typeof DEFAULTS;
  *
  * The order is the priority argument, written down. Secondary lines go first,
  * because the primary line above each one still says the thing. Then the clock
- * comes down a size — it is the point of the card, but it is also the largest
- * thing on it by far, and one size smaller still reads from the doorway. Then
- * the date, because the clock is right there. Then the second alert. The
- * next-event band goes last of all: on a panel, what is wrong now outranks what
- * is happening later, and if only one of the two fits it should be the alert.
+ * comes down, twice, with the date going between the two — the clock is the
+ * point of the card, but it is also by far the largest thing on it, and taking
+ * two smaller bites out of it beats dropping an alert that someone needs to
+ * press. Then the second alert. The next-event band goes last of all: on a
+ * panel, what is wrong now outranks what is happening later, and if only one of
+ * the two fits it should be the alert.
  */
-const FIT_STEPS = 5;
+const FIT_STEPS = 6;
 
 /** The chosen event, and whether it has already started. */
 interface NextUp {
@@ -83,6 +84,9 @@ export class DaylineGlanceCard extends LitElement {
   private _timer?: number;
   private _align?: number;
   private _ro?: ResizeObserver;
+  /** Last size the observer saw, so a shrink this card caused is not read as
+   *  the panel getting bigger. */
+  private _box = { h: 0, w: 0 };
 
   // ---------------------------------------------------------------- lifecycle
 
@@ -98,6 +102,15 @@ export class DaylineGlanceCard extends LitElement {
   }
 
   private _applyInsets(): void {
+    // A length, straight into a custom property. Restricted to the shapes a
+    // length actually takes, because this one is a string rather than a number
+    // and a custom property is a place CSS gets read from.
+    const max = this._config.max_height;
+    if (max && /^[0-9.]+(px|em|rem|vh|svh|dvh|lvh|%)$/.test(max.trim())) {
+      this.style.setProperty("--glance-max-height", max.trim());
+    } else {
+      this.style.removeProperty("--glance-max-height");
+    }
     for (const [prop, value] of [
       ["--inset-bottom", this._config.inset_bottom],
       ["--inset-top", this._config.inset_top],
@@ -145,12 +158,21 @@ export class DaylineGlanceCard extends LitElement {
     if (this._config?.load_fonts) loadFonts();
     this._startClock();
     // A panel gets resized by rotation, by a dashboard edit, and once by the
-    // browser settling after load. Each time, start from everything drawn —
-    // a card that only ever gives things up would stay stripped down forever
+    // browser settling after load. Each time, start from everything drawn — a
+    // card that only ever gives things up would stay stripped down forever
     // after one brief moment of being too small.
+    //
+    // Only when it got *bigger*, though. Where the parent lets this card size
+    // to its own content, taking something away shrinks the host, which fires
+    // this observer, which puts it back, which grows the host again: the card
+    // oscillates and settles at everything-drawn, overflowing, which is exactly
+    // the state the fit steps exist to prevent.
     if (typeof ResizeObserver !== "undefined") {
       this._ro = new ResizeObserver(() => {
-        this._fit = 0;
+        const h = this.clientHeight;
+        const w = this.clientWidth;
+        if (h > this._box.h + 1 || w !== this._box.w) this._fit = 0;
+        this._box = { h, w };
       });
       this._ro.observe(this);
     }
@@ -176,11 +198,56 @@ export class DaylineGlanceCard extends LitElement {
    */
   protected override updated(): void {
     if (this._fit >= FIT_STEPS) return;
-    const card = this.renderRoot.querySelector(".card");
+    const card = this.renderRoot.querySelector(".card") as HTMLElement | null;
     if (!card) return;
-    // A pixel of slack: sub-pixel layout rounding otherwise reads as an overflow
-    // on a card that fits perfectly well.
-    if (card.scrollHeight > card.clientHeight + 1) this._fit += 1;
+    // A pixel of slack throughout: sub-pixel layout rounding otherwise reads as
+    // an overflow on a card that fits perfectly well.
+    if (card.scrollHeight > card.clientHeight + 1 || this._overflowsScreen()) {
+      this._fit += 1;
+    }
+  }
+
+  /**
+   * The case the card's own box cannot see.
+   *
+   * `height: 100%` only means something when the parent has a height to be a
+   * percentage of. Where it does not — a view that lets its cards size to their
+   * content — the card grows to fit whatever it drew, its scrollHeight equals
+   * its clientHeight, it concludes everything is fine, and the bottom of it goes
+   * off the screen instead. Which is a card that has been told it has infinite
+   * room by a device that plainly does not have any.
+   *
+   * So when the box says nothing, ask the window — but only when the box really
+   * did say nothing. Two guards, and both matter:
+   *
+   * There must be no slack left in the card, which is what tells us no height
+   * was handed down. Comparing the content against the box does not answer that
+   * — the clock zone grows to absorb whatever is spare, so the content always
+   * appears to fill the card exactly. What the spare room went into is the clock
+   * zone itself, so that is where to look for it: a zone standing taller than
+   * the clock and date inside it is a card with room going begging, which means
+   * a parent that gave it a height. A 600px card on a 480px phone is a card the
+   * page scrolls to see, not one that should start throwing away alerts.
+   *
+   * And its top must be in the upper part of the screen. That is a panel view,
+   * or a card at the top of a dashboard, where what falls below the fold is
+   * genuinely lost. A card halfway down a long dashboard has a whole page under
+   * it and must not strip itself because the fold happens to land nearby.
+   */
+  private _overflowsScreen(): boolean {
+    const zone = this.renderRoot.querySelector(".clock-zone") as HTMLElement | null;
+    if (!zone) return false;
+    const kids = Array.from(zone.children) as HTMLElement[];
+    const gap = parseFloat(getComputedStyle(zone).rowGap) || 0;
+    const content =
+      kids.reduce((h, el) => h + el.getBoundingClientRect().height, 0) +
+      gap * Math.max(0, kids.length - 1);
+    if (zone.getBoundingClientRect().height - content > 2) return false;
+
+    const rect = this.getBoundingClientRect();
+    const screen = window.innerHeight || 0;
+    if (!screen || !rect.height || rect.top > screen * 0.4) return false;
+    return rect.bottom > screen + 1;
   }
 
   /** On the minute boundary, so the digits change when the wall clock does. */
@@ -221,11 +288,11 @@ export class DaylineGlanceCard extends LitElement {
     const down = !s || s.state === "unavailable" || s.state === "unknown";
 
     const entries = down ? [] : this._live(Array.isArray(s!.attributes.entries) ? s!.attributes.entries : []);
-    // Steps 1 and 2 are pure CSS — the classes below hide the secondary lines
-    // and shrink the clock. Steps 3 to 5 drop whole things, so they happen here.
-    const alerts = this._alerts(entries).slice(0, this._fit >= 4 ? 1 : undefined);
+    // Steps 1, 2 and 4 are pure CSS — the classes below hide the secondary lines
+    // and shrink the clock twice. The rest drop whole things, so they are here.
+    const alerts = this._alerts(entries).slice(0, this._fit >= 5 ? 1 : undefined);
     const next = this._next(entries, alerts);
-    const showNext = cfg.show_next && this._fit < 5;
+    const showNext = cfg.show_next && this._fit < 6;
     const showDate = cfg.show_date && this._fit < 3;
 
     return html`<div class="card ${cfg.use_ha_theme ? "themed" : ""} a${alerts.length} f${this._fit}">

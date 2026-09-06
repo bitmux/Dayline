@@ -17,6 +17,21 @@ on the spine card read once up close, and wrong for an instrument read constantl
 from eight feet. `clock_font_family` overrides it alone, separately from
 `font_family`.
 
+**The fit steps now work in a Panel view.** They are driven by measuring the
+card against its own box, which needs the parent to have given it a height — and
+a Panel (single card) view does not: it lets the card size to its own content, so
+the card filled whatever it had drawn, measured itself as fitting perfectly, and
+ran off the bottom of the screen. It now falls back to what is left of the
+window, guarded so that a card whose parent *did* give it a height is left alone
+to be scrolled to. `max_height` takes the guessing out of it entirely.
+
+Two smaller faults came out of the same corner. The observer that restores the
+card after a resize was firing on resizes the card had caused itself, undoing
+each step as it was taken. And the clock zone was free to shrink below the clock
+inside it, so the clock spilled out of a box that was centring it while the
+card's own measurement never changed — the overflow was invisible to the thing
+whose job was to find it.
+
 `inset_bottom` and `inset_top` exist because a panel app is not always honest
 about how much of the view is yours — View Assist paints a voice status line
 across the bottom of it, and the card underneath is handed the full height, fills

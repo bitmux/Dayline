@@ -33,6 +33,9 @@ export const glanceStyles = css`
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     height: 100%;
+    /* Unset by default, so this is inert until someone gives the card a ceiling
+       the parent would not. */
+    max-height: var(--glance-max-height, none);
     box-sizing: border-box;
     overflow: hidden;
   }
@@ -41,9 +44,16 @@ export const glanceStyles = css`
 
   .clock-zone {
     /* Takes every pixel the alerts have not claimed, and gives them back the
-       moment one arrives. */
+       moment one arrives.
+
+       No min-height of zero, which would be the reflex here and is wrong. It lets
+       this box shrink below the clock inside it; the clock then spills out of a
+       zone that is centring it, in both directions at once, and the card's own
+       scrollHeight never changes — so the measure concludes everything fits
+       while the top of the clock is being cut off. Left at its content floor,
+       the overflow reaches the card, where it can be seen and answered by making
+       the clock smaller, which is the actual remedy. */
     flex: 1 1 auto;
-    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -66,15 +76,15 @@ export const glanceStyles = css`
        readable size rather than an inherited default. The clamp below wins
        wherever cqw resolves. */
     font-size: 96px;
-    font-size: calc(clamp(64px, 34cqw, 200px) * var(--clock-scale, 1));
+    font-size: calc(clamp(64px, 32cqw, 176px) * var(--clock-scale, 1));
   }
   .a1 .clock {
     font-size: 72px;
-    font-size: calc(clamp(52px, 26cqw, 152px) * var(--clock-scale, 1));
+    font-size: calc(clamp(52px, 24cqw, 140px) * var(--clock-scale, 1));
   }
   .a2 .clock {
     font-size: 58px;
-    font-size: calc(clamp(42px, 20cqw, 118px) * var(--clock-scale, 1));
+    font-size: calc(clamp(42px, 19cqw, 108px) * var(--clock-scale, 1));
   }
 
   .mer {
@@ -292,10 +302,13 @@ export const glanceStyles = css`
      definite height this card cannot promise in every dashboard, the measure
      that is already running just tells it to be smaller. */
   .f2,
-  .f3,
+  .f3 {
+    --clock-scale: 0.78;
+  }
   .f4,
-  .f5 {
-    --clock-scale: 0.62;
+  .f5,
+  .f6 {
+    --clock-scale: 0.56;
   }
 
   .f1 .next-auto,
@@ -303,11 +316,13 @@ export const glanceStyles = css`
   .f3 .next-auto,
   .f4 .next-auto,
   .f5 .next-auto,
+  .f6 .next-auto,
   .f1 .alert-sub,
   .f2 .alert-sub,
   .f3 .alert-sub,
   .f4 .alert-sub,
-  .f5 .alert-sub {
+  .f5 .alert-sub,
+  .f6 .alert-sub {
     display: none;
   }
 

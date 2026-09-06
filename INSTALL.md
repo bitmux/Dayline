@@ -491,10 +491,11 @@ takes comes out of the alerts that *are* legible.
 A panel is a fixed rectangle. It cannot scroll and there is nobody standing there
 to scroll it, so when the content does not fit, the card decides what goes rather
 than letting the bottom of it be cut off mid-button. In order: the secondary sage
-lines, then the clock comes down a size, then the date under the clock, then the
-second alert, then the next-event band. The clock survives to the end, and the
-alert outranks the calendar — if only one of the two fits, it should be the thing
-that is wrong.
+lines, the clock down a size, the date under the clock, the clock down again, the
+second alert, and last the next-event band. The clock takes two smaller bites
+rather than one large one, because a slightly smaller clock beats an alert nobody
+can reach. The alert outranks the calendar — if only one of the two fits, it
+should be the thing that is wrong.
 
 The clock is also sized by how many alerts are on screen, so an alert appearing
 takes its room from the clock rather than fighting it for the space. That is
@@ -519,11 +520,36 @@ hearing from the house.
 | `quiet_message` | `Nothing else today` | What the event band says when the day has nothing left in it |
 | `inset_bottom` | `0` | Pixels along the bottom edge something else is drawing over — see below |
 | `inset_top` | `0` | The same for the top edge |
+| `max_height` | — | A hard ceiling as a CSS length — `100vh`, `580px`. Worth setting in a Panel view; see below. |
 | `time_format` | `auto` | `auto` follows your Home Assistant locale; `12` or `24` overrides it |
 | `use_ha_theme` | `false`, but a newly added card starts with `true` in its YAML | Colors and card surface from the active HA theme instead of the Organic palette |
 | `font_family` | — | A CSS font stack for the card's text. Does **not** touch the clock. |
 | `clock_font_family` | — | A CSS font stack for the clock alone, e.g. `"Roboto Mono", monospace`. It has its own key because what works for a sentence rarely works at 200px. |
 | `load_fonts` | `true` | Fetch Roboto, Caprasimo and Figtree from Google Fonts. Worth setting `false` on a panel with no internet — Roboto is already present inside Home Assistant, and the clock falls back to the system sans either way. |
+
+### Panel views, and giving the card a height
+
+The card works out what fits by measuring itself, which needs the parent to have
+given it a height to measure against. Most layouts do. **A Panel (single card)
+view does not** — it lets the card size to its own content, so the card fills
+whatever it drew, concludes everything is fine, and runs off the bottom of the
+screen instead. Which is where you find yourself looking at the top third of a
+button.
+
+The card handles this by falling back to what is left of the window, which is the
+right answer on a panel and is still a measurement rather than a promise. If you
+want it deterministic, hand it the number:
+
+```yaml
+type: custom:dayline-glance-card
+entity: sensor.dayline
+max_height: 100vh
+inset_bottom: 12
+```
+
+`max_height` takes any CSS length — `100vh`, `580px`. Everything else follows
+from it, and nothing has to be inferred. On a tablet whose browser chrome eats
+into the viewport, a plain pixel number measured off the device beats `100vh`.
 
 ### On old tablets
 

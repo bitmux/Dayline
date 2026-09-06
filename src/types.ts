@@ -280,6 +280,16 @@ export interface DaylineGlanceCardConfig {
    */
   inset_bottom?: number;
   inset_top?: number;
+  /**
+   * A hard ceiling for the card, as a CSS length — `580px`, `100vh`, `60svh`.
+   *
+   * The card works out what fits by measuring itself, which needs the parent to
+   * have given it a height to measure against. Most do. A view that lets its
+   * cards size to their own content has not, and the card falls back to what is
+   * left of the window — a good guess, and still a guess. This is the way to
+   * stop guessing: say the number and everything else follows from it.
+   */
+  max_height?: string;
   time_format?: "auto" | "12" | "24";
   load_fonts?: boolean;
   font_family?: string;
