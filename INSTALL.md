@@ -449,6 +449,97 @@ Live rows, overdue actionables and all-day entries are never collapsed by
 
 ---
 
+## The glance card
+
+The same feed, read from across a room.
+
+`custom:dayline-glance-card` is a second card in the same bundle — nothing extra
+to install, and it appears in the card picker as **Dayline Glance** as soon as
+the spine card does. It draws three things and no more:
+
+- **the time**, in Home Assistant's own Roboto and large enough to be the reason
+  someone looks at the panel — up to 200px on a 1024-wide one
+- **one event** — whatever is running now, or else whatever is next, with the
+  time, how long until it, and the sage line if the house is going to do
+  something about it
+- **up to two alerts**, with their buttons live
+
+It was built for a wall tablet — a View Assist panel, a kitchen display, an old
+phone in a dock — but there is nothing tablet-specific about it and it will sit
+in a dashboard column happily enough.
+
+```yaml
+type: custom:dayline-glance-card
+entity: sensor.day_spine
+```
+
+### What counts as an alert
+
+Only rows an automation put there deliberately: `level: alert` from
+`day_spine.show`, and standing rows — the ones that stay true until something
+changes, which is what *the garage is open* is. Nothing the feed generates on its
+own can reach that list, so a busy calendar can never crowd out a door. Alerts
+sort before info, newest first.
+
+Anything past `max_alerts` is dropped rather than counted. The spine card's rule
+— always say what you are not showing — is suspended here on purpose: a `+2 more`
+line is unreadable from eight feet and unactionable from a wall, and the room it
+takes comes out of the alerts that *are* legible.
+
+### It gives things up to fit
+
+A panel is a fixed rectangle. It cannot scroll and there is nobody standing there
+to scroll it, so when the content does not fit, the card decides what goes rather
+than letting the bottom of it be cut off mid-button. In order: the secondary sage
+lines, then the clock comes down a size, then the date under the clock, then the
+second alert, then the next-event band. The clock survives to the end, and the
+alert outranks the calendar — if only one of the two fits, it should be the thing
+that is wrong.
+
+The clock is also sized by how many alerts are on screen, so an alert appearing
+takes its room from the clock rather than fighting it for the space. That is
+width-driven, which is right on a panel roughly as tall as it is wide and wrong
+on a letterbox — a 1024×300 strip is where you will see the clock step down and
+the second alert go.
+
+One consequence worth knowing: **the clock keeps working when the feed does
+not.** If the sensor goes unavailable the card says so in the event band and goes
+on telling the time, because a panel showing a clock and an empty line looks like
+a quiet day, and *quiet* is exactly the wrong thing to imply when we have stopped
+hearing from the house.
+
+### Options
+
+| Key | Default | What it does |
+|---|---|---|
+| `entity` | — | The merged feed sensor. Required, and the same one the spine card uses. |
+| `show_date` | `true` | The weekday and date under the clock |
+| `show_next` | `true` | The next-event band. Off leaves a clock and whatever alerts arrive. |
+| `max_alerts` | `2` | Most alerts drawn at once |
+| `quiet_message` | `Nothing else today` | What the event band says when the day has nothing left in it |
+| `time_format` | `auto` | `auto` follows your Home Assistant locale; `12` or `24` overrides it |
+| `use_ha_theme` | `false`, but a newly added card starts with `true` in its YAML | Colors and card surface from the active HA theme instead of the Organic palette |
+| `font_family` | — | A CSS font stack for the card's text. Does **not** touch the clock. |
+| `clock_font_family` | — | A CSS font stack for the clock alone, e.g. `"Roboto Mono", monospace`. It has its own key because what works for a sentence rarely works at 200px. |
+| `load_fonts` | `true` | Fetch Roboto, Caprasimo and Figtree from Google Fonts. Worth setting `false` on a panel with no internet — Roboto is already present inside Home Assistant, and the clock falls back to the system sans either way. |
+
+### On old tablets
+
+The card is one custom element with its own shadow DOM, so there is nothing to
+reach into with card-mod and no grid-layout wrapper needed to make it legible.
+The clock is set in Roboto, which is what the Home Assistant frontend itself
+uses, so it should sit alongside anything else on the panel without looking
+imported. If View Assist's own clock is set in something else on your devices,
+`clock_font_family` is the one key to change.
+
+The one thing worth checking before you mount anything on a wall is the device's
+**System WebView** version, which on Android updates through the Play Store
+independently of the OS. The test costs nothing: if that tablet already renders
+your normal Home Assistant dashboard correctly, it will render this — the HA
+frontend targets newer browsers than this card does.
+
+---
+
 ## Working on it
 
 ```bash
@@ -561,7 +652,11 @@ Renders every card state side by side with no Home Assistant involved:
 python3 -m http.server 8765
 ```
 
-then open `http://localhost:8765/dev/index.html`. With that server running,
+then open `http://localhost:8765/dev/index.html`, and
+`http://localhost:8765/dev/glance.html` for the glance card at every panel size
+it is likely to meet. Add `?only=narrow` — any prefix of a panel's label — to
+render one of them on its own, which is how you look at a single state without
+nine others around it. With that server running,
 
 ```bash
 .venv/bin/python tools/shots.py

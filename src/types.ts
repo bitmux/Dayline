@@ -236,3 +236,45 @@ export interface SpineRow {
   /** Set on the now row when live rows sit above it, so the rail stays accent. */
   afterLive?: boolean;
 }
+
+/**
+ * The glance card: the same feed read from across a room.
+ *
+ * Deliberately a separate config type rather than a superset of
+ * `DaySpineCardConfig`. Nearly every key on that one is about the spine — the
+ * density budget, the legend, the source pills — and none of it has any meaning
+ * on a card whose whole content is a clock, one event and at most two alerts.
+ * The four that do overlap are spelled the same way so nobody has to learn two
+ * names for the clock format.
+ */
+export interface DaylineGlanceCardConfig {
+  type: string;
+  entity: string;
+  /** The weekday and date under the clock. */
+  show_date?: boolean;
+  /** The next-event band. Off leaves a clock and whatever alerts arrive. */
+  show_next?: boolean;
+  /**
+   * Most alerts drawn at once. Anything past this is dropped, not counted.
+   *
+   * The spine's house rule — say what you are not showing — is suspended here
+   * on purpose. A `+2 more` line is unreadable from eight feet and unactionable
+   * from a wall, and the space it costs comes out of the two alerts that *are*
+   * legible.
+   */
+  max_alerts?: number;
+  /** What the next-event band says when the day has nothing left in it. */
+  quiet_message?: string;
+  time_format?: "auto" | "12" | "24";
+  load_fonts?: boolean;
+  font_family?: string;
+  heading_font_family?: string;
+  /**
+   * A CSS `font-family` for the clock alone, written exactly as you would in
+   * CSS. Deliberately separate from `font_family`: the clock is the one thing
+   * on this card being read from across a room, and what works for a paragraph
+   * is rarely what works at 200px.
+   */
+  clock_font_family?: string;
+  use_ha_theme?: boolean;
+}

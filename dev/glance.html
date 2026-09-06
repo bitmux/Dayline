@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dayline glance card — dev harness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  body{margin:0;padding:40px;background:#231f1b;font-family:"Figtree",system-ui,sans-serif;
+       display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+  .col{display:flex;flex-direction:column;gap:10px}
+  .lbl{font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;
+       color:rgba(232,220,198,.45)}
+  dayline-glance-card{box-shadow:0 12px 32px rgba(0,0,0,.35);border-radius:28px;display:block}
+  /* The panel sizes that matter: an old 1024x600 Android tablet in landscape,
+     the same tablet in portrait, and the half-width case for a dashboard. */
+  .tablet{width:1024px;height:600px}
+  .portrait{width:600px;height:900px}
+  .half{width:420px;height:420px}
+  .tiny{width:340px;height:400px}
+  .letterbox{width:1024px;height:300px}
+</style>
+</head>
+<body>
+<script type="module">
+// Pinned like the spine harness, so a screenshot taken at midnight matches one
+// taken at noon. Harness-only — the card reads the real clock.
+const PINNED = (() => { const d = new Date(); d.setHours(14, 39, 0, 0); return d.getTime(); })();
+Date.now = () => PINNED;
+
+const { mock } = await import("./dev-bundle.js");
+
+function hass(attributes, { unavailable = false } = {}) {
+  return {
+    locale: { language: "en-US" },
+    states: unavailable ? {} : {
+      "sensor.day_spine": {
+        entity_id: "sensor.day_spine",
+        state: "3",
+        last_updated: new Date().toISOString(),
+        attributes,
+      },
+    },
+    callService: (d, s, data, target) => {
+      console.info("callService", `${d}.${s}`, { data, target });
+      return Promise.resolve();
+    },
+  };
+}
+
+// `?only=one-alert` renders a single variant on its own, which is how you get a
+// clean screenshot of one state without ten cards of context around it.
+const ONLY = new URLSearchParams(location.search).get("only");
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+function mount(label, entries, { size = "tablet", config = {}, unavailable = false } = {}) {
+  if (ONLY && !slug(label).startsWith(ONLY)) return;
+  const col = document.createElement("div");
+  col.className = "col";
+  col.innerHTML = `<div class="lbl">${label}</div>`;
+  const card = document.createElement("dayline-glance-card");
+  card.className = size;
+  card.setConfig({ type: "custom:dayline-glance-card", entity: "sensor.day_spine", ...config });
+  card.hass = hass({ entries }, { unavailable });
+  col.appendChild(card);
+  document.body.appendChild(col);
+}
+
+// The whole point of the reflow: the same card with nothing wrong, one thing
+// wrong, and two. The clock gives up exactly as much room as it has to.
+const oneAlert = mock.standing.filter((e) => e.id !== "push:garage_open");
+
+mount("Quiet · 1024×600 landscape", mock.ordinary);
+mount("One alert", oneAlert);
+mount("Two alerts · both buttons", mock.standing);
+mount("Portrait", mock.standing, { size: "portrait" });
+mount("Empty day", mock.emptyDay, { size: "half" });
+mount("Feed unavailable · the clock is still true", [], { size: "half", unavailable: true });
+mount("Narrow · buttons wrap under", mock.standing, { size: "tiny" });
+// Wide and short is the case the clock cannot size itself out of by width alone.
+mount("Letterbox · 1024×300", mock.standing, { size: "letterbox" });
+mount("24h, no date", mock.ordinary, { size: "half", config: { time_format: "24", show_date: false } });
+mount("max_alerts: 1", mock.standing, { size: "half", config: { max_alerts: 1 } });
+mount("Themed mode", mock.standing, { size: "half", config: { use_ha_theme: true } });
+</script>
+</body>
+</html>

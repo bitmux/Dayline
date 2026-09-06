@@ -2,6 +2,8 @@ import { LitElement, html, nothing, type TemplateResult } from "lit";
 import { state } from "lit/decorators.js";
 import { styles } from "./styles";
 import { icon, conditionIcon } from "./icons";
+import { calStyle } from "./cal";
+import { loadFonts } from "./fonts";
 import type {
   DaySpineCardConfig,
   HassEntity,
@@ -18,20 +20,6 @@ const DEFAULT_LEGEND =
   "Sage lines are what the house will do on its own.";
 
 /**
- * The calendar palette, as names the feed may use.
- *
- * A whitelist rather than a passthrough. The feed is ours, but this value ends
- * up inside a `style` attribute, and anything that reaches a stylesheet from
- * data should have to be on a list first. An unknown name simply gets no
- * colour, which is the same as not setting one.
- */
-const CAL_COLORS = ["blue", "cyan", "teal", "green", "violet", "magenta", "rose"];
-
-/** `--cal` for a row, an all-day item or a pill; empty when it has no colour. */
-const calStyle = (name?: string): string =>
-  name && CAL_COLORS.includes(name) ? `--cal: var(--cal-${name})` : "";
-
-/**
  * How long a pressed button stays dimmed with no word back.
  *
  * Long enough for a garage door to finish moving and the feed to notice, short
@@ -39,9 +27,6 @@ const calStyle = (name?: string): string =>
  */
 const PENDING_TIMEOUT = 20_000;
 
-const FONT_LINK_ID = "day-spine-card-fonts";
-const FONT_HREF =
-  "https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&display=swap";
 
 const DEFAULTS = {
   show_all_day: true,
@@ -137,7 +122,7 @@ export class DaySpineCard extends LitElement {
 
   public override connectedCallback(): void {
     super.connectedCallback();
-    if (this._config?.load_fonts) this._loadFonts();
+    if (this._config?.load_fonts) loadFonts();
     this._startClock();
   }
 
@@ -160,15 +145,6 @@ export class DaySpineCard extends LitElement {
       tick();
       this._timer = window.setInterval(tick, 60_000);
     }, 60_000 - (Date.now() % 60_000));
-  }
-
-  private _loadFonts(): void {
-    if (document.getElementById(FONT_LINK_ID)) return;
-    const link = document.createElement("link");
-    link.id = FONT_LINK_ID;
-    link.rel = "stylesheet";
-    link.href = FONT_HREF;
-    document.head.appendChild(link);
   }
 
   public getCardSize(): number {

@@ -46,6 +46,11 @@ is logbook-oriented — it tells you what happened, not what is about to.
   the spine; `Dayline Control` lets that calendar's `#tags` act; a `#tag` in an
   event title fires an event you bind to anything you like with the shipped
   blueprint. See [INSTALL.md](INSTALL.md#labels-and-tags--where-the-settings-went).
+- **Comes with a second card for a wall.** **Dayline Glance** is the same feed
+  reduced to a clock, the one event that is next, and up to two live alerts —
+  sized to be read from across a room, and it gives content up in a deliberate
+  order rather than being cut off by a panel that cannot scroll. Same bundle,
+  nothing extra to install.
 - **Never hides anything silently.** What the density budget collapses is
   counted on a `+N more today` row. A stale calendar tints its own pill and says
   so in the footer. The card states what it does not know.

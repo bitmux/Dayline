@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+**A second card: Dayline Glance.** The same feed, reduced to what survives being
+read from across a room — the time, one event, and up to two alerts with their
+buttons live. It ships in the same bundle as the spine card, so there is nothing
+extra to install; it appears in the picker as **Dayline Glance** the moment the
+other one does. Built for a wall tablet, and it adds nothing to the feed: every
+line on it is a selection from the same `entries[]`, so a panel and a dashboard
+can never disagree about the day.
+
+The clock is the point of the card and is sized and set accordingly: Roboto,
+which is what the Home Assistant frontend itself uses, at up to 200px on a
+1024-wide panel. Not Caprasimo — that is a display face, right for the day name
+on the spine card read once up close, and wrong for an instrument read constantly
+from eight feet. `clock_font_family` overrides it alone, separately from
+`font_family`.
+
+Two decisions in it are worth knowing about. Only rows an automation pushed in
+deliberately — `level: alert`, and standing rows — can become alerts, so a busy
+calendar can never crowd out an open door. And because a panel cannot scroll and
+has nobody standing there to scroll it, the card gives content up in a fixed
+order until it fits the rectangle it was given: sage lines, then the date, then
+the second alert, then the event band. The clock is last, and still ticks when
+the feed has gone unavailable.
+
 **Any automation can put a row on the spine.** `day_spine.show` and
 `day_spine.dismiss` are the first services this integration has had. A row takes
 a message, an optional sage second line, a level, a priority, an optional
