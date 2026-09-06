@@ -21,6 +21,10 @@
   .half{width:420px;height:420px}
   .tiny{width:340px;height:400px}
   .letterbox{width:1024px;height:300px}
+  /* Measured off the real thing over ADB: a first-generation Echo Show 5 on
+     LineageOS, running the View Assist companion app. 960x480 physical at
+     195dpi is 788x394 CSS pixels, and the panel hands the card all of it. */
+  .echo{width:788px;height:394px}
   /* No height at all — the case a view that lets its cards size themselves
      produces, where `height: 100%` resolves to auto and the card cannot see its
      own overflow. Open this one in a short window. */
@@ -111,6 +115,10 @@ const nowAndNext = [
 ];
 mount("Now + then · progress and the follow-on", nowAndNext);
 mount("Now + then · half width", nowAndNext, { size: "half" });
+
+// The real device, at its real size, in the dress it actually wears.
+mount("Echo Show 5 · 788×394 · themed", nowAndNext, { size: "echo", config: { use_ha_theme: true } });
+mount("Echo Show 5 · two alerts", mock.standing, { size: "echo", config: { use_ha_theme: true } });
 
 mount("Themed mode", mock.standing, { size: "half", config: { use_ha_theme: true } });
 </script>
