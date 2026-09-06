@@ -20,6 +20,12 @@ OPT_TITLE_NOISE = "title_noise"
 OPT_RECENT = "recent"  # [{entity_id, state, phrase}]
 OPT_RECENT_TTL = "recent_ttl"
 OPT_RECENT_MAX = "recent_max"
+OPT_LEAVE_BY = "leave_by"  # price journeys to events that name a place
+OPT_LEAVE_ORIGIN = "leave_origin"  # address, coordinates, or an entity to ask
+OPT_LEAVE_BUFFER = "leave_buffer"  # minutes of parking-and-walking-in
+OPT_LEAVE_MAX = "leave_max"  # how many upcoming events to price
+OPT_LEAVE_REGION = "leave_region"
+OPT_LEAVE_VEHICLE = "leave_vehicle"
 OPT_NOW_TEMPLATE = "now_template"
 OPT_HEADLINE_TEMPLATE = "headline_template"
 OPT_SCAN_MINUTES = "scan_minutes"
@@ -58,6 +64,11 @@ SERVICE_DISMISS = "dismiss"
 LEVELS = ["normal", "info", "alert"]
 
 PRIORITIES = ["high", "normal", "low"]
+
+# What Waze will route for, and where. Its region codes are its own; `row` is
+# "rest of world" and covers everywhere the other three do not.
+VEHICLES = ["car", "taxi", "motorcycle"]
+REGIONS = ["us", "na", "eu", "il", "au", "row"]
 ROLES = ["people", "schedule"]
 
 # --- calendar colours --------------------------------------------------------
@@ -97,6 +108,11 @@ DEFAULT_TITLE_NOISE = [
 ]
 DEFAULT_RECENT_TTL = 300
 DEFAULT_RECENT_MAX = 6
+DEFAULT_LEAVE_ORIGIN = "zone.home"
+DEFAULT_LEAVE_BUFFER = 10
+DEFAULT_LEAVE_MAX = 3
+DEFAULT_LEAVE_REGION = "us"
+DEFAULT_LEAVE_VEHICLE = "car"
 
 # How long a running automation stays attributable, and how many we keep.
 # Long enough for an action with a `delay` in it; short enough that a

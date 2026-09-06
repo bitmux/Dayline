@@ -48,6 +48,30 @@ export const ordinary: SpineEntry[] = [
     entity_id: "calendar.family",
   },
   {
+    // Two leave-by states side by side: one with time still on it, and one the
+    // clock has already gone past.
+    id: "cal:dentist",
+    start: at(16, 40),
+    kind: "calendar",
+    source: "Google",
+    color: "violet",
+    title: "Dentist",
+    location: "1200 W Harrison St",
+    leave_by: at(16, 8),
+    travel: { minutes: 22, buffer: 10, route: "I-90 W" },
+  },
+  {
+    id: "cal:recital",
+    start: at(14, 55),
+    kind: "calendar",
+    source: "Google",
+    color: "blue",
+    title: "Kid's recital",
+    location: "Auditorium, 55 E Monroe",
+    leave_by: at(14, 30),
+    travel: { minutes: 15, buffer: 10 },
+  },
+  {
     id: "cal:dinner",
     start: at(16, 15),
     kind: "calendar",

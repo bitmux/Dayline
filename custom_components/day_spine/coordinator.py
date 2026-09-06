@@ -21,10 +21,16 @@ from homeassistant.util import dt as dt_util
 
 from . import labels
 from . import tags as tagging
+from .travel import Travel
 from .const import (
     CONF_CALENDARS,
     CONF_TODO,
     CONF_WEATHER,
+    DEFAULT_LEAVE_BUFFER,
+    DEFAULT_LEAVE_MAX,
+    DEFAULT_LEAVE_ORIGIN,
+    DEFAULT_LEAVE_REGION,
+    DEFAULT_LEAVE_VEHICLE,
     DEFAULT_RECENT_MAX,
     DEFAULT_RECENT_TTL,
     DEFAULT_SCAN_MINUTES,
@@ -41,6 +47,12 @@ from .const import (
     OPT_CALENDAR_META,
     OPT_EXCLUDE,
     OPT_HEADLINE_TEMPLATE,
+    OPT_LEAVE_BUFFER,
+    OPT_LEAVE_BY,
+    OPT_LEAVE_MAX,
+    OPT_LEAVE_ORIGIN,
+    OPT_LEAVE_REGION,
+    OPT_LEAVE_VEHICLE,
     OPT_NOW_TEMPLATE,
     OPT_RECENT,
     OPT_RECENT_MAX,
@@ -55,6 +67,7 @@ from .const import (
 from .merge import (
     Entry,
     MergeConfig,
+    attach_leave_by,
     attach_weather,
     dedupe,
     from_calendars,
@@ -62,6 +75,7 @@ from .merge import (
     from_todo,
     remaining_count,
     tags_seen,
+    travel_targets,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -111,6 +125,10 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # ever was.
         self._rows_store: Store = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.rows")
         self._pushed: list[Entry] = []
+
+        # Journeys, and the cache of what they cost. See travel.py.
+        self._travel = Travel(hass)
+        self._travel_origin = ""
 
         super().__init__(
             hass,
@@ -188,6 +206,8 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             similarity=float(self._opts.get(OPT_SIMILARITY, DEFAULT_SIMILARITY)),
             title_noise=self._opts.get(OPT_TITLE_NOISE) or DEFAULT_TITLE_NOISE,
             todo_entity=self.entry.data.get(CONF_TODO),
+            leave_buffer=int(self._opts.get(OPT_LEAVE_BUFFER, DEFAULT_LEAVE_BUFFER)),
+            leave_max=int(self._opts.get(OPT_LEAVE_MAX, DEFAULT_LEAVE_MAX)),
         )
 
     # -- the fast path ------------------------------------------------------
@@ -442,6 +462,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         entries = dedupe(cfg, entries)
         entries = attach_weather(entries, await self._fetch_forecast(), now)
+        entries = await self._attach_travel(cfg, entries, now)
 
         self._base = entries
         self._apply_tags(now)
@@ -487,6 +508,34 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._log_fetch_failure("todo.get_items")
             return []
         return ((response or {}).get(todo) or {}).get("items", [])
+
+    async def _attach_travel(
+        self, cfg: MergeConfig, entries: list[Entry], now: datetime
+    ) -> list[Entry]:
+        """Work out when to leave for the next few places you have to be.
+
+        Off unless asked for: it is the one thing in here that talks to a
+        server outside the house, and a timeline is still a timeline without
+        it.
+        """
+        if not self._opts.get(OPT_LEAVE_BY):
+            return entries
+        origin = str(self._opts.get(OPT_LEAVE_ORIGIN) or DEFAULT_LEAVE_ORIGIN).strip()
+        if origin != self._travel_origin:
+            # Every cached journey started somewhere else.
+            self._travel.forget()
+            self._travel_origin = origin
+        targets = travel_targets(entries, now, cfg.leave_max)
+        priced = await self._travel.prices(
+            targets,
+            origin,
+            now,
+            region=str(self._opts.get(OPT_LEAVE_REGION) or DEFAULT_LEAVE_REGION),
+            vehicle_type=str(
+                self._opts.get(OPT_LEAVE_VEHICLE) or DEFAULT_LEAVE_VEHICLE
+            ),
+        )
+        return attach_leave_by(entries, priced, cfg.leave_buffer)
 
     async def _fetch_forecast(self) -> list[dict[str, Any]]:
         weather = self.entry.data.get(CONF_WEATHER)

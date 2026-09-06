@@ -58,7 +58,20 @@ from .const import (
     OPT_SIMILARITY,
     OPT_SUN_PRIORITY,
     OPT_TITLE_NOISE,
+    DEFAULT_LEAVE_BUFFER,
+    DEFAULT_LEAVE_MAX,
+    DEFAULT_LEAVE_ORIGIN,
+    DEFAULT_LEAVE_REGION,
+    DEFAULT_LEAVE_VEHICLE,
+    OPT_LEAVE_BUFFER,
+    OPT_LEAVE_BY,
+    OPT_LEAVE_MAX,
+    OPT_LEAVE_ORIGIN,
+    OPT_LEAVE_REGION,
+    OPT_LEAVE_VEHICLE,
     PRIORITIES,
+    REGIONS,
+    VEHICLES,
     ROLES,
 )
 
@@ -208,6 +221,7 @@ class DaySpineOptionsFlow(OptionsFlow):
                 "calendars",
                 "sentences",
                 "recent",
+                "leaving",
                 "sources",
                 "tuning",
             ],
@@ -508,6 +522,47 @@ class DaySpineOptionsFlow(OptionsFlow):
         schema[vol.Required("phrase", default=current.get("phrase", ""))] = selector.TextSelector()
         schema[vol.Optional("delete", default=False)] = selector.BooleanSelector()
         return self.async_show_form(step_id="recent_edit", data_schema=vol.Schema(schema))
+
+    # -- when to leave ------------------------------------------------------
+
+    async def async_step_leaving(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Travel time to the places today's events name.
+
+        Off by default, and the only page here that arranges to talk to a
+        server outside the house. It uses Home Assistant's own Waze Travel Time
+        component — no account, no key, and nothing to install: Dayline loads it
+        for the one service call and no sensor is created.
+        """
+        if user_input is not None:
+            self._opts.update(user_input)
+            return self._save()
+
+        o = self._opts
+        return self.async_show_form(
+            step_id="leaving",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(OPT_LEAVE_BY, default=o.get(OPT_LEAVE_BY, False)): selector.BooleanSelector(),
+                    vol.Optional(
+                        OPT_LEAVE_ORIGIN, default=o.get(OPT_LEAVE_ORIGIN, DEFAULT_LEAVE_ORIGIN)
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        OPT_LEAVE_BUFFER, default=o.get(OPT_LEAVE_BUFFER, DEFAULT_LEAVE_BUFFER)
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(min=0, max=60, step=5, unit_of_measurement="min")
+                    ),
+                    vol.Optional(
+                        OPT_LEAVE_MAX, default=o.get(OPT_LEAVE_MAX, DEFAULT_LEAVE_MAX)
+                    ): selector.NumberSelector(selector.NumberSelectorConfig(min=1, max=8, step=1)),
+                    vol.Optional(
+                        OPT_LEAVE_VEHICLE, default=o.get(OPT_LEAVE_VEHICLE, DEFAULT_LEAVE_VEHICLE)
+                    ): _select(VEHICLES, "vehicle"),
+                    vol.Optional(
+                        OPT_LEAVE_REGION, default=o.get(OPT_LEAVE_REGION, DEFAULT_LEAVE_REGION)
+                    ): _select(REGIONS, "region"),
+                }
+            ),
+        )
 
     # -- the dials ----------------------------------------------------------
 

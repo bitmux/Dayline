@@ -23,7 +23,8 @@
           "sentences": "Sentences — what the house does, in plain words",
           "recent": "What just happened — better wording for automatic changes",
           "sources": "Weather and to-do — and the fallback calendar list",
-          "tuning": "Tuning — sun, merging, timings, templates"
+          "tuning": "Tuning — sun, merging, timings, templates",
+          "leaving": "Leaving — travel time to the places your events name"
         }
       },
       "labels": {
@@ -80,6 +81,18 @@
           "delete": "Delete this line"
         }
       },
+      "leaving": {
+        "title": "Leaving",
+        "description": "When an event says where it is, Dayline can work out when you have to leave: the drive at the time you would be driving it, plus a buffer for parking and walking in.\n\nThere is nothing to install. This uses Home Assistant’s own Waze Travel Time component — no account and no API key — and Dayline loads it only to ask the question. No extra sensor appears.\n\nIt is the one thing here that talks to a server outside your house, which is why it is off until you turn it on. Only the next few events are priced, and only the ones whose location looks like a place: “Zoom” and “TBD” are left alone.\n\nStart from can be an address, a latitude and longitude, or an entity — `zone.home` for the house, or a person to route from wherever they are.",
+        "data": {
+          "leave_by": "Work out when to leave",
+          "leave_origin": "Start from",
+          "leave_buffer": "Buffer before the event",
+          "leave_max": "Events to price at once",
+          "leave_vehicle": "Travelling by",
+          "leave_region": "Region"
+        }
+      },
       "tuning": {
         "title": "Tuning",
         "description": "Similarity is how much of two titles must match before they are treated as one event — 0.8 is strict. Lower it if duplicates slip through, raise it if unrelated events start merging.\n\n“Check calendars every” is also how promptly a `#tag` can fire: a tag added to an event starting sooner than that may miss its moment.\n\nLeave the templates empty for sensible defaults.",
@@ -122,6 +135,23 @@
         "violet": "Violet",
         "magenta": "Magenta",
         "rose": "Rose"
+      }
+    },
+    "vehicle": {
+      "options": {
+        "car": "Car",
+        "taxi": "Taxi",
+        "motorcycle": "Motorcycle"
+      }
+    },
+    "region": {
+      "options": {
+        "us": "United States",
+        "na": "North America",
+        "eu": "Europe",
+        "il": "Israel",
+        "au": "Australia",
+        "row": "Rest of the world"
       }
     }
   }

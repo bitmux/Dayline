@@ -33,6 +33,12 @@ is logbook-oriented — it tells you what happened, not what is about to.
   into the past and go mouldy.
 - **Explains what just happened.** "Living room lights turned off by motion
   sensor", for five minutes, so nobody has to wonder.
+- **Says when to leave.** When an event names a place, Dayline prices the drive
+  *at the time you would be driving it* and works back from the start: "Leave by
+  4:08 PM · 22 min drive", turning terracotta once that time has gone. It uses
+  Home Assistant's own Waze Travel Time component — no account, no API key,
+  nothing to install — and it is off until you turn it on, because it is the one
+  thing here that talks to a server outside the house.
 - **Joins the hourly forecast** to upcoming entries — you are going to the fair,
   and it will be raining.
 - **Wears your theme, or brings its own.** A card you add starts with

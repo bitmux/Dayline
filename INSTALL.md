@@ -227,6 +227,49 @@ muted version of the past dot, and the icon on an all-day row. It deliberately
 never touches the now marker, a running entry, or a sage sentence — where a
 colour already means something, meaning wins over identity.
 
+## Leaving in time
+
+An event that says *where* it is can also say *when to set off*. Under the title:
+
+> **Dentist** — 4:40 PM
+> 🚗 Leave by 4:08 PM · 22 min drive
+
+Grey while there is still time. Terracotta once there is not, and the words
+change to **Leave now** — this is the only line on the card that stops being
+information and becomes an instruction, so it is the only one that changes
+colour.
+
+Turn it on in **Settings → Devices & services → Dayline → Configure →
+Leaving**. It is off until you do, because it is the one part of Dayline that
+talks to a server outside your house.
+
+**There is nothing to install.** No account, no API key, no billing. It uses
+Home Assistant's own Waze Travel Time component, and Dayline loads it just to
+ask the question — no config entry is created and no extra sensor appears
+anywhere.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| Work out when to leave | off | The whole feature |
+| Start from | `zone.home` | An address, a `lat, lon` pair, or an entity — a `person.*` to route from wherever they actually are |
+| Buffer before the event | `10 min` | Parking, walking in, finding the room. A household constant, not a fact about roads — which is why it is one number rather than a guess per destination |
+| Events to price at once | `3` | Each one is a network call. Being late for the next thing is the problem; the fourth event of the afternoon can wait until it is closer |
+| Travelling by | Car | Also taxi or motorcycle |
+| Region | United States | Waze's own regions |
+
+Three things it does on purpose:
+
+- **The drive is priced for the time you would be driving it**, not for now. A
+  Friday five o'clock is not a Tuesday ten, and a leave-by built on current
+  traffic is wrong in the direction that makes you late.
+- **The drive is rounded up.** Being early is free.
+- **It says nothing rather than something wrong.** A location the router cannot
+  make sense of — "Kid's school" — simply gets no line, and is not asked about
+  again for six hours. Locations that are obviously not places (`Zoom`, a
+  meeting link, `TBD`) are never sent anywhere at all.
+
+---
+
 ## Rows an automation puts there
 
 A calendar event happens at a time. Plenty of what is left of your day does not:
@@ -440,6 +483,7 @@ dashboard is where people go to change how a dashboard looks; what the feed
 | `recent_ttl` | `300` | Seconds a recent line lives if the feed did not set `expires` |
 | `show_weather` | `true` | Condition icon and temperature under the time, on upcoming entries |
 | `show_duration` | `true` | The duration chip on upcoming entries that have an end |
+| `show_leave_by` | `true` | The "leave by" line, on events the feed could price a journey to. Nothing appears unless **Leaving** is switched on in the integration's options. |
 | `use_ha_theme` | `false`, but a newly added card starts with `true` in its YAML | Take colors *and the card surface* from the active HA theme instead of the Organic palette — including a frosted theme's blur, shadow and border, so the card is made of the same material as everything around it. Geometry and typefaces stay fixed either way. |
 | `load_fonts` | `true` | Fetch Caprasimo and Figtree from Google Fonts. Set `false` on an offline tablet — the card falls back to Georgia and the system sans. |
 
