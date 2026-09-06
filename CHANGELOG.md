@@ -17,6 +17,12 @@ on the spine card read once up close, and wrong for an instrument read constantl
 from eight feet. `clock_font_family` overrides it alone, separately from
 `font_family`.
 
+`inset_bottom` and `inset_top` exist because a panel app is not always honest
+about how much of the view is yours — View Assist paints a voice status line
+across the bottom of it, and the card underneath is handed the full height, fills
+it, and has the last few pixels of whatever it drew covered up. The insets take
+that room out of the card's own box, and the fit steps see the smaller box.
+
 Two decisions in it are worth knowing about. Only rows an automation pushed in
 deliberately — `level: alert`, and standing rows — can become alerts, so a busy
 calendar can never crowd out an open door. And because a panel cannot scroll and

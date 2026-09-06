@@ -22,7 +22,11 @@ export const glanceStyles = css`
   .card {
     background: var(--ds-bg);
     border-radius: var(--radius-lg);
-    padding: var(--space-6);
+    /* The insets are extra padding rather than a smaller card on purpose: the
+       background still runs edge to edge under whatever is drawing over it, so
+       a panel overlay sits on the card rather than on a gap beside it. */
+    padding: calc(var(--space-6) + var(--inset-top, 0px)) var(--space-6)
+      calc(var(--space-6) + var(--inset-bottom, 0px));
     display: flex;
     flex-direction: column;
     gap: var(--space-4);

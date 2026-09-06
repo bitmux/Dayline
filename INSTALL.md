@@ -517,6 +517,8 @@ hearing from the house.
 | `show_next` | `true` | The next-event band. Off leaves a clock and whatever alerts arrive. |
 | `max_alerts` | `2` | Most alerts drawn at once |
 | `quiet_message` | `Nothing else today` | What the event band says when the day has nothing left in it |
+| `inset_bottom` | `0` | Pixels along the bottom edge something else is drawing over — see below |
+| `inset_top` | `0` | The same for the top edge |
 | `time_format` | `auto` | `auto` follows your Home Assistant locale; `12` or `24` overrides it |
 | `use_ha_theme` | `false`, but a newly added card starts with `true` in its YAML | Colors and card surface from the active HA theme instead of the Organic palette |
 | `font_family` | — | A CSS font stack for the card's text. Does **not** touch the clock. |
@@ -531,6 +533,27 @@ The clock is set in Roboto, which is what the Home Assistant frontend itself
 uses, so it should sit alongside anything else on the panel without looking
 imported. If View Assist's own clock is set in something else on your devices,
 `clock_font_family` is the one key to change.
+
+**If the last line looks clipped, something is drawn over it.** View Assist
+paints its voice status line across the bottom of the view, and a card
+underneath has no way to know: it is handed the full height, it fills the full
+height, and the bottom few pixels of whatever it drew end up behind the bar. The
+card is drawing correctly — it just does not own as much of the box as it was
+told it did.
+
+`inset_bottom` takes that room out of the card's own box:
+
+```yaml
+type: custom:dayline-glance-card
+entity: sensor.dayline
+inset_bottom: 16
+```
+
+Measure the overlay and use that number. The background still runs edge to edge
+underneath, so the bar sits on the card rather than on a gap beside it, and the
+fit steps see the smaller box — a card that no longer fits gives something up
+rather than tucking it behind the bar. `inset_top` does the same for a panel with
+a status bar at the top.
 
 The one thing worth checking before you mount anything on a wall is the device's
 **System WebView** version, which on Android updates through the Play Store

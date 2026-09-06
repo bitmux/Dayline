@@ -81,6 +81,9 @@ mount("Feed unavailable · the clock is still true", [], { size: "half", unavail
 mount("Narrow · buttons wrap under", mock.standing, { size: "tiny" });
 // Wide and short is the case the clock cannot size itself out of by width alone.
 mount("Letterbox · 1024×300", mock.standing, { size: "letterbox" });
+// What a View Assist panel actually hands us: the full height, with its voice
+// status line painted across the bottom of it.
+mount("Inset · 16px overlay at the bottom", mock.ordinary, { config: { inset_bottom: 16 } });
 mount("24h, no date", mock.ordinary, { size: "half", config: { time_format: "24", show_date: false } });
 mount("max_alerts: 1", mock.standing, { size: "half", config: { max_alerts: 1 } });
 mount("Themed mode", mock.standing, { size: "half", config: { use_ha_theme: true } });

@@ -35,6 +35,8 @@ const DEFAULTS = {
   show_next: true,
   max_alerts: 2,
   quiet_message: "Nothing else today",
+  inset_bottom: 0,
+  inset_top: 0,
   time_format: "auto" as "auto" | "12" | "24",
   load_fonts: true,
   use_ha_theme: false,
@@ -89,7 +91,23 @@ export class DaylineGlanceCard extends LitElement {
       throw new Error("dayline-glance-card: `entity` is required (the merged feed sensor).");
     }
     this._config = { ...DEFAULTS, ...config };
+    // A different box is a different answer about what fits in it.
+    this._fit = 0;
     this._applyFonts();
+    this._applyInsets();
+  }
+
+  private _applyInsets(): void {
+    for (const [prop, value] of [
+      ["--inset-bottom", this._config.inset_bottom],
+      ["--inset-top", this._config.inset_top],
+    ] as const) {
+      // Numbers only, and they become a length here rather than anywhere the
+      // value could be read as CSS of its own.
+      const px = Number(value);
+      if (Number.isFinite(px) && px > 0) this.style.setProperty(prop, `${px}px`);
+      else this.style.removeProperty(prop);
+    }
   }
 
   private _applyFonts(): void {

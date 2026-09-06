@@ -265,6 +265,21 @@ export interface DaylineGlanceCardConfig {
   max_alerts?: number;
   /** What the next-event band says when the day has nothing left in it. */
   quiet_message?: string;
+  /**
+   * Pixels along the bottom and top edges that something else is drawing over.
+   *
+   * A panel app is not always honest about how much of the view is yours. View
+   * Assist paints its voice status line across the bottom of the view, and the
+   * card underneath has no way to know: it is handed the full height, fills it,
+   * and the last few pixels of whatever it drew are simply covered up.
+   *
+   * These take that room out of the card's own box, so the content sits above
+   * the overlay instead of under it — and the fit steps see the smaller box, so
+   * a card that no longer fits will give something up rather than tuck it
+   * behind the bar.
+   */
+  inset_bottom?: number;
+  inset_top?: number;
   time_format?: "auto" | "12" | "24";
   load_fonts?: boolean;
   font_family?: string;
