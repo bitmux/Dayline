@@ -63,6 +63,18 @@ export interface SpineEntry {
   title: string;
   /** What the house does on its own, in plain words. Never an entity id or scene name. */
   automation?: string | null;
+  /** Where the event is, as the calendar wrote it. Not always an address. */
+  location?: string | null;
+  /**
+   * When to set off, so as to arrive on time: the start, less the drive, less
+   * a buffer for parking and walking in.
+   *
+   * Present only when the feed could actually price the journey. A missing
+   * leave-by line is a card that is quiet about it; a wrong one makes you late.
+   */
+  leave_by?: string | null;
+  /** The journey behind `leave_by`. `minutes` is the drive, rounded up. */
+  travel?: { minutes: number; buffer?: number; route?: string | null } | null;
   /**
    * `#tags` the feed lifted out of the event title, as they were typed.
    *
@@ -186,6 +198,8 @@ export interface DaySpineCardConfig {
   show_weather?: boolean;
   /** The duration chip on upcoming entries that have an end. */
   show_duration?: boolean;
+  /** Draw the "leave by" line on events the feed could price a journey to. */
+  show_leave_by?: boolean;
   /** Adopt the active Home Assistant theme's colors instead of the Organic palette. */
   use_ha_theme?: boolean;
 }

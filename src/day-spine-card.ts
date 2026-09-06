@@ -51,6 +51,7 @@ const DEFAULTS = {
   show_weather: true,
   use_ha_theme: false,
   show_duration: true,
+  show_leave_by: true,
 };
 
 /** Chance of rain at or above this gets the accent treatment, not just an icon. */
@@ -434,9 +435,34 @@ export class DaySpineCard extends LitElement {
           ${e!.automation
             ? html`<div class="auto">${icon("sparkles", 14)}${e!.automation}</div>`
             : nothing}
-          ${this._renderAction(e!)}`;
+          ${this._renderLeave(e!)} ${this._renderAction(e!)}`;
       }
     }
+  }
+
+  /**
+   * When to set off, on an event that says where it is.
+   *
+   * Neutral while there is time, terracotta once there is not — the same
+   * escalation an overdue actionable gets, and for the same reason: this is
+   * the one line on the card that stops being information and starts being an
+   * instruction. It never claims the journey is impossible. It says the time
+   * has gone, and leaves the judgement where it belongs.
+   */
+  private _renderLeave(e: SpineEntry): TemplateResult | typeof nothing {
+    if (!this._config.show_leave_by || !e.leave_by) return nothing;
+    const leave = Date.parse(e.leave_by);
+    if (!Number.isFinite(leave)) return nothing;
+    // Once the event itself has started, when to have left is history.
+    if (Date.parse(e.start) <= this._now) return nothing;
+
+    const drive = e.travel?.minutes;
+    const trip = drive ? `${drive} min drive` : null;
+    const late = leave <= this._now;
+    const when = late ? "Leave now" : `Leave by ${this._fmt(leave, false)}`;
+    return html`<div class="leave ${late ? "late" : ""}">
+      ${icon("car", 14)}<span>${trip ? `${when} · ${trip}` : when}</span>
+    </div>`;
   }
 
   /**

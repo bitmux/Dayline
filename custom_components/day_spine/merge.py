@@ -8,6 +8,7 @@ module's job is to decide.
 
 from __future__ import annotations
 
+import math
 import re
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
@@ -34,6 +35,8 @@ class MergeConfig:
     similarity: float = 0.8
     title_noise: list[str] = field(default_factory=list)
     todo_entity: str | None = None
+    leave_buffer: int = 10
+    leave_max: int = 3
 
 
 # ---------------------------------------------------------------------------
@@ -217,6 +220,12 @@ def from_calendars(
             color = meta.get("color")
             if color and color != "default":
                 entry["color"] = color
+            # Where it is, if the calendar says. Omitted when blank, like the
+            # colour: most events do not have one, and this payload is re-sent
+            # to every open browser on every refresh.
+            location = str(ev.get("location") or "").strip()
+            if location:
+                entry["location"] = location
             # Omitted rather than empty: this payload is re-sent to every open
             # browser on each refresh, and most events will never carry a tag.
             if tags:
@@ -423,6 +432,104 @@ def attach_weather(entries: list[Entry], forecast: list[dict[str, Any]], now: da
                 "precipitation_probability": f.get("precipitation_probability"),
                 "precipitation": f.get("precipitation"),
             }
+    return entries
+
+
+# ---------------------------------------------------------------------------
+# leaving in time
+# ---------------------------------------------------------------------------
+
+# Things people put in a location field that are not places. Checked before
+# anything is asked of a routing service, because "Zoom" resolves to a town in
+# more than one country and would cheerfully return a two-hour drive.
+_NOT_A_PLACE = re.compile(
+    r"^(https?://|tel:|zoom|teams|meet\.|webex|google meet|phone|call|tbd|online|virtual|home)\b",
+    re.I,
+)
+
+
+def is_place(location: str) -> bool:
+    """Whether a location field is worth asking a router about.
+
+    Deliberately a blocklist, not an allowlist: real addresses are written every
+    way there is, and a router that accepts free text is better at reading them
+    than any pattern here would be. This only catches the things that are
+    confidently *not* addresses.
+    """
+    text = (location or "").strip()
+    return len(text) >= 3 and not _NOT_A_PLACE.match(text)
+
+
+def travel_targets(
+    entries: list[Entry], now: datetime, limit: int = 3
+) -> list[tuple[str, datetime]]:
+    """The destinations worth pricing a journey to, with the time to be there.
+
+    Soonest first.
+
+    Every lookup is a network call, and the answer goes stale, so this is
+    capped. Being late for the next thing is the problem; the fourth event of
+    the afternoon can wait until it is closer.
+    """
+    seen: set[str] = set()
+    out: list[tuple[str, datetime]] = []
+    for entry in sorted(entries, key=lambda e: str(e.get("start") or "")):
+        if entry.get("all_day") or entry.get("kind") not in ("calendar", "automation"):
+            continue
+        location = str(entry.get("location") or "").strip()
+        start = _parse(entry["start"])
+        if not location or start is None or start <= now or not is_place(location):
+            continue
+        key = location.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append((location, start))
+        if len(out) >= limit:
+            break
+    return out
+
+
+def attach_leave_by(
+    entries: list[Entry],
+    travel: dict[str, dict[str, Any]],
+    buffer_minutes: int = 10,
+) -> list[Entry]:
+    """Hang a departure time on each entry we know the journey for.
+
+    `travel` is keyed by the lowercased location string, and carries at least
+    `minutes`. The buffer is padding at the far end — parking, walking in,
+    finding the room — and is the same for every journey because guessing it
+    per-destination would be a lie dressed up as precision.
+
+    A leave-by time already gone is still attached, and whether it has gone is
+    left to the card, which knows what time it is between refreshes. Someone
+    reading at ten past knows they are ten minutes late, and taking the row away
+    would be the card deciding they had given up.
+    """
+    if not travel:
+        return entries
+    for entry in entries:
+        location = str(entry.get("location") or "").strip()
+        if not location or entry.get("all_day"):
+            continue
+        found = travel.get(location.lower())
+        start = _parse(entry["start"])
+        if not found or start is None:
+            continue
+        minutes = found.get("minutes")
+        if minutes is None:
+            continue
+        # Rounded up, not to the nearest. A drive that takes less time than it
+        # was given costs nothing; the other way round you are late, which is
+        # the only thing this is for. It also keeps the number on the card and
+        # the time on the card telling the same story, to the minute.
+        drive = math.ceil(float(minutes))
+        entry["leave_by"] = _iso(start - timedelta(minutes=drive + buffer_minutes))
+        entry["travel"] = {"minutes": drive, "buffer": buffer_minutes}
+        route = found.get("route")
+        if route:
+            entry["travel"]["route"] = route
     return entries
 
 

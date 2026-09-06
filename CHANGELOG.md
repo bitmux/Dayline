@@ -2,6 +2,37 @@
 
 ## Unreleased
 
+**Leave-by times.** An event that says where it is can now say when to set off.
+The start time, less the drive, less a buffer for parking and walking in — drawn
+under the title in grey while there is still time, and terracotta the moment
+there is not. It is the one line on the card that stops being information and
+starts being an instruction, so it is the one line that changes colour.
+
+The drive is priced *for the time you would be driving it*, not for now. Waze
+answers a Friday five o'clock differently from a Tuesday ten, and on the run
+this was built against the same journey was 24.8 minutes now and 20.5 in three
+hours. A leave-by time computed from current traffic would have been wrong by
+four minutes in a direction that makes you late. Departure depends on the
+journey length, which is the thing being asked for, so the previous answer seeds
+the question and it is asked once — not a loop that converges on somebody else's
+server.
+
+There is nothing to install and no account to make. `waze_travel_time` registers
+its service in `async_setup` and declares `config_entry_only_config_schema`,
+which means Dayline can load it with no configuration at all: no config entry,
+no extra sensor on anybody's dashboard, just the service. It is still off by
+default, because a feature that sends your calendar's addresses to a routing
+service should be something you switched on.
+
+Only the next few events are priced, and answers are cached for a quarter of the
+time left before you have to be there — an event four hours out is re-priced
+hourly, one twenty minutes out every five. A destination the router cannot make
+sense of is dropped for six hours rather than retried every poll: "Kid's school"
+is not a road and never will be. Locations that are obviously not places —
+`Zoom`, a meeting URL, `TBD` — are never sent anywhere at all.
+
+The drive is rounded **up**. Being early is free.
+
 **"What just happened" now works for automations that are not state-triggered,
 which was most of them.** The test for whether the house acted was whether the
 state change carried a parent context. That is only true when the automation was

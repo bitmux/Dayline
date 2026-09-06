@@ -590,6 +590,27 @@ export const styles = css`
     flex: none;
   }
 
+  /* ---------- when to leave ---------- */
+  /*
+   * Neither sage nor terracotta while there is still time: the house is not
+   * acting and nothing is happening yet. Terracotta the moment the time has
+   * gone, which is the only point at which this line is asking for anything.
+   */
+  .leave {
+    font-size: 13.5px;
+    color: var(--color-neutral-500);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+  }
+  .leave .icon {
+    flex: none;
+  }
+  .leave.late {
+    color: var(--color-accent-300);
+  }
+
   /* ---------- the action button ---------- */
 
   .act {

@@ -278,10 +278,8 @@ explaining it are one object, so they cannot drift.
 
 The cheapest magic is derived. None of the below asks anyone for anything.
 
-- **Leave-by, not start-at.** "Leave at 3:40" beats "4:00 appointment". Event
-  location plus a travel-time integration gets there with nothing typed.
-  Highest value per unit of work on this page, and cheaper to set up than
-  expected:
+- **Leave-by, not start-at.** **Built**, and cheaper than this page expected in
+  one more way than it predicted. Every note below survived contact:
   - **Waze Travel Time needs no API key.** Google Maps Travel Time needs a key
     *and* billing enabled with a card on file, and at its 10-minute polling rate
     a single sensor roughly consumes the free tier on its own. Waze is the
@@ -294,10 +292,28 @@ The cheapest magic is derived. None of the below asks anyone for anything.
     roads; "this family needs fifteen minutes to get out of the door" is a
     household constant, and conflating them makes both wrong. One number, set
     once, added to every leave-by.
-  - Status quo until then is fine and worth not breaking: an extra calendar
-    entry when travel is notable, with the phone's own native notification
-    doing the telling. That path involves no Home Assistant at all, which by
-    principle 2 makes it hard to beat.
+  - **Nothing to install, in the end.** `waze_travel_time` registers its service
+    in `async_setup` and uses `config_entry_only_config_schema`, so Dayline
+    loads the component itself for the one call. No config entry, no key, no
+    account, and no extra sensor appears on anybody's dashboard.
+  - **The unanticipated part: `time_delta`.** The service will answer for
+    traffic at a future moment, not just now. On the journey this was built
+    against that was 24.8 minutes now against 20.5 in three hours — so a
+    leave-by computed from current traffic is wrong by four minutes, in the
+    direction that makes you late. This is the difference between the feature
+    being useful and being decorative, and it was free.
+  - **Still open, and deliberately so:**
+    - Whether a leave-by should also be *its own row* on the spine, at the
+      departure time, rather than a line under the event. A row can go overdue
+      and can carry a button; a line cannot. The data supports both — `leave_by`
+      is on the entry, and the card decides — so this is a card change whenever
+      somebody wants it.
+    - Whether the glance card shows it. It is the card most likely to be looked
+      at on the way out of the door.
+    - Whether the origin should follow a person rather than being the house.
+      `zone.home` is the default; the field takes any entity, so routing from
+      wherever you actually are is a setting away, but "leave by" means
+      something different when you are not home yet.
 - **The gaps.** "2h 40m free after lunch." People plan against negative space
   and no calendar app shows it.
 - **The evening pivot.** After a cutoff hour the card's question changes from

@@ -30,14 +30,17 @@ _sys.modules[_spec.name] = merge
 _spec.loader.exec_module(merge)
 
 MergeConfig = merge.MergeConfig
+attach_leave_by = merge.attach_leave_by
 attach_weather = merge.attach_weather
 dedupe = merge.dedupe
 from_calendars = merge.from_calendars
 from_sun = merge.from_sun
 from_todo = merge.from_todo
 remaining_count = merge.remaining_count
+is_place = merge.is_place
 split_tags = merge.split_tags
 tags_seen = merge.tags_seen
+travel_targets = merge.travel_targets
 _similar = merge._similar
 
 TZ = timezone(timedelta(hours=-5))
@@ -535,3 +538,88 @@ def test_a_deduped_event_keeps_the_first_calendars_colour():
     assert len(kept) == 1
     assert kept[0]["color"] == "blue"
     assert kept[0]["source"] == "Google + CalDAV"
+
+
+# ---------------------------------------------------------------------------
+# leaving in time
+# ---------------------------------------------------------------------------
+
+
+def _at(hour: int, minute: int = 0) -> str:
+    return datetime(2026, 9, 2, hour, minute, tzinfo=TZ).isoformat()
+
+
+def test_an_events_location_reaches_the_entry():
+    out = from_calendars(
+        cfg(),
+        {"calendar.family": [ev("2026-09-02T16:00:00-05:00", "Dentist", location="12 Main St")]},
+        DAY_START,
+    )
+    assert out[0]["location"] == "12 Main St"
+
+
+def test_an_event_with_no_location_does_not_carry_an_empty_one():
+    """The payload is re-sent to every open browser on every refresh, and most
+    events will never have a location."""
+    out = from_calendars(
+        cfg(),
+        {"calendar.family": [ev("2026-09-02T16:00:00-05:00", "Dentist", location="  ")]},
+        DAY_START,
+    )
+    assert "location" not in out[0]
+
+
+def test_things_that_are_not_places_are_never_routed_to():
+    for text in ("Zoom", "https://meet.example/abc", "TBD", "Google Meet", "Home", "x"):
+        assert not is_place(text), text
+    for text in ("12 Main St", "O'Hare International Airport", "41.88, -87.62"):
+        assert is_place(text), text
+
+
+def test_targets_are_the_soonest_few_places_still_ahead():
+    entries = [
+        {"start": _at(9), "kind": "calendar", "location": "Past Place"},
+        {"start": _at(16), "kind": "calendar", "location": "Dentist St"},
+        {"start": _at(18), "kind": "calendar", "location": "Zoom"},
+        {"start": _at(19), "kind": "calendar", "location": "School Rd"},
+        {"start": _at(20), "kind": "calendar", "location": "Late Ave"},
+        {"start": _at(21), "kind": "calendar"},
+    ]
+    got = travel_targets(entries, NOW, limit=2)
+    assert [location for location, _ in got] == ["Dentist St", "School Rd"]
+
+
+def test_the_same_place_twice_is_one_lookup():
+    entries = [
+        {"start": _at(16), "kind": "calendar", "location": "Dentist St"},
+        {"start": _at(18), "kind": "calendar", "location": "dentist st"},
+    ]
+    assert len(travel_targets(entries, NOW)) == 1
+
+
+def test_leave_by_is_the_start_less_the_drive_and_the_buffer():
+    entries = [
+        {"start": _at(16), "kind": "calendar", "location": "Dentist St"},
+    ]
+    attach_leave_by(entries, {"dentist st": {"minutes": 25.4, "route": "I-90 W"}}, buffer_minutes=10)
+    # 25.4 minutes is rounded up, not to the nearest: being early is free.
+    assert entries[0]["leave_by"] == _at(15, 24)
+    assert entries[0]["travel"] == {"minutes": 26, "buffer": 10, "route": "I-90 W"}
+
+
+def test_a_place_the_router_could_not_price_says_nothing_at_all():
+    """A missing leave-by line is a card that is quiet. A wrong one makes you
+    late, which is the only thing this feature exists to prevent."""
+    entries = [{"start": _at(16), "kind": "calendar", "location": "Kid\'s school"}]
+    attach_leave_by(entries, {})
+    assert "leave_by" not in entries[0]
+    attach_leave_by(entries, {"somewhere else": {"minutes": 10}})
+    assert "leave_by" not in entries[0]
+
+
+def test_an_all_day_event_is_never_given_a_departure_time():
+    entries = [
+        {"start": _at(0), "all_day": True, "kind": "calendar", "location": "Dentist St"},
+    ]
+    attach_leave_by(entries, {"dentist st": {"minutes": 25}})
+    assert "leave_by" not in entries[0]
