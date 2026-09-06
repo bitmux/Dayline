@@ -54,7 +54,9 @@ is logbook-oriented — it tells you what happened, not what is about to.
   blueprint. See [INSTALL.md](INSTALL.md#labels-and-tags--where-the-settings-went).
 - **Comes with a second card for a wall.** **Dayline Glance** is the same feed
   reduced to a clock, the one event that is next with its leave-by time, and up
-  to two live alerts —
+  to two live alerts. The clock itself goes amber as that leave-by time
+  approaches and red once it has gone, so a panel being ignored across the room
+  still gets your attention —
   sized to be read from across a room, and it gives content up in a deliberate
   order rather than being cut off by a panel that cannot scroll. Same bundle,
   nothing extra to install.

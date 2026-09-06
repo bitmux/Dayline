@@ -171,6 +171,13 @@ export const glanceStyles = css`
   }
   /* Neutral while there is time; the accent the moment there is not. The only
      line on this card that is an instruction rather than a fact. */
+  /* The meridiem follows the tint, so the clock reads as one object going
+     amber rather than a number arguing with its own AM. */
+  .clock.tint .mer {
+    color: inherit;
+    opacity: 0.72;
+  }
+
   .next-leave {
     font-size: 15px;
     font-size: clamp(13px, 3.4cqw, 20px);

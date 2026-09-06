@@ -517,6 +517,25 @@ type: custom:dayline-glance-card
 entity: sensor.day_spine
 ```
 
+### The clock as the warning
+
+As a leave-by time approaches, the clock itself changes colour: amber
+`warn_minutes` before it, red from the time itself until the event starts.
+
+This is for the card sitting in the corner of a room being ignored. A line of
+text is only read by somebody who chose to look; a clock that has quietly gone
+amber is noticed by somebody who did not — and it costs no space on a panel that
+cannot scroll.
+
+Two states rather than a gradual fade, on purpose: a colour creeping between two
+hues cannot be read without the previous glance to compare it against, and the
+whole premise here is a person who is not paying attention.
+
+The clock only ever reflects the event the card is **showing**. A clock that
+turned red for something invisible would be asking a question the card then
+refuses to answer. And the colour is never the only telling — the leave-by line
+underneath still says the time and the drive in words.
+
 ### What counts as an alert
 
 Only rows an automation put there deliberately: `level: alert` from
@@ -561,6 +580,9 @@ hearing from the house.
 | `show_date` | `true` | The weekday and date under the clock |
 | `show_next` | `true` | The next-event band. Off leaves a clock and whatever alerts arrive. |
 | `show_leave_by` | `true` | The "leave by" line under the event, when the feed could price the journey. Held longer than the sage line as the card gives things up — this is the card by the door. |
+| `warn_minutes` | `15` | How long before a leave-by time the clock turns amber. `0` skips the amber stage entirely; the clock still goes red at the time itself. |
+| `warn_color` | `#e8b04b` | Any CSS colour. Empty string disables that stage. |
+| `urgent_color` | `#e0563f` | Any CSS colour, from the leave-by time until the event starts. Empty string disables it. |
 | `max_alerts` | `2` | Most alerts drawn at once |
 | `quiet_message` | `Nothing else today` | What the event band says when the day has nothing left in it |
 | `inset_bottom` | `0` | Pixels along the bottom edge something else is drawing over — see below |

@@ -34,6 +34,13 @@ const DEFAULTS = {
   show_date: true,
   show_next: true,
   show_leave_by: true,
+  // Amber a quarter of an hour out, red once the time has gone. Two states, not
+  // a ramp: a colour creeping from one hue to another is unreadable without the
+  // previous glance to compare it to, and the whole point is that this is read
+  // from across a room by somebody who is not paying attention.
+  warn_minutes: 15,
+  warn_color: "#e8b04b",
+  urgent_color: "#e0563f",
   max_alerts: 2,
   quiet_message: "Nothing else today",
   inset_bottom: 0,
@@ -298,7 +305,7 @@ export class DaylineGlanceCard extends LitElement {
 
     return html`<div class="card ${cfg.use_ha_theme ? "themed" : ""} a${alerts.length} f${this._fit}">
       <div class="clock-zone">
-        ${this._renderClock()} ${showDate ? html`<div class="date">${this._dateLine()}</div>` : nothing}
+        ${this._renderClock(next)} ${showDate ? html`<div class="date">${this._dateLine()}</div>` : nothing}
       </div>
       ${showNext ? this._renderNext(next, down) : nothing}
       ${alerts.length ? html`<div class="alerts">${alerts.map((e) => this._renderAlert(e))}</div>` : nothing}
@@ -309,13 +316,46 @@ export class DaylineGlanceCard extends LitElement {
    * The clock, which is the one thing on this card that does not come from the
    * feed — and so the one thing still true when the feed is not.
    */
-  private _renderClock(): TemplateResult {
+  private _renderClock(next?: NextUp): TemplateResult {
     const full = this._fmt(this._now, false);
     const bare = this._fmt(this._now, true);
     const meridiem = full.startsWith(bare) ? full.slice(bare.length).trim() : "";
-    return html`<div class="clock">
+    const tint = this._tint(next);
+    return html`<div
+      class="clock ${tint ? "tint" : ""}"
+      style=${tint ? `color:${tint}` : nothing}
+    >
       ${bare}${meridiem ? html`<span class="mer">${meridiem}</span>` : nothing}
     </div>`;
+  }
+
+  /**
+   * The clock's colour, when there is somewhere to be.
+   *
+   * The point of this card is that it sits in the corner of a room being
+   * ignored. A line of text is only read by someone who chose to look; a clock
+   * that has quietly gone amber is noticed by someone who did not. So the
+   * biggest element on the card doubles as the warning, and no new element is
+   * added to a panel that already cannot scroll.
+   *
+   * It only ever reflects the event the card is *showing*. A clock that turned
+   * red for something invisible would be a card asking a question it refuses to
+   * answer.
+   *
+   * Colour is the hint, never the information: the leave-by line underneath
+   * still says the time and the drive in words.
+   */
+  private _tint(next?: NextUp): string | null {
+    const e = next?.entry;
+    if (!e?.leave_by || !this._config.show_leave_by) return null;
+    const leave = Date.parse(e.leave_by);
+    // Once the thing has started, when to have left is history, and a red clock
+    // would be shouting about a decision nobody can make any more.
+    if (!Number.isFinite(leave) || Date.parse(e.start) <= this._now) return null;
+    if (this._now >= leave) return this._config.urgent_color || null;
+    const warn = Number(this._config.warn_minutes) || 0;
+    if (warn <= 0 || this._now < leave - warn * 60_000) return null;
+    return this._config.warn_color || null;
   }
 
   private _dateLine(): string {

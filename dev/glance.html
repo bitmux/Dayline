@@ -92,6 +92,14 @@ mount("Auto height · nothing to measure against", mock.standing, { size: "autoh
 mount("Auto height · max_height: 420px", mock.standing, { size: "autoheight", config: { max_height: "420px" } });
 mount("24h, no date", mock.ordinary, { size: "half", config: { time_format: "24", show_date: false } });
 mount("max_alerts: 1", mock.standing, { size: "half", config: { max_alerts: 1 } });
+// The clock as the warning. Three states of the same card, so the amber and the
+// red can be compared against the ordinary one directly.
+const leaving = (mins) => mock.ordinary.map((e) =>
+  e.id === "cal:recital" ? { ...e, leave_by: new Date(Date.now() + mins * 60_000).toISOString() } : e);
+mount("Clock calm · leave-by an hour out", leaving(60), { size: "half" });
+mount("Clock amber · 8 min to leave", leaving(8), { size: "half" });
+mount("Clock red · leave-by has gone", leaving(-3), { size: "half" });
+
 mount("Themed mode", mock.standing, { size: "half", config: { use_ha_theme: true } });
 </script>
 </body>

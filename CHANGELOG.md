@@ -33,6 +33,24 @@ is not a road and never will be. Locations that are obviously not places —
 
 The drive is rounded **up**. Being early is free.
 
+**The glance card's clock goes amber, then red.** `warn_minutes` before a
+leave-by time the clock turns `warn_color`; from the time itself until the event
+starts, `urgent_color`. All three configurable, and the amber stage skippable
+with `warn_minutes: 0`.
+
+The card is designed to sit in the corner of a room being ignored, and that is
+exactly the argument for putting the warning on the biggest element rather than
+adding a new one. A line of text is read by somebody who chose to look. A clock
+that has quietly changed colour is noticed by somebody who did not, and it costs
+no room on a panel that cannot scroll.
+
+Two discrete states rather than a fade between them, because a colour part-way
+between two hues is unreadable without the previous glance to compare it
+against. It reflects only the event the card is actually showing — a clock going
+red for something invisible would be asking a question the card refuses to
+answer — and the words underneath still say the time and the drive, so the
+colour is a hint and never the information.
+
 **The glance card shows it too**, and ranks it above the sage line: as the card
 gives things up to fit a panel, what the house will do on its own goes three
 steps before when to leave does. What the house is doing can wait until you are

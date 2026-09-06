@@ -282,6 +282,15 @@ export interface DaylineGlanceCardConfig {
   /** Draw the "leave by" line under the event the card is naming. */
   show_leave_by?: boolean;
   /**
+   * How long before a leave-by time the clock turns `warn_color`. `0` skips
+   * the amber stage; the clock still turns `urgent_color` at the time itself.
+   */
+  warn_minutes?: number;
+  /** Any CSS colour. Empty disables that stage. */
+  warn_color?: string;
+  /** Any CSS colour, from the leave-by time onward. Empty disables it. */
+  urgent_color?: string;
+  /**
    * Pixels along the bottom and top edges that something else is drawing over.
    *
    * A panel app is not always honest about how much of the view is yours. View
