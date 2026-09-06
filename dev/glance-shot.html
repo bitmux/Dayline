@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dayline Glance — one state, for capture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  /* Same contract as shot.html: no page chrome, transparent behind, so
+     tools/shots.py can crop to exactly the card. */
+  html,body{margin:0;padding:0;background:transparent}
+  body{font-family:"Figtree",system-ui,sans-serif}
+  dayline-glance-card{display:block;border-radius:28px;overflow:hidden}
+</style>
+</head>
+<body>
+<script type="module">
+// The same instant shot.html pins, not merely the same clock time: the two
+// cards get photographed together, and a pair of screenshots that disagree
+// about what day it is reads as a mistake in the card rather than in the
+// harness.
+// `new Date()` has to be pinned as well as `Date.now()`, and it has to happen
+// before the mock is imported: the mock builds its entry times relative to
+// today at module scope, so a bare Date.now() override leaves the entries on
+// the real calendar date and the clock on the pinned one — which renders as a
+// next event 88 hours away.
+const PINNED = new Date(2026, 8, 2, 14, 39, 0, 0).getTime();
+const RealDate = Date;
+// eslint-disable-next-line no-global-assign
+Date = class extends RealDate {
+  constructor(...args) { super(...(args.length ? args : [PINNED])); }
+  static now() { return PINNED; }
+};
+Date.now = () => PINNED;
+
+const { mock } = await import("./dev-bundle.js");
+
+const NOW_WX = { condition: "cloudy", temperature: 67, temperature_unit: "°F" };
+
+// Something on now, with the day still visible behind it: the state that shows
+// the most of what this card does at once.
+const running = [
+  { id: "cal:running", start: new Date(Date.now() - 40 * 60_000).toISOString(),
+    end: new Date(Date.now() + 50 * 60_000).toISOString(),
+    kind: "calendar", source: "CalDAV", color: "teal", title: "Making dinner for house",
+    automation: "Kitchen 90%, hallway 40%" },
+  ...mock.ordinary.filter((e) => e.id === "cal:dentist" || e.id === "cal:kid-out"),
+];
+
+// The leave-by warning, eight minutes out, which is the whole argument for the
+// clock doing double duty as the signal.
+const leaving = mock.ordinary.map((e) =>
+  e.id === "cal:recital"
+    ? { ...e, leave_by: new Date(Date.now() + 8 * 60_000).toISOString() }
+    : e);
+
+const STATES = {
+  running: [running, { w: 880, h: 460 }],
+  leaving: [leaving, { w: 880, h: 460 }],
+  alerts: [mock.standing, { w: 880, h: 460 }],
+};
+
+const key = new URLSearchParams(location.search).get("state") || "running";
+const [entries, size] = STATES[key];
+
+const card = document.createElement("dayline-glance-card");
+card.style.width = `${size.w}px`;
+card.style.height = `${size.h}px`;
+card.setConfig({ type: "custom:dayline-glance-card", entity: "sensor.day_spine" });
+card.hass = {
+  locale: { language: "en-US" },
+  states: {
+    "sensor.day_spine": {
+      entity_id: "sensor.day_spine",
+      state: String(entries.length),
+      last_updated: new Date().toISOString(),
+      attributes: { entries, weather: NOW_WX },
+    },
+  },
+  callService: () => Promise.resolve(),
+};
+document.body.appendChild(card);
+
+await document.fonts.ready;
+// Three frames rather than two: this card measures itself and may give
+// something up, which costs a frame the spine card never spends.
+await new Promise((r) => requestAnimationFrame(() =>
+  requestAnimationFrame(() => requestAnimationFrame(r))));
+document.title = "ready";
+</script>
+</body>
+</html>

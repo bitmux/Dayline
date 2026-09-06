@@ -13,6 +13,12 @@ her arrival", never a scene name.
 
 ![The card, mid-afternoon](design/screenshots/01-card-ordinary.png)
 
+And the same feed on a wall panel, sixteen minutes before it is time to set off
+for the recital. The clock is the warning; the line underneath still says it in
+words.
+
+![Dayline Glance, with a leave-by time approaching](design/screenshots/11-glance-leaving.png)
+
 ## Why this exists
 
 Nothing in core Lovelace or HACS merges calendar + sun + automation intent into

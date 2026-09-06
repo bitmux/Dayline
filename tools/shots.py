@@ -23,17 +23,29 @@ from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "design" / "screenshots"
-BASE = "http://localhost:8765/dev/shot.html?state="
+SPINE = "http://localhost:8765/dev/shot.html?state="
+GLANCE = "http://localhost:8765/dev/glance-shot.html?state="
 
 SHOTS = {
-    "ordinary": "01-card-ordinary.png",
-    "empty": "02-card-empty-day.png",
-    "stale": "03-card-stale-source.png",
-    "busy": "07-card-busy-day.png",
+    SPINE: {
+        "ordinary": "01-card-ordinary.png",
+        "empty": "02-card-empty-day.png",
+        "stale": "03-card-stale-source.png",
+        "busy": "07-card-busy-day.png",
+    },
+    # The glance card is a fixed rectangle rather than a column, so its captures
+    # come out at the size the harness set rather than cropped to content.
+    GLANCE: {
+        "running": "10-glance-running.png",
+        "leaving": "11-glance-leaving.png",
+        "alerts": "12-glance-alerts.png",
+    },
 }
 
 # Tall enough for the longest state; the transparent remainder is cropped off.
-WINDOW = (520, 2400)
+# The glance card is landscape and sized by its harness, so its window has to be
+# wider than the card or the capture clips instead of cropping.
+WINDOWS = {SPINE: (520, 2400), GLANCE: (960, 620)}
 
 
 def chrome() -> str:
@@ -44,7 +56,8 @@ def chrome() -> str:
     sys.exit("no chrome on PATH")
 
 
-def capture(state: str, dest: pathlib.Path, binary: str) -> None:
+def capture(base: str, state: str, dest: pathlib.Path, binary: str) -> None:
+    window = WINDOWS[base]
     with tempfile.TemporaryDirectory() as tmp:
         raw = pathlib.Path(tmp) / "raw.png"
         subprocess.run(
@@ -55,11 +68,11 @@ def capture(state: str, dest: pathlib.Path, binary: str) -> None:
                 "--hide-scrollbars",
                 # Transparent page background is what makes the crop possible.
                 "--default-background-color=00000000",
-                f"--window-size={WINDOW[0]},{WINDOW[1]}",
+                f"--window-size={window[0]},{window[1]}",
                 "--virtual-time-budget=4000",
                 f"--user-data-dir={tmp}/profile",
                 f"--screenshot={raw}",
-                BASE + state,
+                base + state,
             ],
             check=True,
             capture_output=True,
@@ -75,8 +88,9 @@ def capture(state: str, dest: pathlib.Path, binary: str) -> None:
 def main() -> None:
     binary = chrome()
     OUT.mkdir(parents=True, exist_ok=True)
-    for state, name in SHOTS.items():
-        capture(state, OUT / name, binary)
+    for base, states in SHOTS.items():
+        for state, name in states.items():
+            capture(base, state, OUT / name, binary)
 
 
 if __name__ == "__main__":
