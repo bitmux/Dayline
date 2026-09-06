@@ -33,6 +33,21 @@ is not a road and never will be. Locations that are obviously not places —
 
 The drive is rounded **up**. Being early is free.
 
+**A running event on the glance card now shows how much is left, and what
+follows it.** It used to say "now" and stop there, which answers neither question
+somebody at home actually has. The progress bar is what makes both affordable: a
+few pixels of track buys what a line of text would have cost, so the space it
+saves pays for the one-line "and then" underneath.
+
+Only one event ahead is named, and only while something is running. A third
+horizon turns a panel read from across a room into a list.
+
+**The clock's tint got stricter at the same time.** It now follows the leave-by
+of whichever event the card is actually drawing that line for — the follow-on
+event when something is running — and goes back to plain when the fit ladder has
+given that line up. A clock going red with no words under it explaining why is
+the card raising an alarm and then refusing to say about what.
+
 **The glance card's clock goes amber, then red.** `warn_minutes` before a
 leave-by time the clock turns `warn_color`; from the time itself until the event
 starts, `urgent_color`. All three configurable, and the amber stage skippable

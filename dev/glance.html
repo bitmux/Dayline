@@ -100,6 +100,18 @@ mount("Clock calm · leave-by an hour out", leaving(60), { size: "half" });
 mount("Clock amber · 8 min to leave", leaving(8), { size: "half" });
 mount("Clock red · leave-by has gone", leaving(-3), { size: "half" });
 
+// Something on now, and the rest of the day still visible behind it: the bar
+// answers "how much of this is left", the line under it answers "and then what".
+const nowAndNext = [
+  { id: "cal:running", start: new Date(Date.now() - 40 * 60_000).toISOString(),
+    end: new Date(Date.now() + 50 * 60_000).toISOString(),
+    kind: "calendar", source: "CalDAV", color: "teal", title: "Making dinner for house",
+    automation: "Kitchen 90%, hallway 40%" },
+  ...mock.ordinary.filter((e) => e.id === "cal:dentist" || e.id === "cal:kid-out"),
+];
+mount("Now + then · progress and the follow-on", nowAndNext);
+mount("Now + then · half width", nowAndNext, { size: "half" });
+
 mount("Themed mode", mock.standing, { size: "half", config: { use_ha_theme: true } });
 </script>
 </body>

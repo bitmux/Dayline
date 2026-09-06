@@ -517,6 +517,26 @@ type: custom:dayline-glance-card
 entity: sensor.day_spine
 ```
 
+### While something is running
+
+A running event used to say "now" and nothing else — not how much of it was
+left, and not what came after it. Both now appear, and together they cost about
+what one extra sentence would have:
+
+> **Making dinner for house** — now
+> ▓▓▓▓▓▓▓▓░░░░░░░░  50m left
+> 3:50 PM  Kid out of school
+
+The progress bar is the reason both fit. A few pixels of track answers "how much
+of this is left" in the space a line of text would have wanted, which leaves room
+for the follow-on line to answer "and then what" — the two questions somebody
+standing in their own kitchen actually has.
+
+Only one event ahead is named. A third horizon turns a panel read from across a
+room into a list, and lists do not get read from across rooms. The follow-on line
+appears only while something is running; when the band is already showing an
+upcoming event, the one after it is not the card's business.
+
 ### The clock as the warning
 
 As a leave-by time approaches, the clock itself changes colour: amber
@@ -579,6 +599,8 @@ hearing from the house.
 | `entity` | — | The merged feed sensor. Required, and the same one the spine card uses. |
 | `show_date` | `true` | The weekday and date under the clock |
 | `show_next` | `true` | The next-event band. Off leaves a clock and whatever alerts arrive. |
+| `show_progress` | `true` | The progress bar on a running event, with the time left beside it |
+| `show_then` | `true` | The one-line "and then" under a running event, naming what follows it |
 | `show_leave_by` | `true` | The "leave by" line under the event, when the feed could price the journey. Held longer than the sage line as the card gives things up — this is the card by the door. |
 | `warn_minutes` | `15` | How long before a leave-by time the clock turns amber. `0` skips the amber stage entirely; the clock still goes red at the time itself. |
 | `warn_color` | `#e8b04b` | Any CSS colour. Empty string disables that stage. |

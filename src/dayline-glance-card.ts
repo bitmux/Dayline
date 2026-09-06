@@ -33,6 +33,8 @@ const PENDING_TIMEOUT = 20_000;
 const DEFAULTS = {
   show_date: true,
   show_next: true,
+  show_progress: true,
+  show_then: true,
   show_leave_by: true,
   // Amber a quarter of an hour out, red once the time has gone. Two states, not
   // a ramp: a colour creeping from one hue to another is unreadable without the
@@ -76,6 +78,15 @@ const FIT_STEPS = 6;
 interface NextUp {
   entry: SpineEntry;
   running: boolean;
+  /**
+   * What follows the thing that is running, when something is.
+   *
+   * Only ever populated while `running`. When the band is already showing an
+   * upcoming event, the one after it is somebody else's problem — a panel read
+   * from across a room can answer "what now" and "what next", and a third
+   * horizon turns it into a list nobody reads.
+   */
+  then?: SpineEntry;
 }
 
 export class DaylineGlanceCard extends LitElement {
@@ -346,8 +357,15 @@ export class DaylineGlanceCard extends LitElement {
    * still says the time and the drive in words.
    */
   private _tint(next?: NextUp): string | null {
-    const e = next?.entry;
+    // The same entry the leave-by line is drawn for — the follow-on event when
+    // something is running, otherwise the one being named.
+    const e = next?.running ? next.then : next?.entry;
     if (!e?.leave_by || !this._config.show_leave_by) return null;
+    // Only while that line is actually on screen. A clock going red with no
+    // words under it explaining why is the card raising an alarm and then
+    // refusing to say about what. `.next-leave` is hidden from fit step 4, and
+    // the whole band from step 6.
+    if (!this._config.show_next || this._fit >= 4) return null;
     const leave = Date.parse(e.leave_by);
     // Once the thing has started, when to have left is history, and a red clock
     // would be shouting about a decision nobody can make any more.
@@ -391,9 +409,61 @@ export class DaylineGlanceCard extends LitElement {
         <div class="next-title">
           ${dot ? html`<span class="dot" style=${dot}></span>` : nothing}${entry.title}
         </div>
+        ${running ? this._renderProgress(entry) : nothing}
         ${entry.automation ? html`<div class="next-auto">${entry.automation}</div>` : nothing}
-        ${this._renderLeave(entry)}
+        ${this._renderLeave(running ? next.then : entry)}
+        ${this._renderThen(next)}
       </div>
+    </div>`;
+  }
+
+  /**
+   * How far through a running event we are.
+   *
+   * "Now" on its own answers the wrong question: what a person standing in
+   * their own kitchen wants is how much of this is left. It is also the
+   * cheapest thing on the card in vertical space — a few pixels of track buys
+   * what a second line of text would have cost — which is the only reason both
+   * this and the follow-on line below can fit at once.
+   */
+  private _renderProgress(e: SpineEntry): TemplateResult | typeof nothing {
+    if (!this._config.show_progress || !e.end) return nothing;
+    const start = Date.parse(e.start);
+    const end = Date.parse(e.end);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return nothing;
+    const pct = Math.round(Math.min(1, Math.max(0, (this._now - start) / (end - start))) * 100);
+    const mins = Math.max(0, Math.round((end - this._now) / 60_000));
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const left = h && m ? `${h}h ${m}m` : h ? `${h}h` : `${m}m`;
+    return html`<div class="prog">
+      <div
+        class="prog-track"
+        role="progressbar"
+        aria-valuenow=${pct}
+        aria-valuemin="0"
+        aria-valuemax="100"
+      >
+        <div class="prog-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="prog-left">${left} left</div>
+    </div>`;
+  }
+
+  /**
+   * What follows the thing that is on now, in one line.
+   *
+   * Byron's case: you are at home, something is running, and the card used to
+   * go quiet about the rest of the day until it ended. Both questions matter
+   * from the same glance, so both are answered — but the second one gets a
+   * single line rather than a second band, because vertical space on a panel
+   * that cannot scroll is the whole budget.
+   */
+  private _renderThen(next: NextUp): TemplateResult | typeof nothing {
+    const e = next.then;
+    if (!this._config.show_then || !next.running || !e) return nothing;
+    return html`<div class="then">
+      <span class="then-time">${this._fmt(Date.parse(e.start), false)}</span>${e.title}
     </div>`;
   }
 
@@ -405,8 +475,8 @@ export class DaylineGlanceCard extends LitElement {
    * on its own can wait until you are back at a screen. Whether you are already
    * late cannot.
    */
-  private _renderLeave(e: SpineEntry): TemplateResult | typeof nothing {
-    if (!this._config.show_leave_by || !e.leave_by) return nothing;
+  private _renderLeave(e: SpineEntry | undefined): TemplateResult | typeof nothing {
+    if (!e?.leave_by || !this._config.show_leave_by) return nothing;
     const leave = Date.parse(e.leave_by);
     if (!Number.isFinite(leave) || Date.parse(e.start) <= this._now) return nothing;
     const drive = e.travel?.minutes;
@@ -554,9 +624,8 @@ export class DaylineGlanceCard extends LitElement {
       const end = e.end ? Date.parse(e.end) : NaN;
       return start <= this._now && !Number.isNaN(end) && end > this._now;
     });
-    if (running) return { entry: running, running: true };
-
     const upcoming = timed.find((e) => Date.parse(e.start) > this._now);
+    if (running) return { entry: running, running: true, then: upcoming };
     return upcoming ? { entry: upcoming, running: false } : undefined;
   }
 

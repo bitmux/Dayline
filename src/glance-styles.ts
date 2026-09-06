@@ -171,6 +171,56 @@ export const glanceStyles = css`
   }
   /* Neutral while there is time; the accent the moment there is not. The only
      line on this card that is an instruction rather than a fact. */
+  /* ---------- how far through ---------- */
+  /*
+   * A few pixels of track instead of a line of text. That is the whole reason
+   * the follow-on line below can also be afforded: "how much of this is left"
+   * and "what is after it" together cost about what one sentence would.
+   */
+  .prog {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: 5px;
+  }
+  .prog-track {
+    flex: 1 1 auto;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--ds-prog-track, rgba(255, 255, 255, 0.11));
+    overflow: hidden;
+  }
+  .prog-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--ds-now-dot, var(--color-accent-500));
+  }
+  .prog-left {
+    flex: none;
+    font-size: 13px;
+    font-size: clamp(11px, 2.9cqw, 17px);
+    color: var(--color-neutral-500);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- and then ---------- */
+  .then {
+    font-size: 15px;
+    font-size: clamp(13px, 3.4cqw, 20px);
+    color: var(--color-neutral-500);
+    line-height: 1.25;
+    margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* The time carries the weight, because it is the part that gets acted on. */
+  .then-time {
+    color: var(--color-neutral-400, var(--color-neutral-500));
+    font-variant-numeric: tabular-nums;
+    margin-right: 0.5em;
+  }
+
   /* The meridiem follows the tint, so the clock reads as one object going
      amber rather than a number arguing with its own AM. */
   .clock.tint .mer {
@@ -341,6 +391,9 @@ export const glanceStyles = css`
   .f4 .next-leave,
   .f5 .next-leave,
   .f6 .next-leave,
+  .f4 .then,
+  .f5 .then,
+  .f6 .then,
   .f1 .alert-sub,
   .f2 .alert-sub,
   .f3 .alert-sub,
