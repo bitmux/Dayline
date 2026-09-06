@@ -63,7 +63,12 @@ function hass(attributes, { unavailable = false } = {}) {
 const ONLY = new URLSearchParams(location.search).get("only");
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-function mount(label, entries, { size = "tablet", config = {}, unavailable = false } = {}) {
+// Conditions now, which is a top-level attribute rather than anything on an
+// entry: the corner readout and the per-event forecast come from the same
+// weather entity but answer questions about different moments.
+const NOW_WX = { condition: "cloudy", temperature: 67, temperature_unit: "°F" };
+
+function mount(label, entries, { size = "tablet", config = {}, unavailable = false, weather = NOW_WX } = {}) {
   if (ONLY && !slug(label).startsWith(ONLY)) return;
   const col = document.createElement("div");
   col.className = "col";
@@ -71,7 +76,7 @@ function mount(label, entries, { size = "tablet", config = {}, unavailable = fal
   const card = document.createElement("dayline-glance-card");
   card.className = size;
   card.setConfig({ type: "custom:dayline-glance-card", entity: "sensor.day_spine", ...config });
-  card.hass = hass({ entries }, { unavailable });
+  card.hass = hass({ entries, weather }, { unavailable });
   col.appendChild(card);
   document.body.appendChild(col);
 }
@@ -115,6 +120,14 @@ const nowAndNext = [
 ];
 mount("Now + then · progress and the follow-on", nowAndNext);
 mount("Now + then · half width", nowAndNext, { size: "half" });
+
+// Weather, both halves of it, and the card with it switched off for comparison.
+mount("Weather off", nowAndNext, { size: "half", config: { show_weather: false } });
+mount("Wet forecast on the next event", nowAndNext.map((e) =>
+  e.id === "cal:kid-out"
+    ? { ...e, weather: { condition: "pouring", temperature: 58, precipitation_probability: 85 } }
+    : e), { size: "half" });
+mount("No weather entity configured", nowAndNext, { size: "half", weather: null });
 
 // The real device, at its real size, in the dress it actually wears.
 mount("Echo Show 5 · 788×394 · themed", nowAndNext, { size: "echo", config: { use_ha_theme: true } });

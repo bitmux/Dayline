@@ -53,6 +53,13 @@ export interface SpineWeather {
   precipitation?: number;
 }
 
+/** Conditions right now, off the weather entity itself rather than a forecast. */
+export interface NowWeather {
+  condition?: string;
+  temperature?: number;
+  temperature_unit?: string;
+}
+
 export interface SpineEntry {
   id: string;
   start: string; // ISO 8601
@@ -281,6 +288,14 @@ export interface DaylineGlanceCardConfig {
   quiet_message?: string;
   /** Draw the "leave by" line under the event the card is naming. */
   show_leave_by?: boolean;
+  /**
+   * Conditions now, in the top corner, and the forecast for the event the band
+   * is naming. One key, because they are the same question asked about two
+   * moments and nobody wants one without the other.
+   */
+  show_weather?: boolean;
+  /** The NOW / NEXT label above the time in the event band. */
+  show_eyebrow?: boolean;
   /**
    * How long before a leave-by time the clock turns `warn_color`. `0` skips
    * the amber stage; the clock still turns `urgent_color` at the time itself.

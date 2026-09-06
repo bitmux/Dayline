@@ -46,6 +46,7 @@ export const ordinary: SpineEntry[] = [
     title: "Kid out of school",
     automation: "Entry unlocks on her arrival",
     entity_id: "calendar.family",
+    weather: { condition: "cloudy", temperature: 66, precipitation_probability: 10 },
   },
   {
     // Two leave-by states side by side: one with time still on it, and one the
@@ -59,6 +60,7 @@ export const ordinary: SpineEntry[] = [
     location: "1200 W Harrison St",
     leave_by: at(16, 8),
     travel: { minutes: 22, buffer: 10, route: "I-90 W" },
+    weather: { condition: "rainy", temperature: 61, precipitation_probability: 70 },
   },
   {
     id: "cal:recital",
@@ -70,6 +72,7 @@ export const ordinary: SpineEntry[] = [
     location: "Auditorium, 55 E Monroe",
     leave_by: at(14, 30),
     travel: { minutes: 15, buffer: 10 },
+    weather: { condition: "partlycloudy", temperature: 68, precipitation_probability: 5 },
   },
   {
     id: "cal:dinner",

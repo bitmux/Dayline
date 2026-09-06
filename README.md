@@ -53,13 +53,16 @@ is logbook-oriented — it tells you what happened, not what is about to.
   event title fires an event you bind to anything you like with the shipped
   blueprint. See [INSTALL.md](INSTALL.md#labels-and-tags--where-the-settings-went).
 - **Comes with a second card for a wall.** **Dayline Glance** is the same feed
-  reduced to a clock, the one event that is next with its leave-by time, and up
-  to two live alerts. The clock itself goes amber as that leave-by time
+  reduced to a clock, the one event that matters next with its leave-by time,
+  and up to two live alerts. The clock itself goes amber as that leave-by time
   approaches and red once it has gone, so a panel being ignored across the room
-  still gets your attention —
-  sized to be read from across a room, and it gives content up in a deliberate
-  order rather than being cut off by a panel that cannot scroll. Same bundle,
-  nothing extra to install.
+  still gets your attention without a new element appearing on it. While
+  something is running it shows how much of it is left and names what follows;
+  the weather sits in the corner, and the forecast for the event it is naming
+  sits beside that event. Everything is sized to be read from eight feet away,
+  and when it does not all fit the card gives things up in a deliberate order
+  rather than being cut off by a panel that cannot scroll. Same bundle, nothing
+  extra to install.
 - **Never hides anything silently.** What the density budget collapses is
   counted on a `+N more today` row. A stale calendar tints its own pill and says
   so in the footer. The card states what it does not know.

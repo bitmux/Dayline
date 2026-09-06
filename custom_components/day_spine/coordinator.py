@@ -768,6 +768,31 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "calendars": list(self._calendar_ids),
             "calendar_source": self._calendar_source,
             "tag_control": sorted(self._control),
+            # What it is doing outside right now, as opposed to what it will be
+            # doing when an event starts. Both come from the same entity, and
+            # neither is worth a second integration.
+            "weather": self._now_weather(),
+        }
+
+    def _now_weather(self) -> dict[str, Any] | None:
+        """Current conditions, read straight off the weather entity.
+
+        The forecast is fetched through a service call because hourly data only
+        exists there. Right now needs no such thing: a weather entity's state
+        *is* the condition, and the temperature is an attribute of it. So this
+        costs nothing per cycle and, unlike the forecast, is still correct when
+        the provider stops answering.
+        """
+        entity_id = self.entry.data.get(CONF_WEATHER)
+        if not entity_id:
+            return None
+        state = self.hass.states.get(entity_id)
+        if state is None or state.state in ("unknown", "unavailable"):
+            return None
+        return {
+            "condition": state.state,
+            "temperature": state.attributes.get("temperature"),
+            "temperature_unit": state.attributes.get("temperature_unit"),
         }
 
     def _headline(self, left: int, now) -> str:

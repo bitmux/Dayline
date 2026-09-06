@@ -38,6 +38,36 @@ export const glanceStyles = css`
     max-height: var(--glance-max-height, none);
     box-sizing: border-box;
     overflow: hidden;
+    /* Only so the corner weather has something to be a corner of. */
+    position: relative;
+  }
+
+  /* ---------- conditions now ---------- */
+  /*
+   * Absolutely placed, and that is the point: on a panel that cannot scroll,
+   * anything in the normal flow is height taken away from the clock. This costs
+   * nothing, because it sits in room the centred clock was never going to use.
+   */
+  .wx-now {
+    position: absolute;
+    top: calc(var(--space-6) + var(--inset-top, 0px));
+    right: var(--space-6);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-neutral-500);
+    line-height: 1;
+    /* Below the clock in the reading order it belongs to. Loud enough to read
+       at a glance, quiet enough that nobody looks at it first. */
+    font-size: 20px;
+    font-size: clamp(15px, 4cqw, 26px);
+  }
+  .wx-now svg {
+    width: 1.15em;
+    height: 1.15em;
+  }
+  .wx-temp {
+    font-variant-numeric: tabular-nums;
   }
 
   /* ---------- the clock ---------- */
@@ -125,6 +155,18 @@ export const glanceStyles = css`
     flex-direction: column;
     gap: 2px;
   }
+  /* Small, spaced, and upper case — a label, so it is never mistaken for part
+     of the sentence underneath it. */
+  .next-eyebrow {
+    font-size: 12px;
+    font-size: clamp(10px, 2.6cqw, 15px);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    color: var(--color-neutral-500);
+    line-height: 1;
+    margin-bottom: 2px;
+  }
   .next-time {
     font-size: 24px;
     font-size: clamp(19px, 5.4cqw, 32px);
@@ -143,6 +185,12 @@ export const glanceStyles = css`
   }
 
   .next-what {
+    /* Grows, so the lines inside it have the full width of the band to work
+       with: the progress track reaches across, and the forecast at the end of
+       the follow-on line sits at the edge of the card instead of trailing the
+       title by a space. Behind a short title that was the whole of the empty
+       lower right. */
+    flex: 1 1 auto;
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -210,9 +258,30 @@ export const glanceStyles = css`
     color: var(--color-neutral-500);
     line-height: 1.25;
     margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  /* The title gives way first: the temperature is two characters and losing
+     them saves nothing, while a long summary can always spare its tail. */
+  .then-text {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .then .next-wx {
+    font-size: 1em;
+  }
+  /* Matches the eyebrow's treatment, so "Next" means the same thing in both
+     places it appears on this card. */
+  .then-lead {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.78em;
+    font-weight: 600;
+    color: var(--color-neutral-600, var(--color-neutral-500));
+    margin-right: 0.6em;
   }
   /* The time carries the weight, because it is the part that gets acted on. */
   .then-time {
@@ -226,6 +295,33 @@ export const glanceStyles = css`
   .clock.tint .mer {
     color: inherit;
     opacity: 0.72;
+  }
+
+  /*
+   * The forecast for the event being named, in what was dead space behind every
+   * short title. margin-left:auto rather than a fixed column: with a long
+   * title the band still gives the words the room, and this closes up.
+   */
+  .next-wx {
+    flex: 0 0 auto;
+    margin-left: auto;
+    align-self: center;
+    padding-left: var(--space-3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-neutral-500);
+    line-height: 1;
+    font-size: 17px;
+    font-size: clamp(14px, 3.6cqw, 22px);
+  }
+  .next-wx svg {
+    width: 1.15em;
+    height: 1.15em;
+  }
+  /* Rain is the only forecast that changes what someone does on the way out. */
+  .next-wx.wet {
+    color: var(--color-accent-400);
   }
 
   .next-leave {

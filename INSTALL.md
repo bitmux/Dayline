@@ -537,6 +537,26 @@ room into a list, and lists do not get read from across rooms. The follow-on lin
 appears only while something is running; when the band is already showing an
 upcoming event, the one after it is not the card's business.
 
+### Weather, in two places
+
+Conditions right now sit in the top right corner, small and grey: an icon and
+the temperature. That corner is the only genuinely spare space on this card —
+the room either side of the clock looks like waste and is not, since it is what
+makes the clock read as centred from across a room. Hanging a readout in one
+side of it would turn a balanced panel into a lopsided one, so nothing goes
+there.
+
+The second place is the forecast for the event the band is naming, at the right
+of the band. This is the question a forecast is actually asked on the way out of
+the house: not *what is the weather*, but *do I need a coat for this*. Rain gets
+the terracotta treatment, because it is the only forecast that changes what
+anybody does. While something is running, the forecast rides the end of the
+follow-on line instead, so it always sits beside the event it belongs to rather
+than beside the one happening now — which the corner already answers.
+
+Both come from the weather entity in the integration's options. With none set,
+neither is drawn.
+
 ### The clock as the warning
 
 As a leave-by time approaches, the clock itself changes colour: amber
@@ -601,6 +621,8 @@ hearing from the house.
 | `show_next` | `true` | The next-event band. Off leaves a clock and whatever alerts arrive. |
 | `show_progress` | `true` | The progress bar on a running event, with the time left beside it |
 | `show_then` | `true` | The one-line "and then" under a running event, naming what follows it |
+| `show_weather` | `true` | Conditions now in the top corner, and the forecast for the event the band is naming. Needs a weather entity set in the integration's options; without one, nothing is drawn and nothing is missed. |
+| `show_eyebrow` | `true` | The small **NOW** / **NEXT** label above the time in the event band |
 | `show_leave_by` | `true` | The "leave by" line under the event, when the feed could price the journey. Held longer than the sage line as the card gives things up — this is the card by the door. |
 | `warn_minutes` | `15` | How long before a leave-by time the clock turns amber. `0` skips the amber stage entirely; the clock still goes red at the time itself. |
 | `warn_color` | `#e8b04b` | Any CSS colour. Empty string disables that stage. |

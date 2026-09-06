@@ -1,11 +1,12 @@
 import { LitElement, html, nothing, type TemplateResult } from "lit";
 import { state } from "lit/decorators.js";
 import { glanceStyles } from "./glance-styles";
-import { icon } from "./icons";
+import { conditionIcon, icon } from "./icons";
 import { calStyle } from "./cal";
 import { loadFonts } from "./fonts";
 import type {
   DaylineGlanceCardConfig,
+  NowWeather,
   HassEntity,
   HomeAssistant,
   SpineAction,
@@ -36,6 +37,8 @@ const DEFAULTS = {
   show_progress: true,
   show_then: true,
   show_leave_by: true,
+  show_weather: true,
+  show_eyebrow: true,
   // Amber a quarter of an hour out, red once the time has gone. Two states, not
   // a ramp: a colour creeping from one hue to another is unreadable without the
   // previous glance to compare it to, and the whole point is that this is read
@@ -315,6 +318,7 @@ export class DaylineGlanceCard extends LitElement {
     const showDate = cfg.show_date && this._fit < 3;
 
     return html`<div class="card ${cfg.use_ha_theme ? "themed" : ""} a${alerts.length} f${this._fit}">
+      ${this._renderNowWeather(down)}
       <div class="clock-zone">
         ${this._renderClock(next)} ${showDate ? html`<div class="date">${this._dateLine()}</div>` : nothing}
       </div>
@@ -396,14 +400,30 @@ export class DaylineGlanceCard extends LitElement {
       return html`<div class="next"><div class="quiet">${this._config.quiet_message}</div></div>`;
     }
     const { entry, running } = next;
+    // The word the card was missing. A bare time and a title is a fact with no
+    // tense on it — read in passing, "3:50 School pickup" could as easily be
+    // something that already happened. One word fixes that, and it costs a line
+    // in the narrow left column that the taller right-hand column was paying
+    // for anyway.
+    const eyebrow = running ? "Now" : "Next";
     // No dot at all rather than an invisible one: a transparent circle still
     // occupies its space, and the sun rows — which never carry a calendar colour
     // — would sit indented from every row that does.
     const dot = calStyle(entry.color);
     return html`<div class="next">
       <div class="next-when">
+        ${this._config.show_eyebrow
+          ? html`<div class="next-eyebrow">${eyebrow}</div>`
+          : nothing}
         <div class="next-time">${this._fmt(Date.parse(entry.start), false)}</div>
-        <div class="next-rel">${running ? "now" : this._relative(Date.parse(entry.start))}</div>
+        ${running
+          ? // The eyebrow above already says "Now", and the progress bar says
+            // how much of it is left. Repeating "now" here was the card using
+            // three lines to make one point.
+            this._config.show_eyebrow
+            ? nothing
+            : html`<div class="next-rel">now</div>`
+          : html`<div class="next-rel">${this._relative(Date.parse(entry.start))}</div>`}
       </div>
       <div class="next-what">
         <div class="next-title">
@@ -414,6 +434,59 @@ export class DaylineGlanceCard extends LitElement {
         ${this._renderLeave(running ? next.then : entry)}
         ${this._renderThen(next)}
       </div>
+      ${running ? nothing : this._renderEntryWeather(entry)}
+    </div>`;
+  }
+
+  /**
+   * Conditions now, in the top corner.
+   *
+   * Placed there rather than beside the clock on purpose. The room either side
+   * of the clock looks like waste and is not: it is what makes the clock read
+   * as centred from eight feet, and hanging something in one side of it turns a
+   * balanced panel into a lopsided one. The corner is the one spot on this card
+   * that is genuinely spare.
+   *
+   * Small, quiet, and never the reason anything else is given up — it is the
+   * first thing the fit ladder throws away.
+   */
+  private _renderNowWeather(down: boolean): TemplateResult | typeof nothing {
+    if (!this._config.show_weather || down || this._fit >= 5) return nothing;
+    const w = this._stateObj?.attributes?.weather as NowWeather | null | undefined;
+    if (!w || (w.condition === undefined && w.temperature === undefined)) return nothing;
+    return html`<div class="wx-now">
+      ${conditionIcon(w.condition, 26)}
+      ${w.temperature !== undefined
+        ? html`<span class="wx-temp">${Math.round(w.temperature)}°</span>`
+        : nothing}
+    </div>`;
+  }
+
+  /**
+   * The forecast for the event being named, on the right of the band.
+   *
+   * This is the corner of the card that stayed empty behind a short title, and
+   * it is the right thing to put there: whether to take a coat is a question
+   * about the event the card is already talking about. It costs no vertical
+   * space at all — the band is as tall as its left and middle columns make it —
+   * so it survives until the whole band goes.
+   */
+  private _renderEntryWeather(e: SpineEntry | undefined): TemplateResult | typeof nothing {
+    const w = e?.weather;
+    if (!this._config.show_weather || !w) return nothing;
+    if (w.condition === undefined && w.temperature === undefined) return nothing;
+    // Two signals, because providers disagree about which they publish: met.no,
+    // the one a default install gets, reports millimetres and no probability.
+    const pop = w.precipitation_probability;
+    const mm = w.precipitation;
+    const wet =
+      (typeof pop === "number" && pop >= 30) ||
+      (typeof pop !== "number" && typeof mm === "number" && mm > 0);
+    return html`<div class="next-wx ${wet ? "wet" : ""}">
+      ${conditionIcon(w.condition, 22)}
+      ${w.temperature !== undefined
+        ? html`<span class="wx-temp">${Math.round(w.temperature)}°</span>`
+        : nothing}
     </div>`;
   }
 
@@ -462,8 +535,16 @@ export class DaylineGlanceCard extends LitElement {
   private _renderThen(next: NextUp): TemplateResult | typeof nothing {
     const e = next.then;
     if (!this._config.show_then || !next.running || !e) return nothing;
+    // The forecast rides the end of this line rather than the side of the band.
+    // While something is running, the band's big title is about now — which the
+    // corner readout already answers — so a temperature parked out to the right
+    // of it would be describing the wrong event.
     return html`<div class="then">
-      <span class="then-time">${this._fmt(Date.parse(e.start), false)}</span>${e.title}
+      <span class="then-text"
+        ><span class="then-lead">Next</span
+        ><span class="then-time">${this._fmt(Date.parse(e.start), false)}</span>${e.title}</span
+      >
+      ${this._renderEntryWeather(e)}
     </div>`;
   }
 

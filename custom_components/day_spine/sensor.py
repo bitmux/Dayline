@@ -34,7 +34,17 @@ class DaySpineSensor(CoordinatorEntity[DaySpineCoordinator], SensorEntity):
     # with a payload nobody will ever query — the state, which is a number and
     # genuinely worth a graph, still records.
     _unrecorded_attributes = frozenset(
-        {"entries", "sources", "tags_seen", "calendars", "calendar_source", "tag_control"}
+        {
+            "entries",
+            "sources",
+            "tags_seen",
+            "calendars",
+            "calendar_source",
+            "tag_control",
+            # The weather integration already records its own history, in a
+            # shape worth querying. This is a copy of two of its fields.
+            "weather",
+        }
     )
 
     _attr_has_entity_name = True
@@ -70,4 +80,5 @@ class DaySpineSensor(CoordinatorEntity[DaySpineCoordinator], SensorEntity):
             "calendars": data.get("calendars", []),
             "calendar_source": data.get("calendar_source", ""),
             "tag_control": data.get("tag_control", []),
+            "weather": data.get("weather"),
         }

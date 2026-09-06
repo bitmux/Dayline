@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+**The glance card gets a tense, and the weather.** A bare time and a title is a
+fact with no tense on it — read in passing, "3:50 Kid out of school" could as
+easily be something that already happened. A small **NOW** / **NEXT** label
+above the time fixes that, and it is free: it replaces the "now" that used to sit
+under the time, and the narrow left column was shorter than the right one
+anyway.
+
+Conditions now sit in the top right corner. Not beside the clock, which is where
+it first looks like they should go — the room either side of the clock is what
+makes it read as centred from eight feet, and filling one side of it makes a
+balanced panel lopsided. The corner is the one genuinely spare piece of this
+card.
+
+The forecast for the event the band is naming goes at the right of the band,
+which behind a short title was empty. That is the question a forecast is really
+asked on the way out: not what the weather is, but whether this needs a coat.
+While something is running it rides the end of the follow-on line, so it always
+sits beside the event it describes rather than beside the one happening now.
+
+Both read `weather` on the feed — current conditions straight off the weather
+entity's own state, which unlike the hourly forecast costs no service call and
+is still right when the provider stops answering. `show_weather` and
+`show_eyebrow` turn each off.
+
 **Leave-by times.** An event that says where it is can now say when to set off.
 The start time, less the drive, less a buffer for parking and walking in — drawn
 under the title in grey while there is still time, and terracotta the moment
