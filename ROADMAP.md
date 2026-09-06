@@ -313,6 +313,81 @@ The cheapest magic is derived. None of the below asks anyone for anything.
 
 ---
 
+## Countdowns — rows that end
+
+"Hey Jarvis, ten minute timer for the cookies" should put a row on the spine that
+fills up as the timer runs, and a progress bar is a thing this card already
+draws. Nothing supports it today, and the gap is small and specific.
+
+`day_spine.show` takes a `duration`, but that sets `expires` — when the row
+should stop being drawn — and the row it builds is always `kind: standing` with
+no `end`. Standing rows are deliberately never drawn as live, because "the garage
+is open" with a progress bar would be nonsense. So a pushed row can appear and
+later vanish; it cannot count down.
+
+**The fix is one field, not a timer feature.** Give `show` an `ends_at`, and a
+row that has one is drawn live, with the progress bar the spine already has for
+running events. Then a blueprint on `timer.started` / `timer.finished` does the
+rest and the integration never learns what a timer is — which is principle 1, and
+which also gets laundry cycles, the oven, the sprinklers and "back in 20" for
+free rather than one narrow feature that only knows about one domain.
+
+Two things to settle first:
+
+- **Where the voice timer actually lives.** Home Assistant's own Assist timers
+  are held by the voice satellite and the intent system; they are not `timer.*`
+  helper entities and there is nothing on the state machine to watch. View Assist
+  runs its own timer machinery for the same reason. A `timer.*` helper started by
+  a script is the easy case and may not be the case in play. This decides whether
+  a blueprint can see them at all, and it is a question about the house, not
+  about this repo.
+- **Whether labelled `timer.*` helpers should be picked up with no automation at
+  all.** The `Dayline` label already means something different on a non-calendar
+  entity — explain this thing's automatic changes — so the label's meaning is
+  already per-domain, and `timer` meaning "put it on the spine while it runs"
+  would be consistent rather than a special case. Zero setup, but only ever
+  covers helpers.
+
+A finished timer is an alert row with a button, which `show` can already do
+today. It is only the running one that needs `ends_at`.
+
+---
+
+## The glance card
+
+The second card, added after the phases below were written: the same feed reduced
+to a clock, one event and up to two live alerts, for a wall panel. It asks a
+narrower question than the spine — *what am I doing next* rather than *what is
+left of today* — and the items that serve it are not the same ones.
+
+- **A second event, when there is room.** The card names exactly one thing, which
+  answers "next" and not "later today". A second line when the panel has space
+  and the entry is close enough to matter, dropped first by the fit steps. Small,
+  and the most direct answer to what the card is for.
+- **"Clear until 7:40" rather than a distant next thing.** Naming an entry five
+  hours out is true and useless. Negative space is what people plan against, and
+  it is the one form of it a panel has room for.
+- **All-day entries, currently excluded entirely.** Deliberate — one would
+  otherwise sit in the event band from midnight and never move — but *trash out
+  tonight* is exactly what a panel should be nagging about. It wants its own thin
+  line, not the event slot.
+- **The evening pivot matters more here than anywhere.** A dashboard is looked
+  at; a panel is on all evening, and after the day is done it is showing nothing
+  anybody asked. See Phase 3.
+- **Silent failure is the alert this card deserves.** Of everything that could
+  compete for one of two slots, an automation that should have fired and did not
+  is the one worth waking a panel for.
+- **Leave-by is held for now.** It would improve the one event this card names
+  more than anything else on this page, and it is deliberately not being built
+  yet.
+
+Panels also constrain the card in ways a dashboard does not, and those are
+notes rather than features: a Panel (single card) view gives the card no height
+to measure itself against, and the panel app may draw over its edges. Both are
+handled; both are the kind of thing that will be true again for the next surface.
+
+---
+
 ## Phase 4 — Reach
 
 Dayline currently waits to be looked at. These give it hands.
@@ -369,6 +444,9 @@ Everything here runs in the coordinator, off the render path, cached.
 
 ## Open questions
 
+- **Where the voice assistant's timers actually live** — a `timer.*` helper, the
+  Assist intent system, or View Assist's own. Decides whether countdown rows can
+  be driven by a blueprint or need something to watch them. See *Countdowns*.
 - **A tag fire missed while Home Assistant was down.** Fire late on start-up if
   the event is still running, or stay quiet? Silent either way, which is what
   makes it worth deciding deliberately rather than discovering.
