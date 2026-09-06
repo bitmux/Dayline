@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — beta, 6 September 2026
 
 **The glance card gets a tense, and the weather.** A bare time and a title is a
 fact with no tense on it — read in passing, "3:50 Kid out of school" could as
