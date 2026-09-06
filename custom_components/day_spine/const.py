@@ -37,6 +37,12 @@ LABEL_CONTROL = "Dayline Control"
 # Assistant's job and not ours.
 EVENT_TAG = "dayline_tag"
 
+# Home Assistant fires these when an automation or script starts. Their
+# context ids are how we tell "the house did this" from "someone pressed a
+# switch" — see DaySpineCoordinator._on_house_action.
+EVENT_AUTOMATION_TRIGGERED = "automation_triggered"
+EVENT_SCRIPT_STARTED = "script_started"
+
 # --- services ----------------------------------------------------------------
 # The way in for anything Dayline has no opinion about. An automation that has
 # already decided something is worth saying can put a row on the spine itself,
@@ -91,6 +97,12 @@ DEFAULT_TITLE_NOISE = [
 ]
 DEFAULT_RECENT_TTL = 300
 DEFAULT_RECENT_MAX = 6
+
+# How long a running automation stays attributable, and how many we keep.
+# Long enough for an action with a `delay` in it; short enough that a
+# coincidence half an hour later is never blamed on it.
+HOUSE_CONTEXT_TTL = 300
+HOUSE_CONTEXT_MAX = 256
 DEFAULT_SCAN_MINUTES = 5
 
 # Left empty rather than guessed at. A wrong sentence about the house is worse

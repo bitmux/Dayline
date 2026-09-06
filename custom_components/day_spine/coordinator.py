@@ -31,7 +31,11 @@ from .const import (
     DEFAULT_SIMILARITY,
     DEFAULT_TITLE_NOISE,
     DOMAIN,
+    EVENT_AUTOMATION_TRIGGERED,
+    EVENT_SCRIPT_STARTED,
     EVENT_TAG,
+    HOUSE_CONTEXT_MAX,
+    HOUSE_CONTEXT_TTL,
     LABEL_CONTROL,
     LABEL_INCLUDE,
     OPT_CALENDAR_META,
@@ -80,6 +84,12 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._recent: list[Entry] = []
         self._unsub_states = None
         self._unsub_registries = None
+        self._unsub_house: list[Callable[[], None]] = []
+
+        # Context ids of automations and scripts currently running, and the
+        # name of each. A state change carrying one of these was the house
+        # acting, and we can say which automation did it.
+        self._house_ctx: dict[str, tuple[float, str]] = {}
 
         # Resolved from labels, refreshed whenever a registry moves.
         self._calendar_ids: list[str] = []
@@ -191,6 +201,10 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._unsub_registries = labels.async_track_registries(
             self.hass, self._on_registry_change
         )
+        self._unsub_house = [
+            self.hass.bus.async_listen(event, self._on_house_action)
+            for event in (EVENT_AUTOMATION_TRIGGERED, EVENT_SCRIPT_STARTED)
+        ]
         self.entry.async_on_unload(self._teardown)
 
     @callback
@@ -201,6 +215,9 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._unsub_registries:
             self._unsub_registries()
             self._unsub_registries = None
+        for unsub in self._unsub_house:
+            unsub()
+        self._unsub_house = []
         self._cancel_fires()
 
     @callback
@@ -271,15 +288,62 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
 
     @callback
+    def _on_house_action(self, event: Event) -> None:
+        """Remember that an automation or script is running, and its name.
+
+        This is how the logbook attributes a change, and it is the only thing
+        that works. An automation on a *state* trigger inherits a parent
+        context from whatever changed; one on a time, sun, template or MQTT
+        trigger starts a fresh context with no parent, and its state changes
+        are indistinguishable from a hand on a wall switch. Which meant the
+        automations most worth explaining were the ones we said nothing about.
+        """
+        name = str(event.data.get("name") or "").strip()
+        now = self.hass.loop.time()
+        if len(self._house_ctx) >= HOUSE_CONTEXT_MAX:
+            self._house_ctx = {
+                ctx: seen for ctx, seen in self._house_ctx.items() if seen[0] > now
+            }
+            if len(self._house_ctx) >= HOUSE_CONTEXT_MAX:
+                self._house_ctx.pop(next(iter(self._house_ctx)), None)
+        self._house_ctx[event.context.id] = (now + HOUSE_CONTEXT_TTL, name)
+
+    @callback
+    def _house_actor(self, event: Event) -> tuple[bool, str | None]:
+        """Did the house do this, and can we name what did it?
+
+        Returns `(house_acted, name)`. A change carrying a user id was asked
+        for by a person, and a person does not need telling what they just did.
+        """
+        context = event.data["new_state"].context
+        if context.user_id is not None:
+            return False, None
+
+        now = self.hass.loop.time()
+        for ctx in (context.id, context.parent_id):
+            if ctx is None:
+                continue
+            seen = self._house_ctx.get(ctx)
+            if seen is None:
+                continue
+            if seen[0] <= now:
+                self._house_ctx.pop(ctx, None)
+                continue
+            return True, seen[1] or None
+
+        # Downstream of *something* — an automation whose run we missed, or a
+        # chain we cannot follow. Worth a line, without a name on it.
+        return context.parent_id is not None, None
+
+    @callback
     def _on_state_change(self, event: Event) -> None:
         new = event.data.get("new_state")
         old = event.data.get("old_state")
         if new is None or old is None or new.state == old.state:
             return
 
-        # A parent context means something other than a person caused this.
-        # Someone who flipped the switch themselves does not need telling.
-        if new.context.parent_id is None:
+        house, actor = self._house_actor(event)
+        if not house:
             return
 
         phrase = self._phrase(event.data["entity_id"], new.state)
@@ -298,6 +362,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "kind": "event",
                 "source": "House",
                 "title": phrase,
+                "automation": actor,
                 "entity_id": event.data["entity_id"],
             }
         )

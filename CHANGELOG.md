@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+**"What just happened" now works for automations that are not state-triggered,
+which was most of them.** The test for whether the house acted was whether the
+state change carried a parent context. That is only true when the automation was
+itself set off by something that already had a context — a state trigger. An
+automation on a time, sun, template, numeric_state, MQTT or webhook trigger
+starts a fresh context with no parent, and its state changes look exactly like a
+hand on a wall switch, so Dayline said nothing about them. The sun-driven lights
+that are the whole reason for the feature were precisely the case it could not
+see.
+
+It now does what the logbook does: listens for `automation_triggered` and
+`script_started`, remembers those context ids for five minutes, and treats a
+change carrying one of them as the house acting. A change carrying a user id is
+still somebody doing it themselves, and still says nothing — you do not need
+telling what you just did.
+
+That map knows *which* automation ran, so the row can say so. The automation's
+name goes on the sage second line, under the sentence: "Porch light turned on",
+and beneath it, "Evening lights".
+
 **A second card: Dayline Glance.** The same feed, reduced to what survives being
 read from across a room — the time, one event, and up to two alerts with their
 buttons live. It ships in the same bundle as the spine card, so there is nothing
