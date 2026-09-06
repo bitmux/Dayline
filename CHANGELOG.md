@@ -33,6 +33,11 @@ is not a road and never will be. Locations that are obviously not places —
 
 The drive is rounded **up**. Being early is free.
 
+**The glance card shows it too**, and ranks it above the sage line: as the card
+gives things up to fit a panel, what the house will do on its own goes three
+steps before when to leave does. What the house is doing can wait until you are
+back at a screen. Whether you are already late cannot.
+
 **"What just happened" now works for automations that are not state-triggered,
 which was most of them.** The test for whether the house acted was whether the
 state change carried a parent context. That is only true when the automation was

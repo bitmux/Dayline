@@ -279,6 +279,8 @@ export interface DaylineGlanceCardConfig {
   max_alerts?: number;
   /** What the next-event band says when the day has nothing left in it. */
   quiet_message?: string;
+  /** Draw the "leave by" line under the event the card is naming. */
+  show_leave_by?: boolean;
   /**
    * Pixels along the bottom and top edges that something else is drawing over.
    *

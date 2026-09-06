@@ -169,6 +169,20 @@ export const glanceStyles = css`
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* Neutral while there is time; the accent the moment there is not. The only
+     line on this card that is an instruction rather than a fact. */
+  .next-leave {
+    font-size: 15px;
+    font-size: clamp(13px, 3.4cqw, 20px);
+    color: var(--color-neutral-500);
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .next-leave.late {
+    color: var(--color-accent-300);
+  }
   .dot {
     display: inline-block;
     width: 0.62em;
@@ -317,6 +331,9 @@ export const glanceStyles = css`
   .f4 .next-auto,
   .f5 .next-auto,
   .f6 .next-auto,
+  .f4 .next-leave,
+  .f5 .next-leave,
+  .f6 .next-leave,
   .f1 .alert-sub,
   .f2 .alert-sub,
   .f3 .alert-sub,

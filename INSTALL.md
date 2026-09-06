@@ -560,6 +560,7 @@ hearing from the house.
 | `entity` | — | The merged feed sensor. Required, and the same one the spine card uses. |
 | `show_date` | `true` | The weekday and date under the clock |
 | `show_next` | `true` | The next-event band. Off leaves a clock and whatever alerts arrive. |
+| `show_leave_by` | `true` | The "leave by" line under the event, when the feed could price the journey. Held longer than the sage line as the card gives things up — this is the card by the door. |
 | `max_alerts` | `2` | Most alerts drawn at once |
 | `quiet_message` | `Nothing else today` | What the event band says when the day has nothing left in it |
 | `inset_bottom` | `0` | Pixels along the bottom edge something else is drawing over — see below |

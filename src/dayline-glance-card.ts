@@ -33,6 +33,7 @@ const PENDING_TIMEOUT = 20_000;
 const DEFAULTS = {
   show_date: true,
   show_next: true,
+  show_leave_by: true,
   max_alerts: 2,
   quiet_message: "Nothing else today",
   inset_bottom: 0,
@@ -351,7 +352,28 @@ export class DaylineGlanceCard extends LitElement {
           ${dot ? html`<span class="dot" style=${dot}></span>` : nothing}${entry.title}
         </div>
         ${entry.automation ? html`<div class="next-auto">${entry.automation}</div>` : nothing}
+        ${this._renderLeave(entry)}
       </div>
+    </div>`;
+  }
+
+  /**
+   * When to set off, on the event the card is naming.
+   *
+   * This is the card by the door, so it outranks the sage line: the fit ladder
+   * gives that up three steps before it gives this up. What the house will do
+   * on its own can wait until you are back at a screen. Whether you are already
+   * late cannot.
+   */
+  private _renderLeave(e: SpineEntry): TemplateResult | typeof nothing {
+    if (!this._config.show_leave_by || !e.leave_by) return nothing;
+    const leave = Date.parse(e.leave_by);
+    if (!Number.isFinite(leave) || Date.parse(e.start) <= this._now) return nothing;
+    const drive = e.travel?.minutes;
+    const late = leave <= this._now;
+    const when = late ? "Leave now" : `Leave by ${this._fmt(leave, false)}`;
+    return html`<div class="next-leave ${late ? "late" : ""}">
+      ${drive ? `${when} · ${drive} min` : when}
     </div>`;
   }
 

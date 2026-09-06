@@ -53,7 +53,8 @@ is logbook-oriented — it tells you what happened, not what is about to.
   event title fires an event you bind to anything you like with the shipped
   blueprint. See [INSTALL.md](INSTALL.md#labels-and-tags--where-the-settings-went).
 - **Comes with a second card for a wall.** **Dayline Glance** is the same feed
-  reduced to a clock, the one event that is next, and up to two live alerts —
+  reduced to a clock, the one event that is next with its leave-by time, and up
+  to two live alerts —
   sized to be read from across a room, and it gives content up in a deliberate
   order rather than being cut off by a panel that cannot scroll. Same bundle,
   nothing extra to install.
