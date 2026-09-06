@@ -315,6 +315,13 @@ The cheapest magic is derived. None of the below asks anyone for anything.
 
 ## Countdowns — rows that end
 
+**Tabled.** View Assist's own timers already work and already solve the problem
+in the place people are actually standing, and duplicating a working thing on a
+second surface is not worth the field it would cost. Kept here because the
+`ends_at` gap below is real and will come up again for anything that runs for a
+known length of time — a wash cycle, an oven, a sprinkler zone — none of which
+have a View Assist implementation to defer to.
+
 "Hey Jarvis, ten minute timer for the cookies" should put a row on the spine that
 fills up as the timer runs, and a progress bar is a thing this card already
 draws. Nothing supports it today, and the gap is small and specific.
@@ -444,9 +451,6 @@ Everything here runs in the coordinator, off the render path, cached.
 
 ## Open questions
 
-- **Where the voice assistant's timers actually live** — a `timer.*` helper, the
-  Assist intent system, or View Assist's own. Decides whether countdown rows can
-  be driven by a blueprint or need something to watch them. See *Countdowns*.
 - **A tag fire missed while Home Assistant was down.** Fire late on start-up if
   the event is still running, or stay quiet? Silent either way, which is what
   makes it worth deciding deliberately rather than discovering.
