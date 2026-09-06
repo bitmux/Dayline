@@ -54,6 +54,7 @@ class Travel:
         #                           "route": str|None}
         self._cache: dict[str, dict[str, Any]] = {}
         self._warned = False
+        self._called_badly = False
 
     def forget(self) -> None:
         """Drop everything. Used when the origin changes: every cached answer
@@ -124,13 +125,24 @@ class Travel:
                     "destination": location,
                     "region": region,
                     "vehicle_type": vehicle_type,
-                    "time_delta": delta,
+                    # A duration selector, so a dict — an integer of seconds
+                    # is rejected, and the rejection looks exactly like a
+                    # destination nobody can route to.
+                    "time_delta": {"seconds": delta},
                 },
                 blocking=True,
                 return_response=True,
             )
         except Exception:  # noqa: BLE001 - a router that is down must not take the day with it
-            _LOGGER.debug("no route to %r", location, exc_info=True)
+            # Once, loudly. A call that raises is usually a wiring problem and
+            # not a bad address, and the quiet handling below — which is right
+            # for "Kid's school" — hid a malformed request for an entire
+            # afternoon. Everything after the first is debug.
+            if self._called_badly:
+                _LOGGER.debug("no route to %r", location, exc_info=True)
+            else:
+                self._called_badly = True
+                _LOGGER.warning("Could not ask for a route to %r", location, exc_info=True)
             return {"until": now + _FAILURE_TTL, "minutes": None}
 
         routes = (response or {}).get("routes") or []
