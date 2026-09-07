@@ -129,6 +129,15 @@ mount("Wet forecast on the next event", nowAndNext.map((e) =>
     : e), { size: "half" });
 mount("No weather entity configured", nowAndNext, { size: "half", weather: null });
 
+// The day is spent and the only thing left is tomorrow's alarm. This is the
+// state the whole when_empty rule exists for: "Nothing else today" is true and
+// answers the wrong question.
+mount("Day spent · tomorrow's alarm is the answer", mock.dayDone, { size: "half" });
+mount("Day spent · no alarm configured", mock.dayDone.filter((e) => e.kind !== "alarm"), { size: "half" });
+// And an alarm that goes off tonight, which is simply part of today.
+mount("Alarm tonight · an ordinary row", mock.ordinary.filter((e) =>
+  ["alarm:sensor.pixel_6a_next_alarm", "cal:bed"].includes(e.id)), { size: "half" });
+
 // The real device, at its real size, in the dress it actually wears.
 mount("Echo Show 5 · 788×394 · themed", nowAndNext, { size: "echo", config: { use_ha_theme: true } });
 mount("Echo Show 5 · two alerts", mock.standing, { size: "echo", config: { use_ha_theme: true } });

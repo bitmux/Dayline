@@ -537,6 +537,42 @@ room into a list, and lists do not get read from across rooms. The follow-on lin
 appears only while something is running; when the band is already showing an
 upcoming event, the one after it is not the card's business.
 
+### Alarms
+
+Dayline never sets an alarm. It has no ringer, and an alarm living in a timeline
+that cannot make a noise is worse than every other option on the phone. What it
+does is read the one your phone already has.
+
+The Home Assistant Companion app publishes a **Next alarm** sensor per device,
+fed by Android's alarm manager — so an alarm set in the stock clock app reaches
+Home Assistant. **It ships switched off.** On each phone: Settings → Companion
+app → Manage sensors → Next alarm. Until that is on there is nothing to pick in
+the options page.
+
+Then in **Options → Alarms**, choose the sensors — one per phone.
+
+An alarm that goes off today sits at its own time, like anything else, drawn a
+step quieter and at low priority so it can never push a real event off the card.
+It is a thing you already know about; it is there to be confirmed, not
+discovered.
+
+An alarm past midnight is different. Tomorrow's 6:30 has no business sitting
+above tonight's dinner, so it is held back until nothing else is left in the
+day — and then it becomes the answer, because at 11pm the question in the room
+is not *is anything left* but *when does this start again*. The countdown stays
+across midnight on purpose: "in 6h 51m" looks like arithmetic right up until you
+are the one deciding whether to go to bed.
+
+`alarm_horizon` caps that at 16 hours by default. The sensor reports the next
+alarm wherever it is, so without a cap an alarm set for Monday would sit on a
+Friday-night panel announcing Monday.
+
+Anything using Android's alarm clock lands in that sensor — a bedtime reminder,
+a fitness app — because to Android they are the same thing. Each row names the
+app that set it, and the package filter is empty by default: a shipped
+allow-list would quietly match nothing on somebody else's phone. Ours reports
+`com.android.deskclock`; yours may not.
+
 ### Weather, in two places
 
 Conditions right now sit in the top right corner, small and grey: an icon and

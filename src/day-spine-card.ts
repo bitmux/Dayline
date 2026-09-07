@@ -427,8 +427,12 @@ export class DaySpineCard extends LitElement {
           ${this._renderProgress(row)} ${this._renderAction(e!)}`;
       default: {
         const dur = this._config.show_duration ? this._duration(e!) : null;
-        return html`<div class="ttl">
-            ${this._renderLevel(e!)}${e!.title}${this._renderTags(e!)}${dur
+        return html`<div class="ttl ${e!.kind === "alarm" ? "alarm" : ""}">
+            ${e!.kind === "alarm" ? icon("alarm-clock", 14) : nothing}${this._renderLevel(
+              e!,
+            )}${e!.title}${this._renderTags(e!)}${e!.kind === "alarm" && e!.source
+              ? html`<span class="whose">${e!.source}</span>`
+              : nothing}${e!.when_empty ? html`<span class="whose">tomorrow</span>` : nothing}${dur
               ? html`<span class="dur">${dur}</span>`
               : nothing}
           </div>
@@ -682,7 +686,20 @@ export class DaySpineCard extends LitElement {
   private _plan(timed: SpineEntry[]): { rows: SpineRow[]; hidden: SpineEntry[] } {
     const cfg = this._config;
     const now = this._now;
-    const sorted = [...timed].sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+    let sorted = [...timed].sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+
+    // Rows that only appear once the day is spent — tomorrow morning's alarm.
+    // The test is "is there anything else still ahead", not "is the list empty":
+    // the past half of the day is still on the card and would otherwise keep
+    // this row suppressed until midnight, which is precisely when it stops
+    // being useful.
+    const held = sorted.filter((e) => e.when_empty);
+    if (held.length) {
+      const ahead = sorted.some(
+        (e) => !e.when_empty && e.kind !== "event" && Date.parse(e.start) > now,
+      );
+      if (ahead) sorted = sorted.filter((e) => !e.when_empty);
+    }
 
     const past: SpineEntry[] = [];
     const recent: SpineEntry[] = [];

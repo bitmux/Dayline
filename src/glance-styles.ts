@@ -208,6 +208,27 @@ export const glanceStyles = css`
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+  /* An alarm carries no calendar colour, so it gets the icon where a coloured
+     dot would go. Same box either way, or the row would sit indented from
+     every row that has one. */
+  .next-ico {
+    display: inline-flex;
+    vertical-align: -0.12em;
+    margin-right: 0.42em;
+    color: var(--color-neutral-500);
+  }
+  .next-ico svg {
+    width: 0.82em;
+    height: 0.82em;
+  }
+  /* Which phone, said quietly after the word. "Alarm" is the fact; whose it is
+     only matters in a house with more than one. */
+  .next-whose {
+    margin-left: 0.5em;
+    font-size: 0.68em;
+    color: var(--color-neutral-500);
+  }
+
   .next-auto {
     font-size: 15px;
     font-size: clamp(13px, 3.4cqw, 20px);

@@ -37,6 +37,8 @@ class MergeConfig:
     todo_entity: str | None = None
     leave_buffer: int = 10
     leave_max: int = 3
+    alarm_horizon: int = 16
+    alarm_packages: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -326,6 +328,88 @@ def from_sun(cfg: MergeConfig, next_rising: datetime | None, next_setting: datet
                 "entity_id": "sun.sun",
             }
         )
+    return out
+
+
+def from_alarms(
+    cfg: MergeConfig,
+    alarms: list[dict[str, Any]],
+    now: datetime,
+    day_start: datetime,
+) -> list[Entry]:
+    """The next alarm on each phone, from the Companion app's `next_alarm` sensor.
+
+    Two different rows come out of this, and the difference is the whole design:
+
+    An alarm that goes off *today* is an ordinary entry at its ordinary place —
+    a 10:45pm alarm is a thing happening this evening and belongs in the evening.
+
+    An alarm past midnight is not part of today and must not sit in the middle
+    of it. Tomorrow's 6:30 has no business appearing above tonight's dinner. But
+    once the day is spent, it is the only thing left worth saying: at 11pm the
+    question in the room is not "is anything left", it is "when does this start
+    again". So it is emitted with `when_empty`, and the cards hold it back until
+    nothing else remains. That is a presentational rule, deliberately — whether
+    the row should exist at all is decided here, and when to draw one that does
+    is the card's business.
+
+    `alarm_horizon` stops that from becoming a permanent fixture. The sensor
+    reports the next alarm wherever it is, so an alarm set for Monday would
+    otherwise sit on a Friday-night panel announcing Monday. Sixteen hours
+    carries any evening across to a morning and no further.
+    """
+    if not alarms:
+        return []
+    horizon = now + timedelta(hours=max(0, cfg.alarm_horizon))
+    day_end = day_start + timedelta(days=1)
+    # Package names are compared lowercase: the field is copied off a phone by
+    # hand, and `com.android.Deskclock` should not silently match nothing.
+    wanted = {p.strip().lower() for p in cfg.alarm_packages if p and p.strip()}
+
+    out: list[Entry] = []
+    for alarm in alarms:
+        moment = _parse(str(alarm.get("start") or ""))
+        if moment is None:
+            continue
+        # The sensor publishes an offset, but a naive value would make
+        # astimezone() guess the *process* timezone rather than the house's.
+        # Read it as local time instead, which is what a wall clock means.
+        moment = (
+            moment.replace(tzinfo=day_start.tzinfo)
+            if moment.tzinfo is None
+            else moment.astimezone(day_start.tzinfo)
+        )
+        # An alarm that has already gone off is not news. The sensor keeps
+        # reporting it for a while after it rings, and a struck-through alarm
+        # row is a fact about the past nobody asked for.
+        if moment <= now or moment > horizon:
+            continue
+        package = str(alarm.get("package") or "").strip()
+        if wanted and package.lower() not in wanted:
+            continue
+
+        label = str(alarm.get("label") or "Alarm").strip() or "Alarm"
+        entry: Entry = {
+            "id": f"alarm:{alarm.get('entity_id') or label}",
+            "start": _iso(moment),
+            "end": None,
+            "all_day": False,
+            "kind": "alarm",
+            "source": label,
+            "title": "Alarm",
+            "automation": None,
+            # Never allowed to push a real event out of the density budget. An
+            # alarm is a thing you already know about; it is on the spine to be
+            # confirmed, not to be discovered.
+            "priority": "low",
+            "sticky": False,
+            "entity_id": alarm.get("entity_id"),
+        }
+        if not (day_start <= moment < day_end):
+            entry["when_empty"] = True
+        if package:
+            entry["package"] = package
+        out.append(entry)
     return out
 
 

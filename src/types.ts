@@ -6,6 +6,7 @@ export type EntryKind =
   | "sun"
   | "automation"
   | "todo"
+  | "alarm"
   | "event"
   /**
    * True for as long as something is true, rather than at a time.
@@ -136,6 +137,17 @@ export interface SpineEntry {
    */
   actions?: SpineAction[] | null;
   weather?: SpineWeather | null;
+  /**
+   * Hold this row back until nothing else is left.
+   *
+   * Tomorrow morning's alarm has no business sitting above tonight's dinner,
+   * but once the day is spent it is the only thing worth saying. The feed
+   * decides whether the row should exist at all; this is the card deciding
+   * when to draw one that does.
+   */
+  when_empty?: boolean;
+  /** Which Android app set an alarm, so a mystery row can be identified. */
+  package?: string;
 }
 
 export interface SpineSource {

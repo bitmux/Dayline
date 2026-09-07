@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 from datetime import datetime, timedelta
 from functools import partial
 from typing import Any, Callable
@@ -26,6 +27,7 @@ from .const import (
     CONF_CALENDARS,
     CONF_TODO,
     CONF_WEATHER,
+    DEFAULT_ALARM_HORIZON,
     DEFAULT_LEAVE_BUFFER,
     DEFAULT_LEAVE_MAX,
     DEFAULT_LEAVE_ORIGIN,
@@ -44,6 +46,9 @@ from .const import (
     HOUSE_CONTEXT_TTL,
     LABEL_CONTROL,
     LABEL_INCLUDE,
+    OPT_ALARMS,
+    OPT_ALARM_HORIZON,
+    OPT_ALARM_PACKAGES,
     OPT_CALENDAR_META,
     OPT_EXCLUDE,
     OPT_HEADLINE_TEMPLATE,
@@ -70,6 +75,7 @@ from .merge import (
     attach_leave_by,
     attach_weather,
     dedupe,
+    from_alarms,
     from_calendars,
     from_sun,
     from_todo,
@@ -97,6 +103,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._base: list[Entry] = []
         self._recent: list[Entry] = []
         self._unsub_states = None
+        self._unsub_alarms = None
         self._unsub_registries = None
         self._unsub_house: list[Callable[[], None]] = []
 
@@ -208,6 +215,8 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             todo_entity=self.entry.data.get(CONF_TODO),
             leave_buffer=int(self._opts.get(OPT_LEAVE_BUFFER, DEFAULT_LEAVE_BUFFER)),
             leave_max=int(self._opts.get(OPT_LEAVE_MAX, DEFAULT_LEAVE_MAX)),
+            alarm_horizon=int(self._opts.get(OPT_ALARM_HORIZON, DEFAULT_ALARM_HORIZON)),
+            alarm_packages=self._opts.get(OPT_ALARM_PACKAGES) or [],
         )
 
     # -- the fast path ------------------------------------------------------
@@ -232,6 +241,9 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._unsub_states:
             self._unsub_states()
             self._unsub_states = None
+        if self._unsub_alarms:
+            self._unsub_alarms()
+            self._unsub_alarms = None
         if self._unsub_registries:
             self._unsub_registries()
             self._unsub_registries = None
@@ -306,6 +318,29 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._unsub_states = async_track_state_change_event(
                 self.hass, list(dict.fromkeys(watched)), self._on_state_change
             )
+
+        # Alarms get their own subscription rather than joining the list above:
+        # that one feeds the "what just happened" lines, which need a phrase and
+        # a house context an alarm sensor will never have. This one only wants
+        # to know the value moved. Without it, setting an alarm at 10:50pm and
+        # looking at the panel shows the old answer until the next cycle, which
+        # reads as the card being broken.
+        if self._unsub_alarms:
+            self._unsub_alarms()
+            self._unsub_alarms = None
+        alarms = [e for e in (self._opts.get(OPT_ALARMS) or []) if e]
+        if alarms:
+            self._unsub_alarms = async_track_state_change_event(
+                self.hass, list(dict.fromkeys(alarms)), self._on_alarm_change
+            )
+
+    @callback
+    def _on_alarm_change(self, event: Event) -> None:
+        new = event.data.get("new_state")
+        old = event.data.get("old_state")
+        if new is not None and old is not None and new.state == old.state:
+            return
+        self.hass.async_create_task(self.async_request_refresh())
 
     @callback
     def _on_house_action(self, event: Event) -> None:
@@ -460,6 +495,8 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 day_start,
             )
 
+        entries += from_alarms(cfg, self._read_alarms(), now, day_start)
+
         entries = dedupe(cfg, entries)
         entries = attach_weather(entries, await self._fetch_forecast(), now)
         entries = await self._attach_travel(cfg, entries, now)
@@ -536,6 +573,34 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ),
         )
         return attach_leave_by(entries, priced, cfg.leave_buffer)
+
+    def _read_alarms(self) -> list[dict[str, Any]]:
+        """Each configured phone's next alarm, straight off the state machine.
+
+        A push sensor, so there is nothing to poll and nothing to call: the
+        Companion app sends a value when the alarm changes and the state is
+        already sitting there. `Package` names the app that set it, which is the
+        only way to tell a wake-up from a bedtime reminder — the two look
+        identical otherwise, because to Android they are.
+        """
+        out: list[dict[str, Any]] = []
+        for entity_id in self._opts.get(OPT_ALARMS) or []:
+            state = self.hass.states.get(entity_id)
+            if state is None or state.state in ("unknown", "unavailable"):
+                continue
+            name = state.attributes.get("friendly_name") or entity_id
+            # "Pixel 6a Next alarm" is the device talking about itself; the row
+            # already says "Alarm", so the suffix is said twice.
+            label = re.sub(r"\s*next alarm\s*$", "", str(name), flags=re.I).strip()
+            out.append(
+                {
+                    "entity_id": entity_id,
+                    "label": label or entity_id,
+                    "start": state.state,
+                    "package": state.attributes.get("Package"),
+                }
+            )
+        return out
 
     async def _fetch_forecast(self) -> list[dict[str, Any]]:
         weather = self.entry.data.get(CONF_WEATHER)

@@ -10,6 +10,12 @@ const at = (h: number, m = 0): string => {
   return d.toISOString();
 };
 const offset = (mins: number): string => new Date(Date.now() + mins * 60_000).toISOString();
+const tomorrow = (h: number, m = 0): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+};
 
 export const ordinary: SpineEntry[] = [
   {
@@ -75,6 +81,17 @@ export const ordinary: SpineEntry[] = [
     weather: { condition: "partlycloudy", temperature: 68, precipitation_probability: 5 },
   },
   {
+    // Tonight's alarm: today, so it sits at its own time like anything else.
+    id: "alarm:sensor.pixel_6a_next_alarm",
+    start: at(22, 45),
+    kind: "alarm",
+    source: "Pixel 6a",
+    title: "Alarm",
+    priority: "low",
+    package: "com.android.deskclock",
+    entity_id: "sensor.pixel_6a_next_alarm",
+  },
+  {
     id: "cal:dinner",
     start: at(16, 15),
     kind: "calendar",
@@ -115,6 +132,46 @@ export const emptyDay: SpineEntry[] = [
     source: "Sun",
     title: "Sunset",
     automation: "Evening lights over 20 minutes",
+  },
+];
+
+/**
+ * The day is spent, and the only thing left is tomorrow's alarm.
+ *
+ * The state the `when_empty` rule exists for. Everything here is behind the
+ * harness clock, so the card has nothing ahead of it — and rather than saying
+ * "Nothing else today", which is true and answers the wrong question, it says
+ * when this starts again.
+ */
+export const dayDone: SpineEntry[] = [
+  { id: "sun:rise", start: at(6, 58), kind: "sun", source: "Sun", title: "Sunrise" },
+  {
+    id: "cal:school",
+    start: at(8, 20),
+    kind: "calendar",
+    source: "Google",
+    color: "blue",
+    title: "Kid to school",
+    automation: "Doors lock behind her",
+  },
+  {
+    id: "cal:lunch",
+    start: at(12, 30),
+    kind: "calendar",
+    source: "CalDAV",
+    color: "teal",
+    title: "Lunch with Wife",
+  },
+  {
+    id: "alarm:sensor.pixel_6a_next_alarm",
+    start: tomorrow(6, 30),
+    kind: "alarm",
+    source: "Pixel 6a",
+    title: "Alarm",
+    priority: "low",
+    when_empty: true,
+    package: "com.android.deskclock",
+    entity_id: "sensor.pixel_6a_next_alarm",
   },
 ];
 

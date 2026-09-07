@@ -423,11 +423,21 @@ export class DaylineGlanceCard extends LitElement {
             this._config.show_eyebrow
             ? nothing
             : html`<div class="next-rel">now</div>`
-          : html`<div class="next-rel">${this._relative(Date.parse(entry.start))}</div>`}
+          : // The countdown stays even across midnight. "in 15h 51m" looks like
+            // arithmetic until you are the one deciding whether to go to bed,
+            // and then it is the whole answer. Which day it lands on is said on
+            // the title line instead, where it costs nothing.
+            html`<div class="next-rel">${this._relative(Date.parse(entry.start))}</div>`}
       </div>
       <div class="next-what">
         <div class="next-title">
-          ${dot ? html`<span class="dot" style=${dot}></span>` : nothing}${entry.title}
+          ${entry.kind === "alarm"
+            ? html`<span class="next-ico">${icon("alarm-clock", 20)}</span>`
+            : dot
+              ? html`<span class="dot" style=${dot}></span>`
+              : nothing}${entry.title}${entry.kind === "alarm" && entry.source
+            ? html`<span class="next-whose">${entry.source}</span>`
+            : nothing}${entry.when_empty ? html`<span class="next-whose">tomorrow</span>` : nothing}
         </div>
         ${running ? this._renderProgress(entry) : nothing}
         ${entry.automation ? html`<div class="next-auto">${entry.automation}</div>` : nothing}
@@ -705,7 +715,14 @@ export class DaylineGlanceCard extends LitElement {
       const end = e.end ? Date.parse(e.end) : NaN;
       return start <= this._now && !Number.isNaN(end) && end > this._now;
     });
-    const upcoming = timed.find((e) => Date.parse(e.start) > this._now);
+    // Rows the feed marked "only once nothing else is left" — tomorrow
+    // morning's alarm. This card's quiet message is the least useful thing it
+    // ever says: at 11pm "Nothing else today" is true and answers the wrong
+    // question, and "6:30 AM · Alarm" answers the right one. So the held row is
+    // not competition for a real event, it is a better empty state.
+    const ahead = (list: SpineEntry[]) => list.find((e) => Date.parse(e.start) > this._now);
+    const upcoming =
+      ahead(timed.filter((e) => !e.when_empty)) ?? ahead(timed.filter((e) => e.when_empty));
     if (running) return { entry: running, running: true, then: upcoming };
     return upcoming ? { entry: upcoming, running: false } : undefined;
   }

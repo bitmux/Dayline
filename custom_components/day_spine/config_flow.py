@@ -37,17 +37,32 @@ from .const import (
     CONF_CALENDARS,
     CONF_TODO,
     CONF_WEATHER,
-    LABEL_CONTROL,
-    LABEL_INCLUDE,
+    DEFAULT_ALARM_HORIZON,
+    DEFAULT_LEAVE_BUFFER,
+    DEFAULT_LEAVE_MAX,
+    DEFAULT_LEAVE_ORIGIN,
+    DEFAULT_LEAVE_REGION,
+    DEFAULT_LEAVE_VEHICLE,
     DEFAULT_RECENT_MAX,
     DEFAULT_RECENT_TTL,
     DEFAULT_SCAN_MINUTES,
     DEFAULT_SIMILARITY,
     DEFAULT_TITLE_NOISE,
     DOMAIN,
+    LABEL_CONTROL,
+    LABEL_INCLUDE,
+    OPT_ALARMS,
+    OPT_ALARM_HORIZON,
+    OPT_ALARM_PACKAGES,
     OPT_CALENDAR_META,
     OPT_EXCLUDE,
     OPT_HEADLINE_TEMPLATE,
+    OPT_LEAVE_BUFFER,
+    OPT_LEAVE_BY,
+    OPT_LEAVE_MAX,
+    OPT_LEAVE_ORIGIN,
+    OPT_LEAVE_REGION,
+    OPT_LEAVE_VEHICLE,
     OPT_NOW_TEMPLATE,
     OPT_RECENT,
     OPT_RECENT_MAX,
@@ -58,21 +73,10 @@ from .const import (
     OPT_SIMILARITY,
     OPT_SUN_PRIORITY,
     OPT_TITLE_NOISE,
-    DEFAULT_LEAVE_BUFFER,
-    DEFAULT_LEAVE_MAX,
-    DEFAULT_LEAVE_ORIGIN,
-    DEFAULT_LEAVE_REGION,
-    DEFAULT_LEAVE_VEHICLE,
-    OPT_LEAVE_BUFFER,
-    OPT_LEAVE_BY,
-    OPT_LEAVE_MAX,
-    OPT_LEAVE_ORIGIN,
-    OPT_LEAVE_REGION,
-    OPT_LEAVE_VEHICLE,
     PRIORITIES,
     REGIONS,
-    VEHICLES,
     ROLES,
+    VEHICLES,
 )
 
 ADD = "__add__"
@@ -222,6 +226,7 @@ class DaySpineOptionsFlow(OptionsFlow):
                 "sentences",
                 "recent",
                 "leaving",
+                "alarms",
                 "sources",
                 "tuning",
             ],
@@ -560,6 +565,42 @@ class DaySpineOptionsFlow(OptionsFlow):
                     vol.Optional(
                         OPT_LEAVE_REGION, default=o.get(OPT_LEAVE_REGION, DEFAULT_LEAVE_REGION)
                     ): _select(REGIONS, "region"),
+                }
+            ),
+        )
+
+    async def async_step_alarms(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """The next alarm on each phone.
+
+        Read off the Home Assistant Companion app's `next_alarm` sensor, which
+        ships **disabled** — it has to be switched on per phone under Settings →
+        Companion app → Manage sensors → Next alarm, or nothing here will find
+        anything to show.
+        """
+        if user_input is not None:
+            self._opts.update(user_input)
+            return self._save()
+
+        o = self._opts
+        return self.async_show_form(
+            step_id="alarms",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(OPT_ALARMS, default=o.get(OPT_ALARMS) or []): _entity(
+                        "sensor", multiple=True
+                    ),
+                    vol.Optional(
+                        OPT_ALARM_HORIZON, default=o.get(OPT_ALARM_HORIZON, DEFAULT_ALARM_HORIZON)
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(min=1, max=48, step=1, unit_of_measurement="h")
+                    ),
+                    # Left empty on purpose. Anything that uses Android's alarm
+                    # clock lands in that sensor — a bedtime reminder, a fitness
+                    # app — and the package name differs between phones, so a
+                    # shipped allow-list would quietly match nothing on somebody
+                    # else's device. Better to show the row, name the app that
+                    # set it, and let it be excluded.
+                    vol.Optional(OPT_ALARM_PACKAGES, default=o.get(OPT_ALARM_PACKAGES) or []): _words(),
                 }
             ),
         )

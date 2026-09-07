@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+**Your phone's alarm, on the spine.** Dayline does not set alarms and should
+not: it has no ringer, and an alarm living in a timeline that cannot make a
+noise is worse than every other option on the phone. So it reads the one Android
+already has, through the Companion app's **Next alarm** sensor. Pick the sensors
+in **Options → Alarms** — one per phone. Note the sensor ships switched off and
+has to be enabled per device under Manage sensors, which is the single most
+likely reason nothing appears.
+
+An alarm going off today sits at its own time, drawn quieter and at low priority
+so it can never push a real event off the card. An alarm past midnight is held
+back until nothing else is left in the day, and only then becomes the next-up
+row. That rule is the feature: at 11pm the glance card used to say "Nothing else
+today", which is true and answers the wrong question. Now it says when this
+starts again. The countdown stays across midnight — "in 6h 51m" reads like
+arithmetic until you are the one deciding whether to go to bed.
+
+`alarm_horizon` caps it at 16 hours. The sensor reports the next alarm wherever
+it is, so without a cap one set for Monday would sit on a Friday-night panel
+announcing Monday.
+
+The package filter is empty by default. Anything using Android's alarm clock
+lands in that sensor — a bedtime reminder, a fitness app — because to Android
+they are the same thing, so each row names the app that set it and you exclude
+what you do not want. No shipped allow-list: the Pixel we built against reports
+`com.android.deskclock`, not the `com.google.` prefix that was the obvious
+guess, and a wrong default would have matched nothing while looking broken
+rather than wrong.
+
 ## 0.3.0 — beta, 6 September 2026
 
 **The glance card gets a tense, and the weather.** A bare time and a title is a

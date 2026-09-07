@@ -37,6 +37,7 @@ SHOTS = {
     # come out at the size the harness set rather than cropped to content.
     GLANCE: {
         "running": "10-glance-running.png",
+        "dayspent": "13-glance-day-spent.png",
         "leaving": "11-glance-leaving.png",
         "alerts": "12-glance-alerts.png",
     },

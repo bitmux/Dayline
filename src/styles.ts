@@ -438,6 +438,25 @@ export const styles = css`
   }
 
   /* the duration chip on upcoming entries */
+  /* An alarm is a thing you already know about. It sits on the spine to be
+     confirmed, not discovered, so it is drawn a step quieter than an event and
+     wears its icon where a title would otherwise start. */
+  .ttl.alarm {
+    color: var(--color-neutral-400, var(--color-neutral-500));
+  }
+  .ttl.alarm svg {
+    vertical-align: -2px;
+    margin-right: 6px;
+    color: var(--color-neutral-500);
+  }
+  /* Whose phone, and whether the row has crossed midnight. Both are asides. */
+  .whose {
+    margin-left: 8px;
+    font-size: 11.5px;
+    color: var(--color-neutral-600);
+    text-transform: lowercase;
+  }
+
   .dur {
     display: inline-block;
     margin-left: 8px;

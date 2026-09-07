@@ -22,9 +22,10 @@
           "calendars": "Calendar wording — pill names, priority, schedule calendars",
           "sentences": "Sentences — what the house does, in plain words",
           "recent": "What just happened — better wording for automatic changes",
+          "leaving": "Leaving — travel time to the places your events name",
+          "alarms": "Alarms — the next alarm on each phone",
           "sources": "Weather and to-do — and the fallback calendar list",
-          "tuning": "Tuning — sun, merging, timings, templates",
-          "leaving": "Leaving — travel time to the places your events name"
+          "tuning": "Tuning — sun, merging, timings, templates"
         }
       },
       "labels": {
@@ -107,6 +108,20 @@
           "scan_minutes": "Check calendars every",
           "now_template": "“Now” subline template",
           "headline_template": "Headline template"
+        }
+      },
+      "alarms": {
+        "title": "Alarms",
+        "description": "The next alarm on each phone, from the Home Assistant Companion app.\n\nThe sensor ships switched off. On each phone: Settings → Companion app → Manage sensors → Next alarm. Until that is on, there is nothing here to find.\n\nAn alarm going off today sits at its own time. One past midnight is held back until nothing else is left in the day, so tomorrow's 6:30 never sits above tonight's dinner.",
+        "data": {
+          "alarm_entities": "Next-alarm sensors",
+          "alarm_horizon": "Show an alarm up to this far ahead",
+          "alarm_packages": "Only these apps (leave empty for all)"
+        },
+        "data_description": {
+          "alarm_entities": "One per phone — look for “Next alarm”.",
+          "alarm_horizon": "Sixteen hours carries an evening across to a morning alarm and no further. Without a cap, an alarm set for Monday would sit on a Friday-night panel announcing Monday.",
+          "alarm_packages": "Anything using Android's alarm clock lands in that sensor — a bedtime reminder, a fitness app. The row names the app that set it, so add its package name here to keep it, or leave this empty and keep them all."
         }
       }
     }

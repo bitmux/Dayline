@@ -41,6 +41,7 @@ is_place = merge.is_place
 split_tags = merge.split_tags
 tags_seen = merge.tags_seen
 travel_targets = merge.travel_targets
+from_alarms = merge.from_alarms
 _similar = merge._similar
 
 TZ = timezone(timedelta(hours=-5))
@@ -623,3 +624,108 @@ def test_an_all_day_event_is_never_given_a_departure_time():
     ]
     attach_leave_by(entries, {"dentist st": {"minutes": 25}})
     assert "leave_by" not in entries[0]
+
+
+# ---------------------------------------------------------------------------
+# alarms
+# ---------------------------------------------------------------------------
+
+
+def _alarm(when: str, **extra) -> dict:
+    row = {"entity_id": "sensor.pixel_6a_next_alarm", "label": "Pixel 6a", "start": when}
+    row.update(extra)
+    return row
+
+
+def _tomorrow(hour: int, minute: int = 0) -> str:
+    return datetime(2026, 9, 3, hour, minute, tzinfo=TZ).isoformat()
+
+
+def test_an_alarm_later_today_is_an_ordinary_row():
+    out = from_alarms(cfg(), [_alarm(_at(22, 45))], NOW, DAY_START)
+    assert len(out) == 1
+    assert out[0]["start"] == _at(22, 45)
+    assert out[0]["kind"] == "alarm"
+    assert out[0]["title"] == "Alarm"
+    assert out[0]["source"] == "Pixel 6a"
+    # Never allowed to crowd out a real event.
+    assert out[0]["priority"] == "low"
+    # It is part of today, so it is shown as part of today.
+    assert "when_empty" not in out[0]
+
+
+def test_tomorrows_alarm_is_held_back_until_the_day_is_spent():
+    """The whole point of the feature. Tomorrow's 6:30 has no business sitting
+    above tonight's dinner, but at 11pm it is the only thing left worth saying."""
+    out = from_alarms(cfg(), [_alarm(_tomorrow(6, 30))], NOW, DAY_START)
+    assert len(out) == 1
+    assert out[0]["when_empty"] is True
+
+
+def test_an_alarm_beyond_the_horizon_is_dropped_entirely():
+    """The sensor reports the next alarm wherever it is. Without the cap, one
+    set for Monday would sit on a Friday-night panel announcing Monday."""
+    out = from_alarms(cfg(), [_alarm(_tomorrow(9, 0))], NOW, DAY_START)
+    assert out == []
+    # ...and the boundary is honoured rather than approximated.
+    assert from_alarms(cfg(), [_alarm(_tomorrow(6, 38))], NOW, DAY_START) != []
+    assert from_alarms(cfg(), [_alarm(_tomorrow(6, 40))], NOW, DAY_START) == []
+
+
+def test_the_horizon_is_configurable():
+    late = [_alarm(_tomorrow(9, 0))]
+    assert from_alarms(cfg(alarm_horizon=24), late, NOW, DAY_START) != []
+    assert from_alarms(cfg(alarm_horizon=0), late, NOW, DAY_START) == []
+
+
+def test_an_alarm_that_has_already_gone_off_is_not_news():
+    """The sensor keeps reporting one after it rings. A struck-through alarm row
+    is a fact about the past nobody asked for."""
+    assert from_alarms(cfg(), [_alarm(_at(7, 0))], NOW, DAY_START) == []
+
+
+def test_the_package_filter_is_off_by_default_and_exact_when_set():
+    rows = [_alarm(_at(22, 45), package="com.android.deskclock")]
+    assert len(from_alarms(cfg(), rows, NOW, DAY_START)) == 1
+    assert from_alarms(cfg(alarm_packages=["com.android.deskclock"]), rows, NOW, DAY_START)
+    # A bedtime reminder from another app is exactly what the filter is for.
+    assert from_alarms(cfg(alarm_packages=["com.android.deskclock"]),
+                       [_alarm(_at(22, 45), package="com.google.android.wellbeing")],
+                       NOW, DAY_START) == []
+
+
+def test_the_package_filter_ignores_case_because_it_is_typed_by_hand():
+    rows = [_alarm(_at(22, 45), package="com.android.deskclock")]
+    assert from_alarms(cfg(alarm_packages=["  COM.Android.Deskclock "]), rows, NOW, DAY_START)
+
+
+def test_the_package_reaches_the_entry_so_a_mystery_row_can_be_identified():
+    out = from_alarms(cfg(), [_alarm(_at(22, 45), package="com.android.deskclock")],
+                      NOW, DAY_START)
+    assert out[0]["package"] == "com.android.deskclock"
+
+
+def test_a_naive_timestamp_is_read_as_local_not_as_the_process_timezone():
+    naive = datetime(2026, 9, 2, 22, 45).isoformat()
+    out = from_alarms(cfg(), [_alarm(naive)], NOW, DAY_START)
+    assert out[0]["start"] == _at(22, 45)
+
+
+def test_several_phones_each_get_their_own_row():
+    out = from_alarms(
+        cfg(),
+        [
+            _alarm(_at(22, 45)),
+            {"entity_id": "sensor.pixel_9_next_alarm", "label": "Wife", "start": _at(23, 0)},
+        ],
+        NOW,
+        DAY_START,
+    )
+    assert [e["source"] for e in out] == ["Pixel 6a", "Wife"]
+    assert len({e["id"] for e in out}) == 2
+
+
+def test_junk_from_the_sensor_is_skipped_not_raised():
+    out = from_alarms(cfg(), [_alarm(""), _alarm("not a time"), _alarm(_at(22, 45))],
+                      NOW, DAY_START)
+    assert len(out) == 1

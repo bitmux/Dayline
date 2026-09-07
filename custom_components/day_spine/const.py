@@ -26,6 +26,11 @@ OPT_LEAVE_BUFFER = "leave_buffer"  # minutes of parking-and-walking-in
 OPT_LEAVE_MAX = "leave_max"  # how many upcoming events to price
 OPT_LEAVE_REGION = "leave_region"
 OPT_LEAVE_VEHICLE = "leave_vehicle"
+
+# Alarms, read off the Companion app's `next_alarm` sensor on each phone.
+OPT_ALARMS = "alarm_entities"
+OPT_ALARM_HORIZON = "alarm_horizon"  # hours ahead an alarm may still be shown
+OPT_ALARM_PACKAGES = "alarm_packages"  # empty means every app that sets one
 OPT_NOW_TEMPLATE = "now_template"
 OPT_HEADLINE_TEMPLATE = "headline_template"
 OPT_SCAN_MINUTES = "scan_minutes"
@@ -113,6 +118,10 @@ DEFAULT_LEAVE_BUFFER = 10
 DEFAULT_LEAVE_MAX = 3
 DEFAULT_LEAVE_REGION = "us"
 DEFAULT_LEAVE_VEHICLE = "car"
+# Enough to carry any evening across to a morning alarm, and no further: the
+# sensor reports the next alarm wherever it is, so without a cap one set for
+# Monday would sit on a Friday-night panel announcing Monday.
+DEFAULT_ALARM_HORIZON = 16
 
 # How long a running automation stays attributable, and how many we keep.
 # Long enough for an action with a `delay` in it; short enough that a
