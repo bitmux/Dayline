@@ -1,17 +1,31 @@
 # Dayline
 
-A Home Assistant dashboard card that renders **today as one vertical spine** —
-calendar events, sun times, scheduled automations and actionable to-dos merged
-into one chronological list with a live "now" marker.
+I got tired of reading my calendar card, my to-do card, my weather card, sunrise & sunset, and my “did the house do the thing” card taking up so much of my dashboard. I’m on a quest to go hardcore minimalist on my dashboards. Designed as a full-height sidebar, Dayline puts today on a single vertical timeline: calendar events (with hourly forecast icon), sunrise and sunset, to-dos, and what my automations are going to do or did on their own, all in time order with a marker for now.
 
-It answers two questions at a glance, without interaction: *what is left of
-today?* and *what will the house do without me?*
 
-Past entries stay, struck through, so the day reads as a whole. Things the house
-will handle on its own are annotated in sage, in plain words — "Entry unlocks on
-her arrival", never a scene name.
+Good for people who live primarily by their calendar.  Vibeslopped together with Claude, if it triggers your HA controlled pyrotechnics unexpectedly, that’s a you problem, you’ve been appropriately informed.
+
+It answers a few questions at a glance, without interaction: *what is next, what's left of today?* *what just happened?* and *what will the house do without me?*
 
 ![The card, mid-afternoon](design/screenshots/01-card-ordinary.png)
+
+
+#tag items can fire automations direct from your calendar. If you have a shared calendar, caution. 2 layers: First you have to tag the calendar you wish to offer control permissions to with “#Dayline Control”, second you have to create the automation with Dayline #tag as a trigger. I rather like the idea combined with a mode selector. #Away sets my master house mode to away. Additional caution, if someone sends you a calendar invite with a #tag in it that just so happens to match an autometion, which you haven’t even accepted yet, I don’t know what will happen.
+
+I live by my calendar and its on a private server local to my lan anyway, so just adding a #tag to my normal daily events is a sick way to automate. if I just move my “wake up” calendar event, with the #wake tag, it sets my alarm automation for me.
+
+Therefore, if you like a little more security: the concept of a house control calendar as a local ha calendar to which no one will send invites, is included. Instead of time helpers or raw time triggers in your automations, you can simply make local calendar entries with
+tags in them corresponding to when you’d like various automations to fire. Then you can have a single calendar gui for modifying when your house makes automatic changes.
+
+If a calendar event has a location, it asks Waze what the drive time is from a configurable start location (defaults to zone.home) at the start time of the event. It then tells me when to walk out the door. No API key or account attached (so far?). You could also insert person.name and if there’s a companion app associated with that person it’ll work from wherever their device is. There’s also a ‘buffer time’ - it seems to take me 15 minutes to actually get out the door for anything, so I build that in.
+
+There’s a second glance card in the same bundle for wall tablets (View Assist): a big clock, whatever’s next, and anything currently wrong, and the clock quietly goes amber and then red as a leave-by time approaches. I chose to replace the entire clock card on my View Assist config with this glance card, though I intentionally did not include all the view assist magic. Its about 8 lines of yaml as opposed to VA’s rather complicated page, I accept the loss of functionality because my card replaces most of it for me (I’m not interested in touch controls on my glance devices, voice and eyeballs only).
+
+Cards are driven by the integration, which is gathering all the data and pushing it to the cards, read the docs, its kinda cool?
+
+There are several cross-paradigm inconsistencies, (do we use a #tag here or a direct automation or is it a config option in the settings?) There might even be a couple items in the integration settings dialog that flat don’t work, I’ll probably fix those eventually
+
+Claude did rather well though it made some interesting visual design choices, I ended up just using the HA theme (dark glass lite) in my production instance.
 
 And the same feed on a wall panel, sixteen minutes before it is time to set off
 for the recital. The clock is the warning; the line underneath still says it in
@@ -19,15 +33,7 @@ words.
 
 ![Dayline Glance, with a leave-by time approaching](design/screenshots/11-glance-leaving.png)
 
-## Why this exists
-
-Nothing in core Lovelace or HACS merges calendar + sun + automation intent into
-one annotated, time-sorted spine. `calendar` cards list events.
-`atomic-calendar-revive` comes closest but has no notion of automation intent
-and no now-marker positioned within the day. `Chronicle Card` merges sources but
-is logbook-oriented — it tells you what happened, not what is about to.
-
-## What it does
+## What it does (Klaudevibe-jargon follows)
 
 - **Merges** calendars, `sun.sun`, schedule calendars and to-do lists into one
   ordered day, deduping near-identical events across calendars.
@@ -35,8 +41,8 @@ is logbook-oriented — it tells you what happened, not what is about to.
 - **Shows what is running now** — several things at once if that is the truth —
   each with a progress bar, time remaining and end time.
 - **Keeps actionable items until they are done.** "The washer is full" stays on
-  the card, with a button, until someone presses it. It does not quietly slide
-  into the past and go mouldy.
+  the card, with a button, until someone presses it.
+  
 - **Explains what just happened.** "Living room lights turned off by motion
   sensor", for five minutes, so nobody has to wonder.
 - **Says when to leave.** When an event names a place, Dayline prices the drive
@@ -88,18 +94,9 @@ separate steps.
 Assistant, then **Settings → Devices & services → Add integration → Dayline**.
 Setup asks for your calendars and nothing else that matters.
 
-HACS registers the card as a Lovelace resource itself — that registration
-belongs to HACS, which is exactly why the two halves are separate repositories
-rather than one repository serving its own card.
-
 Full instructions, the YAML alternative, and every card option:
 **[INSTALL.md](INSTALL.md)**. Where this is going, and the principles that
 decide the arguments: **[ROADMAP.md](ROADMAP.md)**.
-
-## How it is put together
-
-Two halves, joined by one contract: an ordered list of entries on a sensor's
-attributes.
 
 ```
 custom_components/day_spine/   the feed — fetches, merges, decides
@@ -134,26 +131,10 @@ than opening the file, since it loads its fixtures by fetch — including panels
 integration and the YAML package. Its clock is pinned to 2:39 PM so it
 reproduces the design reference whenever you open it.
 
-## Status — 0.1.0, alpha
+## Status — Alpha
 
 Alpha in the honest sense: everything described above works and is running, but
-it has been through one instance, not many, and the version number is where it
-is because the *functionality* has barely been argued with yet. Expect the
-options to move.
-
-What that means concretely, as of 0.1.0:
-
-- Installed through HACS on a live Home Assistant 2026.8, config flow clicked
-  through, drawing a real day from Local Calendar, a Local To-do list and the
-  National Weather Service.
-- Four bugs found by meeting a live instance rather than a fixture, all now
-  covered by tests or verified on the instance: a sunset dropped by a UTC date
-  rollover, rain that never rendered as rain on Home Assistant's default weather
-  provider, events spanning midnight landing at the wrong end of the day, and a
-  cold boot that produced a spine with no to-dos and no forecast for five
-  minutes.
-- The card registers itself as a Lovelace resource, so it appears in the card
-  picker without anyone pasting a URL.
+it has been through one instance. Expect failures and frequent updates.
 
 Not built yet: drag-to-reschedule, a visual editor for the card's own options,
 and the security/awareness variants sketched in `design/`. Untested against
