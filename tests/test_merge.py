@@ -729,3 +729,13 @@ def test_junk_from_the_sensor_is_skipped_not_raised():
     out = from_alarms(cfg(), [_alarm(""), _alarm("not a time"), _alarm(_at(22, 45))],
                       NOW, DAY_START)
     assert len(out) == 1
+
+
+def test_tomorrows_alarm_is_not_counted_as_left_today():
+    """The headline says "N left today". A row that only appears once the day is
+    spent is the thing after the last of them, not one of them."""
+    entries = [
+        {"start": _at(22), "kind": "calendar"},
+        {"start": _tomorrow(6, 30), "kind": "alarm", "when_empty": True},
+    ]
+    assert remaining_count(entries, NOW) == 1

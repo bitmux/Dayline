@@ -627,6 +627,11 @@ def remaining_count(entries: list[Entry], now: datetime) -> int:
     for entry in entries:
         if entry.get("kind") == "event":
             continue
+        # A row held back until the day is spent is not part of the day. The
+        # headline says "N left today", and tomorrow's alarm is not one of them
+        # — it is the thing that comes after the last of them.
+        if entry.get("when_empty"):
+            continue
         start = _parse(entry["start"])
         end = _parse(entry.get("end"))
         running = end is not None and start is not None and start <= now < end
