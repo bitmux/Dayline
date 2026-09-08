@@ -131,9 +131,9 @@ than opening the file, since it loads its fixtures by fetch — including panels
 integration and the YAML package. Its clock is pinned to 2:39 PM so it
 reproduces the design reference whenever you open it.
 
-## Status — Alpha
+## Status — Beta
 
-Alpha in the honest sense: everything described above works and is running, but
+Beta in the honest sense: everything described above works and is running, but
 it has been through one instance. Expect failures and frequent updates.
 
 Not built yet: drag-to-reschedule, a visual editor for the card's own options,

@@ -143,6 +143,16 @@ export const emptyDay: SpineEntry[] = [
  * "Nothing else today", which is true and answers the wrong question, it says
  * when this starts again.
  */
+/** Free time, as the feed emits it: measured from now, low priority, no dot. */
+export const gapRow: SpineEntry = {
+  id: "gap:afternoon",
+  start: at(15, 5),
+  kind: "gap",
+  source: "",
+  title: "2h 40m free",
+  priority: "low",
+};
+
 export const dayDone: SpineEntry[] = [
   { id: "sun:rise", start: at(6, 58), kind: "sun", source: "Sun", title: "Sunrise" },
   {
@@ -172,6 +182,18 @@ export const dayDone: SpineEntry[] = [
     when_empty: true,
     package: "com.android.deskclock",
     entity_id: "sensor.pixel_6a_next_alarm",
+  },
+  // The evening pivot: what the alarm is for. Held back all day behind the
+  // rows above it, and the answer the moment they run out.
+  {
+    id: "cal:standup",
+    start: tomorrow(7, 30),
+    kind: "calendar",
+    source: "Google",
+    color: "violet",
+    title: "Standup",
+    when_empty: true,
+    weather: { condition: "rainy", temperature: 54, precipitation_probability: 70 },
   },
 ];
 

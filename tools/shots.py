@@ -32,6 +32,7 @@ SHOTS = {
         "empty": "02-card-empty-day.png",
         "stale": "03-card-stale-source.png",
         "busy": "07-card-busy-day.png",
+        "daydone": "08-card-day-spent.png",
     },
     # The glance card is a fixed rectangle rather than a column, so its captures
     # come out at the size the harness set rather than cropped to content.

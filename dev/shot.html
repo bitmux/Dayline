@@ -33,7 +33,7 @@ const SOURCES = [{ label: "Google" }, { label: "CalDAV" }];
 
 const STATES = {
   ordinary: [{
-    entries: mock.ordinary,
+    entries: [...mock.ordinary, mock.gapRow],
     headline: "2 September · everyone home by 6",
     now: "Afternoon · house quiet, doors locked",
     sources: SOURCES,
@@ -51,6 +51,12 @@ const STATES = {
     sources: [{ label: "Google", stale: true }, { label: "CalDAV" }],
     stale_message:
       "Google calendar hasn't updated since 8:14 AM yesterday. Anything on it is missing from today.",
+  }],
+  daydone: [{
+    entries: mock.dayDone,
+    headline: "2 September · tomorrow starts at 6:30 AM",
+    now: "Evening · house quiet, doors locked",
+    sources: SOURCES,
   }],
   busy: [{
     entries: mock.busy,

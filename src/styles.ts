@@ -681,6 +681,22 @@ export const styles = css`
     color: var(--color-neutral-300);
   }
 
+  /* ---------- free time ---------- */
+  /*
+   * No dot: .row.future .rail::after is what draws one, and this variant
+   * deliberately does not get it. The rail runs straight through, which is the
+   * point — nothing happens here, and the line carrying on uninterrupted is a
+   * truer drawing of that than any mark would be.
+   */
+  .row.gap .c {
+    padding: 6px 0 14px;
+  }
+  .gap-txt {
+    font-size: 13px;
+    color: var(--color-neutral-600, var(--color-neutral-500));
+    letter-spacing: 0.02em;
+  }
+
   /* ---------- overflow ---------- */
 
   .row.more .rail {

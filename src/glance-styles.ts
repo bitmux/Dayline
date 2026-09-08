@@ -234,6 +234,17 @@ export const glanceStyles = css`
     font-size: clamp(13px, 3.4cqw, 20px);
     color: var(--color-accent-2-400);
     line-height: 1.25;
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+  }
+  /* The icon keeps its size; the sentence is the part that gives way. */
+  .next-auto .icon,
+  .next-leave .icon {
+    flex: none;
+  }
+  .next-auto span,
+  .next-leave span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -304,6 +315,13 @@ export const glanceStyles = css`
     color: var(--color-neutral-600, var(--color-neutral-500));
     margin-right: 0.6em;
   }
+  /* Quieter than the clock time beside it: the two say the same thing, one as
+     a fact and one as arithmetic, and the arithmetic is the supporting half. */
+  .then-rel {
+    color: var(--color-neutral-600, var(--color-neutral-500));
+    font-variant-numeric: tabular-nums;
+    margin-right: 0.5em;
+  }
   /* The time carries the weight, because it is the part that gets acted on. */
   .then-time {
     color: var(--color-neutral-400, var(--color-neutral-500));
@@ -350,9 +368,9 @@ export const glanceStyles = css`
     font-size: clamp(13px, 3.4cqw, 20px);
     color: var(--color-neutral-500);
     line-height: 1.25;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
   }
   .next-leave.late {
     color: var(--color-accent-300);
@@ -367,6 +385,16 @@ export const glanceStyles = css`
        standing in for an answer we do not have. */
     background: var(--cal, transparent);
     vertical-align: baseline;
+  }
+  /*
+   * A ring, not a disc, for anything that has not started — the spine says the
+   * same thing with its rail dots, and a card that fills the dot early is
+   * asserting "now" about an event that is not.
+   */
+  .dot.ring {
+    background: transparent;
+    border: 0.16em solid var(--cal);
+    box-sizing: border-box;
   }
 
   .quiet {

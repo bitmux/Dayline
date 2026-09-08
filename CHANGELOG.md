@@ -2,6 +2,83 @@
 
 ## Unreleased
 
+**Free time, as a row.** The card exists to condense a day into something
+readable, and the point of condensing it is to find the space in it — but a day
+of six events looks exactly as full whether or not there is a clear three hours
+in the middle, because no calendar app draws the negative space. This one does:
+a quiet line, no dot, the rail running straight through, saying `2h 40m free`.
+
+It is the quietest row on the card and the only one without a mark on the rail,
+which is the argument for it: free time is the absence of an entry, and drawing
+it with the furniture of an entry would make the day look busier than it is —
+the exact thing the row exists to correct.
+
+**Measured from now**, not from the end of the last event. A gap half spent has
+to say what is left of it; "2h 40m free" at three o'clock about an afternoon
+that started at one is a lie in the direction that costs you the afternoon.
+
+**Only calendar events count as commitments.** Sunset is not somewhere you have
+to be, an alarm is not a place, and a row an automation pushed in describes the
+house rather than you — any of them counted would carve a real afternoon into
+fragments that mean nothing. An event running inside another one does not reopen
+the gap the outer one closed either, so a call inside an all-afternoon class
+leaves the afternoon as busy as it was.
+
+Never counted in "N left today", and the first thing the density budget gives
+up. `min_gap` sets the threshold at 90 minutes by default; 0 switches it off.
+
+**The evening pivot — the card now says when tomorrow starts.** At eleven at
+night "nothing else today" is true and answers a question nobody in the room is
+asking. The feed reads a second day, holds everything past midnight back behind
+today, and releases it the moment today has nothing left in it — so a day in
+progress looks exactly as it always did, and a day that is over stops pretending
+to be about today.
+
+This is the same rule the phone alarm has used since it shipped, generalised to
+the calendar, and the alarm turns out to have been the harder half: it proved
+the mechanism against a real device before anything depended on it.
+
+**No cutoff hour, anywhere.** An evening mode that switches on at eight is wrong
+for anyone on nights, and wrong again on a Saturday that was over at two. The
+day pivots when it is spent, which is a fact about the calendar rather than a
+guess about the person reading it.
+
+`tomorrow_horizon` caps the reach at 16 hours, counted from now and not from
+midnight: far enough to carry an evening to the next working morning, not so far
+that Friday night starts announcing Monday.
+
+The headline pivots too — `2 September · nothing scheduled` becomes
+`2 September · tomorrow starts at 6:30 AM`. A day with genuinely nothing held
+back still reads as empty, because it is.
+
+All-day events are left out. They carry a date and not a time, so they cannot
+say when tomorrow starts, and one pinned to the start of its day would have been
+drawn at midnight — above tonight's dinner, on the wrong day entirely. That was
+a real fault in the first cut of this and is now a test.
+
+**The glance card now says the same things the same way.** Four places where
+the two cards had drifted apart, which matters more than it sounds: they are
+fed by one sensor and are meant to be the same day seen from two distances, so
+a mark that means one thing on a dashboard and another on a wall is worse than
+no mark at all.
+
+- **A dot that is filled means now; a ring means still to come.** The spine has
+  drawn that distinction since the beginning. The glance card filled every dot,
+  so an event two hours away was drawn in the one treatment reserved for an
+  event under way.
+- **Sage lines carry the sparkles glyph**, as they do everywhere else. Sage
+  means the house acting on its own, and the icon is half of how that reads.
+- **The leave-by line gets its car, and the word "drive" back.** It said
+  "Leave by 2:47 PM · 15 min", which leaves the fifteen minutes to be guessed
+  at — time until departure, or the length of the journey.
+- **A running event no longer hides how long until the next one.** The
+  countdown lived only in the branch where nothing was running, so during a
+  long overlapping event — the case where the question is hardest to answer in
+  your head — the follow-on line gave a clock time and no arithmetic. It now
+  reads `NEXT 3:50 PM · in 1h 11m · Kid out of school`, with the countdown
+  ahead of the title because the title is the part allowed to truncate.
+
+
 **Your phone's alarm, on the spine.** Dayline does not set alarms and should
 not: it has no ringer, and an alarm living in a timeline that cannot make a
 noise is worse than every other option on the phone. So it reads the one Android

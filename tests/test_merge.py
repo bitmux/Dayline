@@ -739,3 +739,198 @@ def test_tomorrows_alarm_is_not_counted_as_left_today():
         {"start": _tomorrow(6, 30), "kind": "alarm", "when_empty": True},
     ]
     assert remaining_count(entries, NOW) == 1
+
+
+# --- the evening pivot ------------------------------------------------------
+
+DAY_END = DAY_START + timedelta(days=1)
+# The pivot only ever speaks once today is spent, so these ask it at ten at
+# night. Asked at 2:39pm a 16-hour horizon reaches 6:39 tomorrow morning, which
+# is correct and is not the question anyone is asking mid-afternoon.
+EVENING = datetime(2026, 9, 2, 22, 0, tzinfo=TZ)
+
+
+def test_without_a_day_end_nothing_is_marked_or_dropped():
+    # Which day an event belongs to is the fetch window's business, not this
+    # function's: it has always rendered whatever it was handed. Passing no
+    # `day_end` has to leave that exactly as it was.
+    entries = from_calendars(
+        cfg(),
+        {"calendar.family": [ev("2026-09-03T07:00:00-05:00", "Standup")]},
+        DAY_START,
+    )
+    assert len(entries) == 1
+    assert "when_empty" not in entries[0]
+
+
+def test_tomorrows_event_is_held_back_until_the_day_is_spent():
+    entries = from_calendars(
+        cfg(),
+        {"calendar.family": [ev("2026-09-03T07:00:00-05:00", "Standup")]},
+        DAY_START,
+        DAY_END,
+        EVENING,
+    )
+    assert len(entries) == 1
+    assert entries[0]["when_empty"] is True
+    assert entries[0]["title"] == "Standup"
+
+
+def test_todays_events_are_never_marked_held_back():
+    entries = from_calendars(
+        cfg(),
+        {"calendar.family": [ev("2026-09-02T15:50:00-05:00", "Kid out of school")]},
+        DAY_START,
+        DAY_END,
+        EVENING,
+    )
+    assert "when_empty" not in entries[0]
+
+
+def test_tomorrow_beyond_the_horizon_is_dropped():
+    # 16 hours from ten at night reaches two tomorrow afternoon. A dinner
+    # tomorrow evening is true and is not what an evening panel is being asked.
+    entries = from_calendars(
+        cfg(),
+        {
+            "calendar.family": [
+                ev("2026-09-03T06:00:00-05:00", "Early start"),
+                ev("2026-09-03T19:00:00-05:00", "Dinner tomorrow"),
+            ]
+        },
+        DAY_START,
+        DAY_END,
+        EVENING,
+    )
+    assert [e["title"] for e in entries] == ["Early start"]
+
+
+def test_an_all_day_event_tomorrow_is_not_pinned_to_today():
+    # The bug this guards: an all-day entry is pinned to the start of the day,
+    # so tomorrow's would have been drawn at midnight this morning.
+    entries = from_calendars(
+        cfg(),
+        {"calendar.family": [ev("2026-09-03", "Bin day", "2026-09-04")]},
+        DAY_START,
+        DAY_END,
+        EVENING,
+    )
+    assert entries == []
+
+
+def test_todays_all_day_event_still_pins_to_today():
+    entries = from_calendars(
+        cfg(),
+        {"calendar.family": [ev("2026-09-02", "Trash out tonight", "2026-09-03")]},
+        DAY_START,
+        DAY_END,
+        EVENING,
+    )
+    assert entries[0]["start"] == DAY_START.isoformat()
+
+
+# --- free time --------------------------------------------------------------
+
+from_gaps = merge.from_gaps
+
+
+def _gaps(events, now=NOW, **kw):
+    entries = from_calendars(cfg(**kw), {"calendar.family": events}, DAY_START)
+    return from_gaps(cfg(**kw), entries, now)
+
+
+def test_a_clear_afternoon_gets_a_row():
+    gaps = _gaps(
+        [
+            ev("2026-09-02T12:00:00-05:00", "Lunch", "2026-09-02T13:00:00-05:00"),
+            ev("2026-09-02T17:00:00-05:00", "Dentist"),
+        ],
+        now=datetime(2026, 9, 2, 11, 0, tzinfo=TZ),
+    )
+    assert [g["title"] for g in gaps] == ["4h free"]
+    assert gaps[0]["kind"] == "gap"
+    assert gaps[0]["priority"] == "low"
+
+
+def test_a_gap_is_measured_from_now_not_from_the_last_event():
+    # Half the afternoon is already gone; the row has to say what is left of it,
+    # not what it was at lunchtime.
+    gaps = _gaps(
+        [
+            ev("2026-09-02T12:00:00-05:00", "Lunch", "2026-09-02T13:00:00-05:00"),
+            ev("2026-09-02T17:00:00-05:00", "Dentist"),
+        ],
+        now=datetime(2026, 9, 2, 15, 0, tzinfo=TZ),
+    )
+    assert [g["title"] for g in gaps] == ["2h free"]
+
+
+def test_a_gap_that_has_passed_is_not_free_time():
+    gaps = _gaps(
+        [
+            ev("2026-09-02T08:00:00-05:00", "School run", "2026-09-02T08:30:00-05:00"),
+            ev("2026-09-02T11:00:00-05:00", "Standup"),
+        ],
+        now=datetime(2026, 9, 2, 14, 0, tzinfo=TZ),
+    )
+    assert gaps == []
+
+
+def test_short_gaps_are_not_worth_saying():
+    gaps = _gaps(
+        [
+            ev("2026-09-02T15:00:00-05:00", "Call", "2026-09-02T15:30:00-05:00"),
+            ev("2026-09-02T16:00:00-05:00", "Call two"),
+        ],
+        now=datetime(2026, 9, 2, 14, 0, tzinfo=TZ),
+    )
+    assert gaps == []
+
+
+def test_an_event_inside_another_does_not_reopen_the_gap():
+    # A class runs all afternoon and a call sits inside it. The afternoon is not
+    # free, and a naive walk would have called the space after the call free.
+    gaps = _gaps(
+        [
+            ev("2026-09-02T13:00:00-05:00", "Class", "2026-09-02T18:00:00-05:00"),
+            ev("2026-09-02T14:00:00-05:00", "Call", "2026-09-02T14:15:00-05:00"),
+        ],
+        now=datetime(2026, 9, 2, 12, 0, tzinfo=TZ),
+    )
+    assert gaps == []
+
+
+def test_only_calendar_events_count_as_commitments():
+    # Sunset is not somewhere you have to be, so it must not carve the evening
+    # in two.
+    entries = from_calendars(
+        cfg(),
+        {"calendar.family": [ev("2026-09-02T20:00:00-05:00", "Dinner")]},
+        DAY_START,
+    )
+    entries += from_sun(cfg(), None, datetime(2026, 9, 2, 19, 47, tzinfo=TZ), DAY_START)
+    gaps = from_gaps(cfg(), entries, datetime(2026, 9, 2, 17, 0, tzinfo=TZ))
+    assert gaps == []
+
+
+def test_free_time_is_not_counted_among_what_is_left_today():
+    entries = from_calendars(
+        cfg(),
+        {
+            "calendar.family": [
+                ev("2026-09-02T12:00:00-05:00", "Lunch", "2026-09-02T13:00:00-05:00"),
+                ev("2026-09-02T17:00:00-05:00", "Dentist"),
+            ]
+        },
+        DAY_START,
+    )
+    now = datetime(2026, 9, 2, 11, 0, tzinfo=TZ)
+    entries += from_gaps(cfg(), entries, now)
+    assert remaining_count(entries, now) == 2
+
+
+def test_gap_durations_read_the_way_a_countdown_does():
+    assert merge._spell(160) == "2h 40m"
+    assert merge._spell(180) == "3h"
+    assert merge._spell(95) == "1h 35m"
+    assert merge._spell(45) == "45m"

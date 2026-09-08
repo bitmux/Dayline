@@ -38,6 +38,9 @@ from .const import (
     CONF_TODO,
     CONF_WEATHER,
     DEFAULT_ALARM_HORIZON,
+    DEFAULT_TOMORROW,
+    DEFAULT_TOMORROW_HORIZON,
+    DEFAULT_MIN_GAP,
     DEFAULT_LEAVE_BUFFER,
     DEFAULT_LEAVE_MAX,
     DEFAULT_LEAVE_ORIGIN,
@@ -54,6 +57,9 @@ from .const import (
     OPT_ALARMS,
     OPT_ALARM_HORIZON,
     OPT_ALARM_PACKAGES,
+    OPT_TOMORROW,
+    OPT_TOMORROW_HORIZON,
+    OPT_MIN_GAP,
     OPT_CALENDAR_META,
     OPT_EXCLUDE,
     OPT_HEADLINE_TEMPLATE,
@@ -601,6 +607,20 @@ class DaySpineOptionsFlow(OptionsFlow):
                     # else's device. Better to show the row, name the app that
                     # set it, and let it be excluded.
                     vol.Optional(OPT_ALARM_PACKAGES, default=o.get(OPT_ALARM_PACKAGES) or []): _words(),
+                    # The same question the alarm answers, asked of the
+                    # calendar: once today is spent, what does tomorrow want?
+                    # No cutoff hour anywhere in this — the day pivots when it
+                    # is actually over, which is the only version that works for
+                    # somebody on nights.
+                    vol.Optional(
+                        OPT_TOMORROW, default=o.get(OPT_TOMORROW, DEFAULT_TOMORROW)
+                    ): selector.BooleanSelector(),
+                    vol.Optional(
+                        OPT_TOMORROW_HORIZON,
+                        default=o.get(OPT_TOMORROW_HORIZON, DEFAULT_TOMORROW_HORIZON),
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(min=1, max=48, step=1, unit_of_measurement="h")
+                    ),
                 }
             ),
         )
@@ -617,6 +637,14 @@ class DaySpineOptionsFlow(OptionsFlow):
             step_id="tuning",
             data_schema=vol.Schema(
                 {
+                    # Free time, as a row. Zero switches it off — one number
+                    # rather than a toggle beside a number, because "off" and
+                    # "shorter than this" are the same answer.
+                    vol.Optional(
+                        OPT_MIN_GAP, default=o.get(OPT_MIN_GAP, DEFAULT_MIN_GAP)
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(min=0, max=480, step=15, unit_of_measurement="min")
+                    ),
                     vol.Optional(OPT_SHOW_SUN, default=o.get(OPT_SHOW_SUN, True)): selector.BooleanSelector(),
                     vol.Optional(OPT_SUN_PRIORITY, default=o.get(OPT_SUN_PRIORITY, "low")): _select(
                         PRIORITIES, "priority"

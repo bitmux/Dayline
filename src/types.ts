@@ -7,6 +7,7 @@ export type EntryKind =
   | "automation"
   | "todo"
   | "alarm"
+  | "gap"
   | "event"
   /**
    * True for as long as something is true, rather than at a time.
@@ -253,7 +254,7 @@ export interface HomeAssistant {
 }
 
 /** What the render pipeline produces: entries classified and ready to draw. */
-export type RowVariant = "past" | "recent" | "overdue" | "live" | "now" | "future";
+export type RowVariant = "past" | "recent" | "overdue" | "live" | "now" | "future" | "gap";
 
 export interface SpineRow {
   variant: RowVariant;

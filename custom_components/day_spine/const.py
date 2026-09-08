@@ -31,6 +31,9 @@ OPT_LEAVE_VEHICLE = "leave_vehicle"
 OPT_ALARMS = "alarm_entities"
 OPT_ALARM_HORIZON = "alarm_horizon"  # hours ahead an alarm may still be shown
 OPT_ALARM_PACKAGES = "alarm_packages"  # empty means every app that sets one
+OPT_TOMORROW = "tomorrow"  # let the day pivot once today is spent
+OPT_TOMORROW_HORIZON = "tomorrow_horizon"  # hours into tomorrow worth naming
+OPT_MIN_GAP = "min_gap"  # minutes of clear time worth a row of its own; 0 is off
 OPT_NOW_TEMPLATE = "now_template"
 OPT_HEADLINE_TEMPLATE = "headline_template"
 OPT_SCAN_MINUTES = "scan_minutes"
@@ -122,6 +125,9 @@ DEFAULT_LEAVE_VEHICLE = "car"
 # sensor reports the next alarm wherever it is, so without a cap one set for
 # Monday would sit on a Friday-night panel announcing Monday.
 DEFAULT_ALARM_HORIZON = 16
+DEFAULT_TOMORROW = True
+DEFAULT_TOMORROW_HORIZON = 16
+DEFAULT_MIN_GAP = 90
 
 # How long a running automation stays attributable, and how many we keep.
 # Long enough for an action with a `delay` in it; short enough that a

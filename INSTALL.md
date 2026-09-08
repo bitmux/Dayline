@@ -573,6 +573,64 @@ app that set it, and the package filter is empty by default: a shipped
 allow-list would quietly match nothing on somebody else's phone. Ours reports
 `com.android.deskclock`; yours may not.
 
+### The evening — what tomorrow starts with
+
+The alarm rule generalises. Once today is spent, the card can name tomorrow's
+first commitments as well as the alarm, from the same held-back mechanism: the
+feed fetches a second day, marks everything past midnight as held, and the cards
+draw none of it while today still has something in it.
+
+**There is no cutoff hour anywhere in this**, and that is deliberate. An
+evening-mode that switches on at 8pm is wrong for anybody working nights, and it
+is wrong on a Saturday afternoon when the day is genuinely over at two. The day
+pivots when it is actually spent, which is a fact about your calendar rather
+than a guess about your life.
+
+`tomorrow_horizon` caps how far in, 16 hours by default, counted from now rather
+than from midnight — far enough that an evening reaches the next working
+morning, and not so far that a Friday-night panel starts announcing Monday.
+
+The headline pivots with it: `2 September · nothing scheduled` becomes
+`2 September · tomorrow starts at 6:30 AM`. A genuinely empty day with nothing
+held back still reads as an empty day.
+
+All-day events are the one exclusion. They carry a date rather than a time, so
+they cannot answer the only question being asked out here, and a birthday
+tomorrow drawn at midnight would sit above tonight's dinner without ever meaning
+to. Switch the whole thing off with **Show tomorrow once today is done** in
+Options → Alarms and the evening.
+
+### Free time
+
+A day of six events looks full whether or not there is a clear three hours in
+the middle of it — and the three hours is usually the thing being looked for.
+Dayline draws it: a quiet row, no dot, the rail running straight through.
+
+    2:55 PM  ● Kid's recital
+                2h 40m free
+    3:50 PM  ○ Kid out of school
+
+**Measured from now**, not from the end of the last event, so a gap half spent
+says what is left of it rather than what it was at lunchtime. A gap entirely
+behind you is not free time, it is this morning, and gets no row.
+
+**Only calendar events count as commitments.** Sunset is not somewhere you have
+to be, an alarm is not a place, and a row an automation pushed in is about the
+house rather than about you. Counting any of them would carve a real afternoon
+into fragments that mean nothing.
+
+An event running inside another one does not reopen the gap the outer event
+closed — a call in the middle of an all-afternoon class leaves the afternoon
+just as busy as it was.
+
+Free time is never counted in the headline's "N left today": it is the absence
+of a commitment, and counting it would be the card arguing with itself. It is
+also the first thing the density budget collapses, so it can never push a real
+event off the card.
+
+`min_gap` in Options → Tuning sets how long is worth saying, 90 minutes by
+default. Set it to 0 to switch it off.
+
 ### Weather, in two places
 
 Conditions right now sit in the top right corner, small and grey: an icon and

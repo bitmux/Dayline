@@ -28,6 +28,9 @@ from .const import (
     CONF_TODO,
     CONF_WEATHER,
     DEFAULT_ALARM_HORIZON,
+    DEFAULT_TOMORROW,
+    DEFAULT_TOMORROW_HORIZON,
+    DEFAULT_MIN_GAP,
     DEFAULT_LEAVE_BUFFER,
     DEFAULT_LEAVE_MAX,
     DEFAULT_LEAVE_ORIGIN,
@@ -49,6 +52,9 @@ from .const import (
     OPT_ALARMS,
     OPT_ALARM_HORIZON,
     OPT_ALARM_PACKAGES,
+    OPT_TOMORROW,
+    OPT_TOMORROW_HORIZON,
+    OPT_MIN_GAP,
     OPT_CALENDAR_META,
     OPT_EXCLUDE,
     OPT_HEADLINE_TEMPLATE,
@@ -76,6 +82,7 @@ from .merge import (
     attach_weather,
     dedupe,
     from_alarms,
+    from_gaps,
     from_calendars,
     from_sun,
     from_todo,
@@ -217,6 +224,10 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             leave_max=int(self._opts.get(OPT_LEAVE_MAX, DEFAULT_LEAVE_MAX)),
             alarm_horizon=int(self._opts.get(OPT_ALARM_HORIZON, DEFAULT_ALARM_HORIZON)),
             alarm_packages=self._opts.get(OPT_ALARM_PACKAGES) or [],
+            tomorrow_horizon=int(
+                self._opts.get(OPT_TOMORROW_HORIZON, DEFAULT_TOMORROW_HORIZON)
+            ),
+            min_gap=int(self._opts.get(OPT_MIN_GAP, DEFAULT_MIN_GAP)),
         )
 
     # -- the fast path ------------------------------------------------------
@@ -482,8 +493,21 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         now = dt_util.now()
         day_start = dt_util.start_of_local_day(now)
 
+        # Fetching a second day is what lets the evening say when tomorrow
+        # starts. The extra events are held back by `when_empty` until today is
+        # spent, so nothing changes about a day that still has something in it.
+        pivot = bool(self._opts.get(OPT_TOMORROW, DEFAULT_TOMORROW))
+        day_end = day_start + timedelta(days=1)
+        window_end = day_end + timedelta(days=1) if pivot else day_end
+
         entries: list[Entry] = []
-        entries += from_calendars(cfg, await self._fetch_calendars(day_start), day_start)
+        entries += from_calendars(
+            cfg,
+            await self._fetch_calendars(day_start, window_end),
+            day_start,
+            day_end if pivot else None,
+            now,
+        )
         entries += from_todo(cfg, await self._fetch_todo(), day_start)
 
         sun = self.hass.states.get("sun.sun")
@@ -500,12 +524,16 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         entries = dedupe(cfg, entries)
         entries = attach_weather(entries, await self._fetch_forecast(), now)
         entries = await self._attach_travel(cfg, entries, now)
+        # Last, and deliberately: gaps are measured between the commitments that
+        # survived dedupe, and a gap is not a thing to price a journey to or
+        # hang a forecast on.
+        entries += from_gaps(cfg, entries, now)
 
         self._base = entries
         self._apply_tags(now)
         return self._compose()
 
-    async def _fetch_calendars(self, day_start) -> dict[str, list[dict[str, Any]]]:
+    async def _fetch_calendars(self, day_start, window_end) -> dict[str, list[dict[str, Any]]]:
         calendars = self._present(list(self._calendar_ids), "calendar.get_events")
         if not calendars:
             return {}
@@ -516,7 +544,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 {
                     "entity_id": calendars,
                     "start_date_time": day_start.isoformat(),
-                    "end_date_time": (day_start + timedelta(days=1)).isoformat(),
+                    "end_date_time": window_end.isoformat(),
                 },
                 blocking=True,
                 return_response=True,
@@ -820,7 +848,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return {
             "entries": entries,
             "remaining": left,
-            "headline": self._headline(left, now),
+            "headline": self._headline(left, now, entries),
             "now": self._render(self._opts.get(OPT_NOW_TEMPLATE) or ""),
             "sources": self._sources(),
             "stale_message": self._stale_message(),
@@ -860,14 +888,34 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "temperature_unit": state.attributes.get("temperature_unit"),
         }
 
-    def _headline(self, left: int, now) -> str:
+    def _headline(self, left: int, now, entries: list[Entry] | None = None) -> str:
         custom = self._render(self._opts.get(OPT_HEADLINE_TEMPLATE) or "")
         if custom:
             return custom
         date = now.strftime("%-d %B") if hasattr(now, "strftime") else ""
         if left == 0:
+            # The pivot, in the one line that states what the card is about.
+            # "Nothing scheduled" is true at eleven at night and answers the
+            # question nobody is asking; what they want to know is when this
+            # starts again. Only said when there is a held-back row to name it
+            # with, so a genuinely empty day still reads as an empty day.
+            first = self._first_held(entries or [], now)
+            if first is not None:
+                return f"{date} · tomorrow starts at {first.strftime('%-I:%M %p')}"
             return f"{date} · nothing scheduled"
         return f"{date} · {left} left today" if left > 1 else f"{date} · 1 left today"
+
+    @staticmethod
+    def _first_held(entries: list[Entry], now) -> datetime | None:
+        """The earliest held-back row still ahead of us, if any."""
+        moments = []
+        for entry in entries:
+            if not entry.get("when_empty"):
+                continue
+            start = dt_util.parse_datetime(str(entry.get("start") or ""))
+            if start is not None and start > now:
+                moments.append(start)
+        return min(moments) if moments else None
 
     def _render(self, tpl: str) -> str:
         if not tpl.strip():

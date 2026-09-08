@@ -419,6 +419,12 @@ export class DaySpineCard extends LitElement {
         return html`${e!.title}${this._renderTags(e!)}`;
       case "recent":
         return html`${icon("sparkles", 14)}<span>${e!.title}</span>`;
+      // Deliberately the quietest row on the card, and the only one with no dot
+      // on the rail: free time is the absence of an entry, so drawing it with
+      // the furniture of an entry would make the day look busier than it is —
+      // which is the exact thing this row exists to correct.
+      case "gap":
+        return html`<span class="gap-txt">${e!.title}</span>`;
       case "live":
         return html`<div class="ttl">${e!.title}${this._renderTags(e!)}</div>
           ${e!.automation
@@ -715,6 +721,10 @@ export class DaySpineCard extends LitElement {
       // the past, because "the garage is open" struck through would be the card
       // telling you it is closed.
       else if (e.kind === "standing") overdue.push(e);
+      // Free time is built to start at now-or-later, so it is always ahead —
+      // said explicitly because a gap starting exactly now would otherwise fall
+      // through to the past and be drawn struck through.
+      else if (e.kind === "gap") future.push(e);
       else if (t > now) future.push(e);
       // Started and not finished. Several can be true at once — a class that runs
       // all afternoon, a slow cooker, and a call inside both — and each gets its
@@ -783,14 +793,21 @@ export class DaySpineCard extends LitElement {
       afterLive: !!firstLive && before[before.length - 1]?.variant === "live",
     };
 
-    const rows = [...before, nowRow, ...keptFuture.map((e) => this._row("future", e))];
+    const rows = [
+      ...before,
+      nowRow,
+      ...keptFuture.map((e) => this._row(e.kind === "gap" ? "gap" : "future", e)),
+    ];
     // Only the final row fades its rail — and only when nothing follows it.
     if (rows.length && !hidden.length) rows[rows.length - 1].last = true;
     return { rows, hidden };
   }
 
   private _row(variant: SpineRow["variant"], entry: SpineEntry): SpineRow {
-    const row: SpineRow = { variant, entry, time: this._fmt(Date.parse(entry.start), false) };
+    // A gap is a span, not a moment. A clock time in the gutter beside it reads
+    // as "something happens at 3:05", which is the opposite of what it says.
+    const time = variant === "gap" ? "" : this._fmt(Date.parse(entry.start), false);
+    const row: SpineRow = { variant, entry, time };
     if (variant === "live") {
       const start = Date.parse(entry.start);
       const end = Date.parse(entry.end!);

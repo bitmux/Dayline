@@ -409,7 +409,11 @@ export class DaylineGlanceCard extends LitElement {
     // No dot at all rather than an invisible one: a transparent circle still
     // occupies its space, and the sun rows — which never carry a calendar colour
     // — would sit indented from every row that does.
+    // Filled means now, a ring means still to come — the same distinction the
+    // spine draws with its rail dots. A solid dot on an event that has not
+    // started was this card claiming a state the other one reserves.
     const dot = calStyle(entry.color);
+    const dotClass = running ? "dot" : "dot ring";
     return html`<div class="next">
       <div class="next-when">
         ${this._config.show_eyebrow
@@ -434,13 +438,17 @@ export class DaylineGlanceCard extends LitElement {
           ${entry.kind === "alarm"
             ? html`<span class="next-ico">${icon("alarm-clock", 20)}</span>`
             : dot
-              ? html`<span class="dot" style=${dot}></span>`
+              ? html`<span class=${dotClass} style=${dot}></span>`
               : nothing}${entry.title}${entry.kind === "alarm" && entry.source
             ? html`<span class="next-whose">${entry.source}</span>`
             : nothing}${entry.when_empty ? html`<span class="next-whose">tomorrow</span>` : nothing}
         </div>
         ${running ? this._renderProgress(entry) : nothing}
-        ${entry.automation ? html`<div class="next-auto">${entry.automation}</div>` : nothing}
+        ${entry.automation
+          ? html`<div class="next-auto">
+              ${icon("sparkles", 15)}<span>${entry.automation}</span>
+            </div>`
+          : nothing}
         ${this._renderLeave(running ? next.then : entry)}
         ${this._renderThen(next)}
       </div>
@@ -549,10 +557,14 @@ export class DaylineGlanceCard extends LitElement {
     // While something is running, the band's big title is about now — which the
     // corner readout already answers — so a temperature parked out to the right
     // of it would be describing the wrong event.
+    // The countdown sits before the title, not after it, because the title is
+    // the part allowed to truncate. "in 2h 10m" is the half of this line that
+    // gets acted on, and it must survive a long event name.
     return html`<div class="then">
       <span class="then-text"
         ><span class="then-lead">Next</span
-        ><span class="then-time">${this._fmt(Date.parse(e.start), false)}</span>${e.title}</span
+        ><span class="then-time">${this._fmt(Date.parse(e.start), false)}</span
+        ><span class="then-rel">${this._relative(Date.parse(e.start))}</span>${e.title}</span
       >
       ${this._renderEntryWeather(e)}
     </div>`;
@@ -573,8 +585,9 @@ export class DaylineGlanceCard extends LitElement {
     const drive = e.travel?.minutes;
     const late = leave <= this._now;
     const when = late ? "Leave now" : `Leave by ${this._fmt(leave, false)}`;
+    const trip = drive ? `${drive} min drive` : null;
     return html`<div class="next-leave ${late ? "late" : ""}">
-      ${drive ? `${when} · ${drive} min` : when}
+      ${icon("car", 15)}<span>${trip ? `${when} · ${trip}` : when}</span>
     </div>`;
   }
 
@@ -705,6 +718,9 @@ export class DaylineGlanceCard extends LitElement {
           !e.all_day &&
           e.kind !== "event" &&
           e.kind !== "standing" &&
+          // Free time is the absence of a commitment. This card names the one
+          // thing that matters next, and "2h 40m free" is not a thing to be at.
+          e.kind !== "gap" &&
           e.level !== "alert" &&
           !shown.has(e.id),
       )

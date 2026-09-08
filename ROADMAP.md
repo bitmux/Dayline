@@ -329,6 +329,47 @@ The cheapest magic is derived. None of the below asks anyone for anything.
 
 ---
 
+## Automations on the spine — what the house will do
+
+**Tabled**, after measuring what Home Assistant will actually tell us.
+
+The ask was reasonable: label an automation the way you label a calendar, and
+have its intent land on the timeline. Two findings killed it in that form.
+
+**An automation entity knows nothing about itself.** Its attributes are `id`,
+`friendly_name`, `last_triggered`, `mode` and `current` — no description, no
+triggers. The config behind `config/automation/config/{id}` does carry `alias`,
+`description`, `triggers`, `conditions` and `actions`, so the information exists;
+it is one indirection away and the entity is not the place to ask.
+
+**Only time-shaped triggers have a future.** `time` and `sun` resolve to a
+moment today. `calendar` is already on the spine. `time_pattern` is not an event,
+it is twenty-four of them. And `state`, `numeric_state`, `device`, `template`,
+`mqtt`, `webhook`, `zone` and `event` have no time at all — a motion-triggered
+porch light is a standing rule, not a timeline entry, and placing it on a
+timeline is a category error rather than a formatting problem. So the feature
+could only ever have covered two trigger types.
+
+**And the description cannot describe what just happened.** It was the obvious
+source for the sage line, and it is the right *kind* of answer — written by the
+person who wrote the automation, in the voice the sentence map already uses. But
+one description covers every path through an automation. For an automation that
+does several things, or branches, the sentence is true about the automation and
+not about the run, and a past row that says the wrong thing confidently is worse
+than a past row that says nothing. `automation_triggered` tells us *which*
+automation ran, which is what the existing what-just-happened line already says,
+and that is the honest ceiling.
+
+Worth knowing if this is picked up again: **blueprint-based automations expose no
+triggers at all** — `use_blueprint` and nothing else — so four of the six on the
+test instance were unreadable regardless. Anything built here has to say so out
+loud rather than silently skipping them, because "I labelled it and nothing
+happened" is the failure this was meant to fix.
+
+The forward half — *what the house will do* — is still answered by schedule
+calendars and by `day_spine.show`, both of which have a person writing the
+sentence at the point the intent is expressed.
+
 ## Countdowns — rows that end
 
 **Tabled.** View Assist's own timers already work and already solve the problem

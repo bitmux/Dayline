@@ -39,6 +39,8 @@ class MergeConfig:
     leave_max: int = 3
     alarm_horizon: int = 16
     alarm_packages: list[str] = field(default_factory=list)
+    tomorrow_horizon: int = 16
+    min_gap: int = 90
 
 
 # ---------------------------------------------------------------------------
@@ -160,11 +162,20 @@ def from_calendars(
     cfg: MergeConfig,
     events_by_entity: dict[str, list[dict[str, Any]]],
     day_start: datetime,
+    day_end: datetime | None = None,
+    now: datetime | None = None,
 ) -> list[Entry]:
     """Calendar events, in the order the calendars were configured.
 
     That order matters: when two calendars carry the same event with different
     wording, the first one listed supplies the words.
+
+    With `day_end` given, events past it are kept and marked `when_empty` — held
+    back while today still has something in it, and promoted the moment it does
+    not. That is the evening pivot: at eleven at night "nothing else today" is
+    true and answers the wrong question, and the same rule already governs a
+    phone alarm past midnight. Without `day_end` nothing beyond today is
+    admitted at all, which is what every caller did before.
     """
     out: list[Entry] = []
     for entity_id, meta in cfg.calendar_meta.items():
@@ -179,6 +190,13 @@ def from_calendars(
                 continue
             raw_start = str(ev.get("start", ""))
             all_day = "T" not in raw_start
+            # An all-day event belongs to a date, not a moment, so it is pinned
+            # to the start of the day — and one dated past today would be pinned
+            # to the wrong day entirely. It is also the one kind of entry that
+            # cannot say when tomorrow starts, which is the only question being
+            # asked out here.
+            if all_day and day_end is not None and raw_start[:10] >= day_end.strftime("%Y-%m-%d"):
+                continue
             start = day_start if all_day else _parse(raw_start)
             if start is None:
                 continue
@@ -203,6 +221,14 @@ def from_calendars(
             else:
                 automation = rule.get("automation") or None
 
+            beyond_today = day_end is not None and not all_day and start >= day_end
+            if beyond_today and now is not None:
+                # The sensor reports the next alarm wherever it is and a
+                # calendar is no different: without a cap, a Friday night panel
+                # announces Monday morning.
+                if start > now + timedelta(hours=cfg.tomorrow_horizon):
+                    continue
+
             entry: Entry = {
                 "id": f"cal:{entity_id}:{raw_start}:{title}",
                 "start": _iso(start),
@@ -219,6 +245,8 @@ def from_calendars(
             # Which calendar this came from, as a colour the card can draw.
             # Omitted when unset, like tags, so the common case costs nothing on
             # a payload that is re-sent to every open browser.
+            if beyond_today:
+                entry["when_empty"] = True
             color = meta.get("color")
             if color and color != "default":
                 entry["color"] = color
@@ -617,6 +645,77 @@ def attach_leave_by(
     return entries
 
 
+def from_gaps(cfg: MergeConfig, entries: list[Entry], now: datetime) -> list[Entry]:
+    """The free time between commitments, as rows of its own.
+
+    People plan against negative space and no calendar app draws it: a day of
+    six events looks full whether or not there is a clear three hours in the
+    middle of it, and the three hours is usually the thing being looked for.
+
+    Only calendar events count as commitments. Sunset is not something you have
+    to be at, an alarm is not a place, and a row an automation pushed in is
+    about the house rather than about you — counting any of them would carve a
+    real afternoon into fragments that do not mean anything.
+
+    Measured from now rather than from the end of the last event, so a gap
+    already half spent says what is actually left of it. A gap wholly behind us
+    is not free time, it is this morning.
+    """
+    if cfg.min_gap <= 0:
+        return []
+    commitments = []
+    for entry in entries:
+        if entry.get("kind") != "calendar" or entry.get("all_day"):
+            continue
+        if entry.get("when_empty"):
+            continue
+        start = _parse(entry["start"])
+        if start is None:
+            continue
+        commitments.append((start, _parse(entry.get("end")) or start))
+    commitments.sort()
+
+    out: list[Entry] = []
+    # `free_from` walks forward through the day. An event running inside another
+    # one must not reopen the gap the outer event closed, so this only ever
+    # moves later — which is also what makes an all-afternoon class behave.
+    free_from: datetime | None = None
+    for start, end in commitments:
+        if free_from is not None and start > free_from:
+            gap_start = max(free_from, now)
+            if start > gap_start:
+                minutes = int((start - gap_start).total_seconds() // 60)
+                if minutes >= cfg.min_gap:
+                    out.append(
+                        {
+                            "id": f"gap:{_iso(gap_start)}",
+                            "start": _iso(gap_start),
+                            "end": None,
+                            "all_day": False,
+                            "kind": "gap",
+                            "source": "",
+                            "title": f"{_spell(minutes)} free",
+                            "automation": None,
+                            # Never allowed to push a commitment off the card:
+                            # free time is the least urgent thing on it, by
+                            # definition.
+                            "priority": "low",
+                            "sticky": False,
+                        }
+                    )
+        if free_from is None or end > free_from:
+            free_from = end
+    return out
+
+
+def _spell(minutes: int) -> str:
+    """`2h 40m`, `3h`, `95m` — the same shape the cards use for a countdown."""
+    hours, mins = divmod(minutes, 60)
+    if not hours:
+        return f"{mins}m"
+    return f"{hours}h" if not mins else f"{hours}h {mins}m"
+
+
 def remaining_count(entries: list[Entry], now: datetime) -> int:
     """What is still ahead: upcoming, running, or waiting to be ticked off.
 
@@ -631,6 +730,10 @@ def remaining_count(entries: list[Entry], now: datetime) -> int:
         # headline says "N left today", and tomorrow's alarm is not one of them
         # — it is the thing that comes after the last of them.
         if entry.get("when_empty"):
+            continue
+        # Free time is the absence of a commitment, so counting it among the
+        # things left to do would be the headline arguing with itself.
+        if entry.get("kind") == "gap":
             continue
         start = _parse(entry["start"])
         end = _parse(entry.get("end"))
