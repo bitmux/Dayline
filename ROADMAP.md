@@ -467,16 +467,18 @@ First-party, and none of it is going anywhere.
 the only thing here that knows the difference between an event, a commitment and
 a gap, and that knowledge belongs in one place.
 
-**Dashie renders.** An Android kiosk app plus a small HACS integration —
-`load_url`, `speak_text`, `show_message`, brightness, volume, a current-page
-sensor and a REST API. View switching is a URL, which is the whole reason it is
-worth having over the alternative: the state lives in the browser, not in a
-tangle of Home Assistant helpers.
+**Ava Pro is the panel.** An Android satellite speaking the **ESPHome
+protocol** — not a HACS integration, not MQTT. Wake word, voiceprint, intercom,
+floating overlays, and — the part that settled the layer question — a browser
+overlay that renders a Home Assistant dashboard properly.
 
-**Ava Pro listens.** An Android voice satellite speaking the **ESPHome
-protocol** — not a HACS integration, not MQTT. Wake word, voiceprint, BLE proxy,
-intercom, and floating overlays above whatever app is running. It renders no
-dashboard, so it and Dashie do not overlap.
+**Dashie is out.** It was going to render while Ava listened, on the assumption
+the two did not overlap. Field-tested on the real hardware in September 2026:
+Ava's voice works and Dashie's does not, and Ava's dashboard rendering is good
+enough that the second app has nothing left to do. Dropping it removes one of
+the two custom projects this stack was resting on, which was the stated worry
+about being here at all. **One vendor, one protocol, and that protocol is
+first-party.**
 
 ```mermaid
 flowchart TB
@@ -494,19 +496,20 @@ flowchart TB
     FEED --> SENSOR --> SPINE & GLANCE
   end
 
-  subgraph VENDOR["Replaceable — transports, never called from our code"]
-    DASHIE["Dashie<br/>renders · load_url · show_message · TTS"]
-    AVA["Ava Pro<br/>listens · wake word · overlays · BLE"]
+  subgraph VENDOR["Replaceable — a transport, never called from our code"]
+    AVA["Ava Pro<br/>listens · wake word · intercom"]
+    BROWSER["its browser overlay<br/>text.*_ha_remote_url"]
+    SCENE["its notification scenes<br/>select.*_notification_scene"]
   end
 
   SRC --> FEED
   ASSIST -->|"todo.add_item<br/>with a due time"| SRC
   ESP --- AVA
   AVA -->|"speech"| ASSIST
-  SPINE --> DASH["dashboard"]
-  GLANCE --> DASHIE --> PANEL["Echo Show 5 · Moto G5+"]
-  AVA -.->|"overlay, interruptions only"| PANEL
-  SENSOR -.->|"alert rows, via an automation"| DASHIE
+  SPINE --> DASH["browser dashboard"]
+  GLANCE --> BROWSER --> PANEL["Echo Show 5 · Moto G5+"]
+  SCENE -.->|"overlay, interruptions only"| PANEL
+  SENSOR -.->|"alert rows, via an automation"| SCENE
   ASSIST -.->|"the spoken briefing — the gap"| SENSOR
 ```
 
@@ -536,6 +539,42 @@ ambient information, which is what the panel is already for. This needs nothing
 built: an automation on an alert row calling the vendor's own service is the
 whole bridge, and the feed stays the thing that decided.
 
+**They draw over the system UI too, including settings** — which is how the
+first field test nearly bricked a panel. The escape is not on the device, and
+that is worth knowing before it is needed rather than after: an overlay is
+closed **from Home Assistant**, by setting the browser's URL entity to an empty
+string or turning its display switch off. A panel is therefore never actually
+locked out while Home Assistant is up, and *while Home Assistant is up* is doing
+real work in that sentence. Ava's own back-button overlay is a convenience on
+top of that, not the safety net.
+
+### The three entities that do all the work
+
+Everything this project needs from the panel is three Ava entities and no custom
+code. Names follow `<device_name>`:
+
+| Entity | Service | What it is for |
+|---|---|---|
+| `text.<dev>_ha_remote_url` | `text.set_value` | **Which view is on screen.** Set a dashboard URL to switch views; set `""` to close the overlay. |
+| `switch.<dev>_browser_*` | `switch.turn_off` | The blunt escape. |
+| `select.<dev>_notification_scene` | `select.select_option` | Fire an overlay by scene title. 90+ built in; custom ones are a JSON array of `id`/`icon`/`title` plus colours, animation and text. |
+
+That first row is the whole of *view control* and *return to home* — the thing
+that took View Assist a spaghetti of helpers to express. **A view is a URL.** A
+single-card dashboard per function, an automation that sets the URL, and an
+idle timer that sets it back to the glance card. Nothing to build here beyond
+the dashboards themselves, and each one is a Lovelace view.
+
+It also answers the camera idea the better way round. Notification scenes are
+text, icon, colour and animation — **no image support is documented**, so a
+camera cannot be pushed through a scene. But the browser overlay takes any URL,
+and a dashboard view holding one `picture-entity` card *is* the camera popup.
+Scene for "someone is at the door", URL for the picture.
+
+**Not using: the Bluetooth proxy.** Tested; it reports one scan at startup and
+then stops. A dedicated ESP proxy is a few pounds and does the job, and a
+half-working proxy is worse than none because the failure is silent.
+
 ### Timers and reminders are two problems
 
 They arrive in the same sentence and want opposite answers.
@@ -556,11 +595,10 @@ They arrive in the same sentence and want opposite answers.
   spine with **no new Dayline code at all**. Deterministic, no model in the
   loop, and it works when the GPU is busy.
 
-**Open, and worth settling before anything is built on it:** upstream
-`brownard/Ava` lists timer support; Ava Pro's documentation does not mention
-timers anywhere. Whether an Ava device actually runs an on-device countdown has
-to be tested rather than assumed, and if it does not, the answer is a cheap
-ESPHome satellite in the one or two rooms where timers are really used.
+**Settled on the hardware: Ava does support timers.** Spoken to a real device
+they work, which retires the open question and means no ESPHome satellite is
+needed for the rooms that have a panel. What is *not* settled is whether a
+running countdown can be seen — see below.
 
 **Measured on the test instance, and it settles how that gets answered.**
 `set a 5 minute timer` through the REST conversation API returns *"timers are
@@ -575,8 +613,16 @@ at `add {item} to my shopping list`, which stopped adding anything and answered
 from the automation instead. A "set a timer" automation written as a safety net
 would therefore silently disable on-device timers on every satellite that does
 support them, trading a firmware countdown that survives a restart for one that
-dies with Home Assistant. If Ava turns out not to support timers, the answer is
-different hardware in that room, not a sentence that captures every room.
+dies with Home Assistant. Since Ava does support timers, a sentence written here
+would take away the good behaviour and give nothing back.
+
+**What is left is display, not function.** A timer that runs but shows no
+countdown is the one thing a kitchen timer must not be. Ava's scene library
+lists a timer/alarm scene, and scenes carry text — so a `timer` entity's
+remaining time can very likely be pushed into one on an interval. That is an
+automation, not Dayline code, and it is the next thing worth an hour on the
+device. **A timer does not belong on the spine**: the spine is the shape of a
+day, and a thing that resolves in eleven minutes has no business rearranging it.
 
 ### Lists
 
@@ -600,10 +646,11 @@ require somebody else's cloud.
 
 | Natively | Here | State |
 |---|---|---|
-| Timers | Assist intents, on-device | available, verify on Ava |
+| Timers | Assist intents, on-device | **works**; display unsolved |
 | Alarms | phone `next_alarm` ingest | **built** |
-| Reminders | `todo` + `due_datetime` | needs an intent |
-| Shopping list | `todo` | needs an intent |
+| Reminders | `todo` + `due_datetime` | **built** |
+| Shopping list | `todo` | **built** (add is first-party) |
+| Camera on demand | a view + the URL entity | available, unbuilt |
 | Weather | both cards | **built** |
 | Music | Music Assistant | available |
 | Intercom / broadcast | Ava, natively | available |
@@ -709,8 +756,13 @@ Everything here runs in the coordinator, off the render path, cached.
   [brownard/Ava](https://github.com/brownard/Ava) — 515 stars against 176, and
   pushed daily against a three-month gap, so momentum is downstream. Not a
   GitHub fork but an independent re-implementation crediting the original, both
-  Apache-2.0. It renders no dashboard, which is what makes it complementary to
-  Dashie rather than a competitor.
+  Apache-2.0. Earlier note here said it renders no dashboard — **wrong**, and it
+  was the claim the whole two-app plan rested on. Its
+  [Browser](https://github.com/knoop7/Ava-Pro/wiki/Browser) page documents an HA
+  dashboard overlay driven by `text.<dev>_ha_remote_url`, and its
+  [Notification Scenes](https://github.com/knoop7/Ava-Pro/wiki/Notification-Scenes)
+  page a `select.<dev>_notification_scene` with 90+ scenes and custom JSON. Ava
+  and Dashie were competitors all along, and the field test picked one.
 - [Voice chapter 7](https://www.home-assistant.io/blog/2024/06/26/voice-chapter-7/)
   and [ESPHome voice_assistant](https://esphome.io/components/voice_assistant/)
   — timer intents landed in 2024.6, and on ESPHome the countdown and chime are
