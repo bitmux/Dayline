@@ -794,6 +794,57 @@ frontend targets newer browsers than this card does.
 
 ---
 
+## Asking out loud
+
+`sensor.dayline` carries a **`briefing`** attribute: the next thing, as one
+sentence.
+
+```
+Dentist in 21 minutes.
+Leave in 11 minutes for School run.
+Move the laundry, overdue.
+Nothing left today. Tomorrow starts at 6:30 AM.
+```
+
+To speak it, one automation — no template logic, because the sentence is
+already decided by the feed:
+
+```yaml
+alias: Dayline — what's next
+mode: single
+triggers:
+  - trigger: conversation
+    command:
+      - what's next
+      - what is next
+      - what should I do next
+      - what am I doing next
+actions:
+  # Refresh first: a spoken "in 20 minutes" that is five minutes stale is the
+  # kind of small lie that stops people asking.
+  - action: homeassistant.update_entity
+    target:
+      entity_id: sensor.dayline
+  - set_conversation_response: >-
+      {{ state_attr('sensor.dayline','briefing') }}
+```
+
+It answers what to **do** rather than what is **scheduled**. A journey outranks
+the appointment it belongs to, a departure already missed outranks everything,
+an overdue item that is still on the card is still the answer, and something you
+are in the middle of is never the answer.
+
+It is one sentence on purpose. If you want the whole day, look at the card —
+that is what a screen is for.
+
+**Careful with the trigger phrases.** A `conversation` trigger **shadows the
+built-in intent of the same sentence**: point one at *add milk to my shopping
+list* and Home Assistant stops adding milk. Use phrases Assist does not already
+handle, and in particular do not write a "set a timer" automation — you would be
+turning off the on-device timer that survives a Home Assistant restart.
+
+---
+
 ## Working on it
 
 ```bash

@@ -654,13 +654,38 @@ require somebody else's cloud.
 | Weather | both cards | **built** |
 | Music | Music Assistant | available |
 | Intercom / broadcast | Ava, natively | available |
-| **"What is my day?"** | **this feed, spoken** | the gap |
+| **"What is my day?"** | **this feed, spoken** | **built** |
 
-That last row is the one that matters, and it is why the spoken briefing moves
-to the top of Phase 4. The feed already computes the answer — the headline, what
-is next, when to leave, what is left. Today it can only be looked at. An intent
-that speaks it means a dashboard, a wall panel and a voice satellite are three
-renderings of one sensor, and they can never disagree about the day.
+That last row is the one that matters, and it is now answered. A dashboard, a
+wall panel and a voice satellite are three renderings of one sensor, and they
+cannot disagree about the day.
+
+**Terse, and it was a decision rather than a shortcut.** The alternative was a
+briefing that reads the day out. Seventeen items spoken is worse than silence:
+by the fourth nobody is listening, and the one that mattered was the ninth. A
+screen is the right surface for a day; a voice is the right surface for the next
+move. `sensor.dayline` therefore carries a `briefing` attribute holding one
+sentence, and the automation that speaks it is two actions — refresh, read.
+
+The ladder inside it answers what to **do**, not what is **scheduled**:
+
+1. a departure already missed — the only bad news here, and bad news does not
+   queue behind a schedule;
+2. a sticky row whose time has gone. *Found by running it:* skipping these had
+   the spoken answer talking about half past seven while a chore overdue since
+   five sat on the card in front of the person asking;
+3. a departure still ahead — leaving is the move, the appointment is the reason;
+4. the next thing, in minutes under the hour and a clock time over it;
+5. nothing left, and when tomorrow starts.
+
+Something already running is never the answer, which is the seven-hour-event
+case: being in a thing is not being told about it.
+
+**Deliberately unanswered: "when do I need to leave?"** It was in the trigger
+list for an afternoon and gave the overdue chore, because it is a *different
+question* wearing the same automation. It deserves its own sentence — a
+departure-only answer, and an honest "nothing to leave for" when there is none —
+and half-answering it is worse than the fallback saying it did not understand.
 
 ---
 
