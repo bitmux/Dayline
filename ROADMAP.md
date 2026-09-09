@@ -452,10 +452,152 @@ handled; both are the kind of thing that will be true again for the next surface
 
 ---
 
+## The surfaces — what is ours, and what we are only standing on
+
+Dayline is one part of a wider goal: a house that always has an answer to *what
+should I or my family do next*. Three other things carry that answer to a room,
+and it is worth being explicit about which is which, because the failure mode
+here is not technical — it is waking up owning somebody else's roadmap.
+
+**Home Assistant is the only layer we are allowed to depend on.** Calendars,
+`todo`, `weather`, `sun`, the Assist pipeline, ESPHome, the service registry.
+First-party, and none of it is going anywhere.
+
+**Dayline is the feed and the two cards.** It decides what the day *is*. It is
+the only thing here that knows the difference between an event, a commitment and
+a gap, and that knowledge belongs in one place.
+
+**Dashie renders.** An Android kiosk app plus a small HACS integration —
+`load_url`, `speak_text`, `show_message`, brightness, volume, a current-page
+sensor and a REST API. View switching is a URL, which is the whole reason it is
+worth having over the alternative: the state lives in the browser, not in a
+tangle of Home Assistant helpers.
+
+**Ava Pro listens.** An Android voice satellite speaking the **ESPHome
+protocol** — not a HACS integration, not MQTT. Wake word, voiceprint, BLE proxy,
+intercom, and floating overlays above whatever app is running. It renders no
+dashboard, so it and Dashie do not overlap.
+
+```mermaid
+flowchart TB
+  subgraph HA["Home Assistant — first-party, the only hard dependency"]
+    SRC["calendars · todo · weather · sun · automations"]
+    ASSIST["Assist pipeline<br/>intents · timers"]
+    ESP["ESPHome protocol"]
+  end
+
+  subgraph DL["Dayline — ours. Decides what the day IS"]
+    FEED["the feed<br/>merge · dedupe · gaps · leave-by · the evening pivot"]
+    SENSOR["sensor.dayline<br/>entries · headline · sources"]
+    SPINE["spine card"]
+    GLANCE["glance card"]
+    FEED --> SENSOR --> SPINE & GLANCE
+  end
+
+  subgraph VENDOR["Replaceable — transports, never called from our code"]
+    DASHIE["Dashie<br/>renders · load_url · show_message · TTS"]
+    AVA["Ava Pro<br/>listens · wake word · overlays · BLE"]
+  end
+
+  SRC --> FEED
+  ASSIST -->|"todo.add_item<br/>with a due time"| SRC
+  ESP --- AVA
+  AVA -->|"speech"| ASSIST
+  SPINE --> DASH["dashboard"]
+  GLANCE --> DASHIE --> PANEL["Echo Show 5 · Moto G5+"]
+  AVA -.->|"overlay, interruptions only"| PANEL
+  SENSOR -.->|"alert rows, via an automation"| DASHIE
+  ASSIST -.->|"the spoken briefing — the gap"| SENSOR
+```
+
+### The rule that keeps this reversible
+
+**No Dayline code ever calls a vendor service.** Not `dashie.*`, not anything
+Ava-shaped. Actions are already service-call descriptors written by the feed, so
+a Dayline button may perfectly well *point* at `dashie.show_message` — that is a
+config change, exactly as pointing the Done button at Grocy would be.
+
+The moment a vendor name appears inside `merge.py` or a card, the swap stops
+being a config change and becomes a rewrite. Both of these projects are single
+maintainers with months of history; the ESPHome protocol and the HA service
+registry are the things with years of it.
+
+### Overlays are an interruption surface, and nothing else
+
+Ava's floating panels draw over whatever is on screen. That is the strongest
+attention-getting device in this whole stack, and the glance card's own design
+argument applies in reverse: we tint the clock rather than adding an element,
+*because* the card sits in a corner being ignored. An overlay is the opposite
+choice and has to be spent accordingly.
+
+So: overlays for a timer that has finished, a leave-by that has gone, and rows
+already marked `level: alert` — the things that must interrupt. Never for
+ambient information, which is what the panel is already for. This needs nothing
+built: an automation on an alert row calling the vendor's own service is the
+whole bridge, and the feed stays the thing that decided.
+
+### Timers and reminders are two problems
+
+They arrive in the same sentence and want opposite answers.
+
+- **Timers belong to Assist.** Home Assistant has had timer intents since
+  2024.6, and on an ESPHome satellite the countdown and the chime run *on the
+  device* — so a timer still goes off while Home Assistant is restarting. That
+  is the reliability property, and no app-local timer has it. Deliberately not
+  Dashie's internal timers: they create no entity and no state, so a timer the
+  card cannot see is a timer this project has to pretend does not exist.
+- **Reminders belong to `todo`.** Home Assistant has no reminder primitive, but
+  Dayline already ingests to-do items with due datetimes, so a fixed-sentence
+  intent calling `todo.add_item` with `due_datetime` puts a reminder on the
+  spine with **no new Dayline code at all**. Deterministic, no model in the
+  loop, and it works when the GPU is busy.
+
+**Open, and worth settling before anything is built on it:** upstream
+`brownard/Ava` lists timer support; Ava Pro's documentation does not mention
+timers anywhere. Whether an Ava device actually runs an on-device countdown has
+to be tested rather than assumed, and if it does not, the answer is a cheap
+ESPHome satellite in the one or two rooms where timers are really used.
+
+### Lists
+
+`todo` first, Grocy when — and only when — the want is stock levels, expiry and
+chores rather than a list. The action-descriptor design already makes that a
+config change, so taking the dependency early buys nothing and costs a whole
+integration's surface. See the deferred note at the foot of this file.
+
+### Where this is going: parity without the account
+
+The useful yardstick is what a voice puck does natively, minus the parts that
+require somebody else's cloud.
+
+| Natively | Here | State |
+|---|---|---|
+| Timers | Assist intents, on-device | available, verify on Ava |
+| Alarms | phone `next_alarm` ingest | **built** |
+| Reminders | `todo` + `due_datetime` | needs an intent |
+| Shopping list | `todo` | needs an intent |
+| Weather | both cards | **built** |
+| Music | Music Assistant | available |
+| Intercom / broadcast | Ava, natively | available |
+| **"What is my day?"** | **this feed, spoken** | the gap |
+
+That last row is the one that matters, and it is why the spoken briefing moves
+to the top of Phase 4. The feed already computes the answer — the headline, what
+is next, when to leave, what is left. Today it can only be looked at. An intent
+that speaks it means a dashboard, a wall panel and a voice satellite are three
+renderings of one sensor, and they can never disagree about the day.
+
+---
+
 ## Phase 4 — Reach
 
 Dayline currently waits to be looked at. These give it hands.
 
+- **The spoken briefing — first, and deterministic.** `conversation` triggers on
+  fixed sentences — *what is my day*, *what is next*, *when do I need to leave* —
+  answered from the feed's own strings. No model, so it works when the GPU is
+  busy and it cannot invent an event. This is the smallest change on this page
+  with the largest reach: it turns one sensor into a third surface.
 - **Actionable notifications.** The `action` descriptor is already a service-call
   blob written by the feed, so it renders as a button on the spine *or* as a
   notification action on a lock screen with no second contract. "Laundry has been
@@ -530,6 +672,23 @@ Everything here runs in the coordinator, off the render path, cached.
 - [Alarm control panel](https://www.home-assistant.io/integrations/alarm_control_panel/)
   and the [vacation-mode architecture discussion](https://github.com/home-assistant/architecture/discussions/500)
   — the first-party abstraction people borrow, and why it fits imperfectly.
+- [Dashie integration](https://github.com/jwlerch78/dashie-ha-integration) and
+  its [feature guide](https://heydashie.com/guides/dashie-kiosk-features) — the
+  service list is thin on purpose: `load_url`, `speak_text`, `show_message`,
+  timers, brightness, volume, `send_command`. Voice is a paid upgrade and routes
+  into Assist rather than replacing it.
+- [Ava Pro](https://github.com/knoop7/Ava-Pro) against its upstream
+  [brownard/Ava](https://github.com/brownard/Ava) — 515 stars against 176, and
+  pushed daily against a three-month gap, so momentum is downstream. Not a
+  GitHub fork but an independent re-implementation crediting the original, both
+  Apache-2.0. It renders no dashboard, which is what makes it complementary to
+  Dashie rather than a competitor.
+- [Voice chapter 7](https://www.home-assistant.io/blog/2024/06/26/voice-chapter-7/)
+  and [ESPHome voice_assistant](https://esphome.io/components/voice_assistant/)
+  — timer intents landed in 2024.6, and on ESPHome the countdown and chime are
+  handled in firmware. `HassStartTimer` needs area context, and
+  [end-of-timer notification on satellites](https://community.home-assistant.io/t/hassstarttimer-no-notification-on-ending-on-satellite/950175)
+  has open complaints, so both want testing rather than trusting.
 - [Waze Travel Time](https://www.home-assistant.io/integrations/waze_travel_time/)
   (no API key) versus
   [Google Maps Travel Time](https://www.home-assistant.io/integrations/google_travel_time/)
