@@ -546,7 +546,11 @@ They arrive in the same sentence and want opposite answers.
   is the reliability property, and no app-local timer has it. Deliberately not
   Dashie's internal timers: they create no entity and no state, so a timer the
   card cannot see is a timer this project has to pretend does not exist.
-- **Reminders belong to `todo`.** Home Assistant has no reminder primitive, but
+- **Reminders belong to `todo`.** *Built on the test instance* as two
+  `conversation` triggers — `remind me to {task} at {when}` and `... in {when}`
+  — parsing a clock time or a duration and calling `todo.add_item` with
+  `due_datetime`. Voice to spine with no Dayline code at all, which was the
+  point. Home Assistant has no reminder primitive, but
   Dayline already ingests to-do items with due datetimes, so a fixed-sentence
   intent calling `todo.add_item` with `due_datetime` puts a reminder on the
   spine with **no new Dayline code at all**. Deterministic, no model in the
@@ -558,10 +562,34 @@ timers anywhere. Whether an Ava device actually runs an on-device countdown has
 to be tested rather than assumed, and if it does not, the answer is a cheap
 ESPHome satellite in the one or two rooms where timers are really used.
 
+**Measured on the test instance, and it settles how that gets answered.**
+`set a 5 minute timer` through the REST conversation API returns *"timers are
+not supported on this device"*. That is not a misconfiguration: timer intents
+are gated on the **calling device** having registered timer support, which a
+satellite integration does and a bare API call cannot. So the only place this
+question can be answered is on the hardware, by speaking to it.
+
+**And a fallback must not be built for it.** A custom `conversation` trigger
+**shadows the built-in intent of the same sentence** — verified by pointing one
+at `add {item} to my shopping list`, which stopped adding anything and answered
+from the automation instead. A "set a timer" automation written as a safety net
+would therefore silently disable on-device timers on every satellite that does
+support them, trading a firmware countdown that survives a restart for one that
+dies with Home Assistant. If Ava turns out not to support timers, the answer is
+different hardware in that room, not a sentence that captures every room.
+
 ### Lists
 
 `todo` first, Grocy when — and only when — the want is stock levels, expiry and
-chores rather than a list. The action-descriptor design already makes that a
+chores rather than a list.
+
+Half of this was already there: **`HassListAddItem` is built in**, so *add milk
+to my shopping list* works on a stock instance with nothing written. What Home
+Assistant does not ship is reading a list **back**, which is the half you need
+standing in a shop — built on the test instance as a `conversation` trigger over
+`todo.get_items`. It names the items and stops. A long list read aloud is worse
+than no answer, and that is an argument for a screen rather than for a longer
+sentence. The action-descriptor design already makes that a
 config change, so taking the dependency early buys nothing and costs a whole
 integration's surface. See the deferred note at the foot of this file.
 
