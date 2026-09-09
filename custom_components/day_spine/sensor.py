@@ -44,6 +44,10 @@ class DaySpineSensor(CoordinatorEntity[DaySpineCoordinator], SensorEntity):
             # The weather integration already records its own history, in a
             # shape worth querying. This is a copy of two of its fields.
             "weather",
+            # A sentence recomputed every poll, and derived from rows that are
+            # themselves unrecorded. Its history would be a very long list of
+            # slightly different countdowns.
+            "briefing",
         }
     )
 
@@ -73,6 +77,7 @@ class DaySpineSensor(CoordinatorEntity[DaySpineCoordinator], SensorEntity):
         return {
             "entries": data.get("entries", []),
             "headline": data.get("headline", ""),
+            "briefing": data.get("briefing", ""),
             "now": data.get("now", ""),
             "sources": data.get("sources", []),
             "stale_message": data.get("stale_message", ""),
