@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+**The day, spoken — as one sentence.** `sensor.dayline` gains a `briefing`
+attribute: the next thing, in as few words as it can be said in. *"Dentist in
+21 minutes."* *"Leave in 11 minutes for School run."* *"Nothing left today.
+Tomorrow starts at 6:30 AM."*
+
+Deliberately not a readout. Seventeen items read aloud is worse than silence —
+by the fourth nobody is listening, and the one that mattered was the ninth. A
+screen is the right surface for a day; a voice is the right surface for the next
+move, and only that.
+
+It answers what to *do* rather than what is *scheduled*, so a journey outranks
+the appointment it belongs to and a departure already missed outranks
+everything. Under an hour it counts in minutes, over an hour it gives a clock
+time, and something you are already in the middle of is never the answer.
+
+The sentence is computed in the feed rather than in a template, for the usual
+reason: the spine, the glance card and the speaker must never disagree about
+what is next. Speaking it is one line in an automation.
+
 **Free time, as a row.** The card exists to condense a day into something
 readable, and the point of condensing it is to find the space in it — but a day
 of six events looks exactly as full whether or not there is a clear three hours

@@ -42,6 +42,7 @@ split_tags = merge.split_tags
 tags_seen = merge.tags_seen
 travel_targets = merge.travel_targets
 from_alarms = merge.from_alarms
+briefing = merge.briefing
 _similar = merge._similar
 
 TZ = timezone(timedelta(hours=-5))
@@ -934,3 +935,112 @@ def test_gap_durations_read_the_way_a_countdown_does():
     assert merge._spell(180) == "3h"
     assert merge._spell(95) == "1h 35m"
     assert merge._spell(45) == "45m"
+
+
+# --- the spoken briefing --------------------------------------------------
+#
+# Terse on purpose. Every one of these asserts a whole sentence rather than a
+# substring, because the thing being tested is the wording — a briefing that
+# says the right facts in too many words has failed at its only job.
+
+
+def _at(hour: int, minute: int = 0) -> str:
+    return datetime(2026, 9, 2, hour, minute, tzinfo=TZ).isoformat()
+
+
+def _row(**kw) -> dict:
+    row = {
+        "id": "x",
+        "start": _at(15, 0),
+        "end": None,
+        "all_day": False,
+        "kind": "calendar",
+        "source": "Google",
+        "title": "Standup",
+        "automation": None,
+        "priority": "normal",
+        "sticky": False,
+    }
+    row.update(kw)
+    return row
+
+
+def test_the_next_thing_within_the_hour_is_counted_in_minutes():
+    said = briefing([_row(start=_at(15, 0), title="Dentist")], NOW)
+    assert said == "Dentist in 21 minutes."
+
+
+def test_further_out_it_is_a_clock_time():
+    assert briefing([_row(start=_at(17, 30), title="Dinner")], NOW) == "Dinner at 5:30 PM."
+
+
+def test_a_whole_hour_drops_the_zeroes():
+    assert briefing([_row(start=_at(19, 0), title="Film")], NOW) == "Film at 7 PM."
+
+
+def test_one_minute_is_not_plural():
+    assert briefing([_row(start=_at(14, 40), title="Call")], NOW) == "Call in 1 minute."
+
+
+def test_the_soonest_thing_wins_not_the_first_listed():
+    said = briefing(
+        [_row(start=_at(17, 0), title="Dinner"), _row(start=_at(15, 0), title="Dentist")],
+        NOW,
+    )
+    assert said == "Dentist in 21 minutes."
+
+
+def test_something_already_running_is_not_what_to_do_next():
+    """The seven-hour-event case. Being in a thing is not being told about it."""
+    said = briefing(
+        [
+            _row(start=_at(9, 0), end=_at(16, 0), title="Conference"),
+            _row(start=_at(17, 0), title="Dinner"),
+        ],
+        NOW,
+    )
+    assert said == "Dinner at 5 PM."
+
+
+def test_a_journey_makes_leaving_the_next_move():
+    said = briefing(
+        [_row(start=_at(15, 30), title="Dentist", leave_by=_at(14, 50))], NOW
+    )
+    assert said == "Leave in 11 minutes for Dentist."
+
+
+def test_a_departure_already_gone_is_said_first_and_says_it_plainly():
+    said = briefing(
+        [
+            _row(start=_at(14, 45), title="School run", leave_by=_at(14, 30)),
+            _row(start=_at(14, 41), title="Kettle"),
+        ],
+        NOW,
+    )
+    assert said == "You're 9 minutes late leaving for School run."
+
+
+def test_free_time_is_never_the_answer():
+    said = briefing(
+        [_row(start=_at(14, 45), kind="gap", title="2h 40m free"), _row(start=_at(17, 0), title="Dinner")],
+        NOW,
+    )
+    assert said == "Dinner at 5 PM."
+
+
+def test_tomorrows_held_back_rows_are_not_today_but_do_name_the_morning():
+    said = briefing(
+        [
+            _row(
+                start=datetime(2026, 9, 3, 6, 30, tzinfo=TZ).isoformat(),
+                title="Alarm",
+                when_empty=True,
+            )
+        ],
+        EVENING,
+    )
+    assert said == "Nothing left today. Tomorrow starts at 6:30 AM."
+
+
+def test_an_empty_day_says_so_and_stops():
+    assert briefing([], EVENING) == "Nothing left today."

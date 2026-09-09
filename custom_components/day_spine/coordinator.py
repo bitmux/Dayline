@@ -80,6 +80,7 @@ from .merge import (
     MergeConfig,
     attach_leave_by,
     attach_weather,
+    briefing,
     dedupe,
     from_alarms,
     from_gaps,
@@ -849,6 +850,10 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "entries": entries,
             "remaining": left,
             "headline": self._headline(left, now, entries),
+            # The same answer the cards give, in a form a speaker can say. It
+            # is computed here rather than in an automation's template so that
+            # no surface can ever disagree with another about what is next.
+            "briefing": briefing(entries, now),
             "now": self._render(self._opts.get(OPT_NOW_TEMPLATE) or ""),
             "sources": self._sources(),
             "stale_message": self._stale_message(),

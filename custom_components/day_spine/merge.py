@@ -754,3 +754,96 @@ def _parse(value: Any) -> datetime | None:
         return datetime.fromisoformat(str(value))
     except ValueError:
         return None
+
+
+def briefing(entries: list[Entry], now: datetime) -> str:
+    """One sentence: the next thing, in as few words as it can be said in.
+
+    Deliberately not a readout. A list of seventeen items read aloud is worse
+    than silence — by item four nobody is listening, and the one that mattered
+    was item nine. A screen is the right surface for a day; a voice is the right
+    surface for the next move, and only that.
+
+    So this answers "what next" the way a person would: the thing to *do*, not
+    the thing that is *scheduled*. When there is a journey attached, leaving is
+    the next move and the appointment is merely the reason — which is why a
+    departure outranks the event it belongs to, and why a departure already
+    missed outranks everything.
+
+    The policy lives here, in the feed, for the usual reason: the spine, the
+    glance card and the spoken answer must never disagree about what is next.
+    """
+    ahead: list[tuple[datetime, Entry]] = []
+    for entry in entries:
+        # The same exclusions the headline counts by. Free time is not a thing
+        # to be at, a held-back row belongs to tomorrow, and a pushed row is
+        # the house talking about itself.
+        if entry.get("kind") in ("gap", "event") or entry.get("when_empty"):
+            continue
+        start = _parse(entry["start"])
+        if start is None:
+            continue
+        end = _parse(entry.get("end"))
+        if end is not None and start <= now < end:
+            # Already in it. It is not what to do next.
+            continue
+        if start >= now:
+            ahead.append((start, entry))
+    ahead.sort(key=lambda pair: pair[0])
+
+    # A departure already gone, for something not yet started. Said first
+    # because it is the only answer here that is bad news, and bad news that
+    # waits its turn behind a schedule is not much use.
+    for start, entry in ahead:
+        leave = _parse(entry.get("leave_by"))
+        if leave is None or leave >= now:
+            continue
+        late = int((now - leave).total_seconds() // 60)
+        title = entry.get("title") or "your next thing"
+        if late < 1:
+            return f"Leave now for {title}."
+        return f"You're {_minutes(late)} late leaving for {title}."
+
+    for start, entry in ahead:
+        title = entry.get("title") or "something"
+        leave = _parse(entry.get("leave_by"))
+        if leave is not None and leave > now:
+            return f"Leave {_when(leave, now)} for {title}."
+        return f"{title} {_when(start, now)}."
+
+    # Nothing left. The held-back rows are exactly the pivot the headline uses,
+    # so the spoken answer and the card agree about when this starts again.
+    held = [
+        s
+        for s in (_parse(e["start"]) for e in entries if e.get("when_empty"))
+        if s is not None and s > now
+    ]
+    if held:
+        return f"Nothing left today. Tomorrow starts at {_clock(min(held))}."
+    return "Nothing left today."
+
+
+def _when(moment: datetime, now: datetime) -> str:
+    """`in 20 minutes` up close, `at 3:30` further out.
+
+    An hour is the turn: under it people think in minutes remaining, over it
+    they think in clock times, and "in two hours and forty minutes" is a
+    sentence nobody says out loud.
+    """
+    minutes = int((moment - now).total_seconds() // 60)
+    if minutes < 1:
+        return "now"
+    if minutes < 60:
+        return f"in {_minutes(minutes)}"
+    return f"at {_clock(moment)}"
+
+
+def _minutes(count: int) -> str:
+    return "1 minute" if count == 1 else f"{count} minutes"
+
+
+def _clock(moment: datetime) -> str:
+    """`6:30`, and `9` rather than `9:00` — spoken, the zeroes are noise."""
+    if moment.minute:
+        return moment.strftime("%-I:%M %p")
+    return moment.strftime("%-I %p")
