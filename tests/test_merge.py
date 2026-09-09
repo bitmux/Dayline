@@ -1044,3 +1044,34 @@ def test_tomorrows_held_back_rows_are_not_today_but_do_name_the_morning():
 
 def test_an_empty_day_says_so_and_stops():
     assert briefing([], EVENING) == "Nothing left today."
+
+
+def test_a_sticky_row_whose_time_has_gone_is_the_next_thing_to_do():
+    """It is still on the card and still in the count, so it is still the answer."""
+    said = briefing(
+        [
+            _row(start=_at(13, 0), title="move the laundry", kind="todo", sticky=True),
+            _row(start=_at(17, 0), title="Dinner"),
+        ],
+        NOW,
+    )
+    assert said == "Move the laundry, overdue."
+
+
+def test_a_missed_departure_still_outranks_an_overdue_chore():
+    said = briefing(
+        [
+            _row(start=_at(13, 0), title="move the laundry", kind="todo", sticky=True),
+            _row(start=_at(14, 45), title="School run", leave_by=_at(14, 30)),
+        ],
+        NOW,
+    )
+    assert said == "You're 9 minutes late leaving for School run."
+
+
+def test_a_sticky_row_still_ahead_of_its_time_is_not_overdue():
+    said = briefing(
+        [_row(start=_at(15, 0), title="move the laundry", kind="todo", sticky=True)],
+        NOW,
+    )
+    assert said == "Move the laundry in 21 minutes."

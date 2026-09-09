@@ -791,6 +791,21 @@ def briefing(entries: list[Entry], now: datetime) -> str:
             ahead.append((start, entry))
     ahead.sort(key=lambda pair: pair[0])
 
+    # A sticky row whose time has gone has not gone anywhere — that is what
+    # sticky means, and the headline is still counting it. Saying what is next
+    # while something is sitting there undone would be the spoken answer
+    # disagreeing with the card the person is looking at.
+    overdue = sorted(
+        (
+            (start, entry)
+            for entry, start in (
+                (e, _parse(e["start"])) for e in entries if e.get("sticky")
+            )
+            if start is not None and start < now
+        ),
+        key=lambda pair: pair[0],
+    )
+
     # A departure already gone, for something not yet started. Said first
     # because it is the only answer here that is bad news, and bad news that
     # waits its turn behind a schedule is not much use.
@@ -801,15 +816,18 @@ def briefing(entries: list[Entry], now: datetime) -> str:
         late = int((now - leave).total_seconds() // 60)
         title = entry.get("title") or "your next thing"
         if late < 1:
-            return f"Leave now for {title}."
-        return f"You're {_minutes(late)} late leaving for {title}."
+            return _said(f"Leave now for {title}.")
+        return _said(f"You're {_minutes(late)} late leaving for {title}.")
+
+    if overdue:
+        return _said(f"{overdue[0][1].get('title') or 'Something'}, overdue.")
 
     for start, entry in ahead:
         title = entry.get("title") or "something"
         leave = _parse(entry.get("leave_by"))
         if leave is not None and leave > now:
-            return f"Leave {_when(leave, now)} for {title}."
-        return f"{title} {_when(start, now)}."
+            return _said(f"Leave {_when(leave, now)} for {title}.")
+        return _said(f"{title} {_when(start, now)}.")
 
     # Nothing left. The held-back rows are exactly the pivot the headline uses,
     # so the spoken answer and the card agree about when this starts again.
@@ -821,6 +839,16 @@ def briefing(entries: list[Entry], now: datetime) -> str:
     if held:
         return f"Nothing left today. Tomorrow starts at {_clock(min(held))}."
     return "Nothing left today."
+
+
+def _said(sentence: str) -> str:
+    """A sentence starts with a capital, even when the row it names does not.
+
+    Titles are whatever someone typed into a calendar or a to-do list, and
+    "move the laundry" typed in lower case is not a reason for the house to
+    start a sentence in lower case.
+    """
+    return sentence[:1].upper() + sentence[1:]
 
 
 def _when(moment: datetime, now: datetime) -> str:
