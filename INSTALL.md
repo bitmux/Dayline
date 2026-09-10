@@ -837,6 +837,25 @@ are in the middle of is never the answer.
 It is one sentence on purpose. If you want the whole day, look at the card —
 that is what a screen is for.
 
+### When do I need to leave
+
+A second question gets a second attribute, **`departure`**, and a second
+automation with the same two actions reading `departure` instead of `briefing`:
+
+```
+Leave in 11 minutes for Dentist. It's 25 minutes away.
+Leave at 4:20 PM for Dentist.
+You're 9 minutes late leaving for School run.
+Nothing to leave for today.
+Leave-by is switched off in Dayline's settings.
+```
+
+Kept apart from the briefing deliberately. Folded together, *when do I need to
+leave* came back with an overdue chore — the briefing is never allowed to say
+"nothing", and this one has to be. It needs **Leaving in time** switched on, and
+it says so rather than saying nothing, because a silent nothing and an unset
+option sound identical from across a room.
+
 **Careful with the trigger phrases.** A `conversation` trigger **shadows the
 built-in intent of the same sentence**: point one at *add milk to my shopping
 list* and Home Assistant stops adding milk. Use phrases Assist does not already

@@ -1144,3 +1144,35 @@ def test_switched_off_says_so_rather_than_saying_nothing():
     assert departure([], NOW, enabled=False) == (
         "Leave-by is switched off in Dayline's settings."
     )
+
+
+def test_a_long_drive_is_said_in_hours_not_in_minutes():
+    """Straight from the test instance: "306 minutes away" is homework."""
+    said = departure(
+        [
+            _row(
+                start=_at(22, 20),
+                title="Dentist",
+                leave_by=_at(16, 59),
+                travel={"minutes": 306, "buffer": 15},
+            )
+        ],
+        datetime(2026, 9, 2, 20, 20, tzinfo=TZ),
+    )
+    assert said == "You're 3 hours 21 minutes late leaving for Dentist. It's 5 hours 6 minutes away."
+
+
+def test_a_round_number_of_hours_drops_the_minutes():
+    said = departure(
+        [_row(start=_at(19, 0), title="Airport", leave_by=_at(17, 0), travel={"minutes": 120})],
+        NOW,
+    )
+    assert said == "Leave at 5 PM for Airport. It's 2 hours away."
+
+
+def test_one_hour_is_not_plural():
+    said = departure(
+        [_row(start=_at(18, 0), title="Airport", leave_by=_at(17, 0), travel={"minutes": 60})],
+        NOW,
+    )
+    assert said == "Leave at 5 PM for Airport. It's 1 hour away."

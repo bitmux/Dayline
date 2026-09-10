@@ -681,11 +681,18 @@ The ladder inside it answers what to **do**, not what is **scheduled**:
 Something already running is never the answer, which is the seven-hour-event
 case: being in a thing is not being told about it.
 
-**Deliberately unanswered: "when do I need to leave?"** It was in the trigger
-list for an afternoon and gave the overdue chore, because it is a *different
-question* wearing the same automation. It deserves its own sentence — a
-departure-only answer, and an honest "nothing to leave for" when there is none —
-and half-answering it is worse than the fallback saying it did not understand.
+**"When do I need to leave?" is a second sentence, not a branch of the first.**
+It spent an afternoon in the briefing's trigger list returning the overdue
+chore, which is what a different question wearing the same automation does. It
+now has its own attribute, `departure`, and its own automation. The split is the
+interesting part: the briefing is never allowed to say "nothing" and this one
+has to be, and a feature that is switched off says so rather than answering
+"nothing to leave for" — from across a room those are the same sound, and one of
+them is a five-minute fix.
+
+Both sentences were wrong in the same way the first time a real journey reached
+them: *"306 minutes away."* Durations over an hour are now said in hours. A card
+can print `5h 6m`; a speaker cannot.
 
 ---
 

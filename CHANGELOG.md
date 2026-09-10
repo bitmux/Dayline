@@ -21,6 +21,14 @@ The sentence is computed in the feed rather than in a template, for the usual
 reason: the spine, the glance card and the speaker must never disagree about
 what is next. Speaking it is one line in an automation.
 
+**And a second sentence for a second question.** `departure` answers *when do I
+need to leave* and nothing else — *"Leave in 11 minutes for Dentist. It's 25
+minutes away."* It is separate because folding it into the briefing answered a
+question about going somewhere with an answer about the laundry. Unlike the
+briefing it is allowed to say there is nothing, and it says when leave-by is
+switched off rather than saying nothing, because those two sound identical from
+across a room.
+
 **Free time, as a row.** The card exists to condense a day into something
 readable, and the point of condensing it is to find the space in it — but a day
 of six events looks exactly as full whether or not there is a clear three hours

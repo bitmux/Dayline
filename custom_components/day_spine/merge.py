@@ -817,7 +817,7 @@ def briefing(entries: list[Entry], now: datetime) -> str:
         title = entry.get("title") or "your next thing"
         if late < 1:
             return _said(f"Leave now for {title}.")
-        return _said(f"You're {_minutes(late)} late leaving for {title}.")
+        return _said(f"You're {_spoken(late)} late leaving for {title}.")
 
     if overdue:
         return _said(f"{overdue[0][1].get('title') or 'Something'}, overdue.")
@@ -876,13 +876,13 @@ def departure(entries: list[Entry], now: datetime, enabled: bool = True) -> str:
     drive = (entry.get("travel") or {}).get("minutes")
     # The drive is the one extra fact worth the words: it is what turns "leave
     # at half four" from an instruction into something you can argue with.
-    ride = f" It's {_minutes(int(drive))} away." if drive else ""
+    ride = f" It's {_spoken(int(drive))} away." if drive else ""
 
     if leave < now:
         late = int((now - leave).total_seconds() // 60)
         if late < 1:
             return _said(f"Leave now for {title}.{ride}")
-        return _said(f"You're {_minutes(late)} late leaving for {title}.{ride}")
+        return _said(f"You're {_spoken(late)} late leaving for {title}.{ride}")
     return _said(f"Leave {_when(leave, now)} for {title}.{ride}")
 
 
@@ -913,6 +913,20 @@ def _when(moment: datetime, now: datetime) -> str:
 
 def _minutes(count: int) -> str:
     return "1 minute" if count == 1 else f"{count} minutes"
+
+
+def _spoken(minutes: int) -> str:
+    """A duration said the way a person says it.
+
+    `_spell` gives `5h 6m`, which is right on a card and unsayable out loud —
+    and "306 minutes away", which is what this said before a real drive turned
+    up on the test instance, is arithmetic homework rather than an answer.
+    """
+    hours, mins = divmod(max(minutes, 0), 60)
+    if not hours:
+        return _minutes(mins)
+    said = "1 hour" if hours == 1 else f"{hours} hours"
+    return said if not mins else f"{said} {_minutes(mins)}"
 
 
 def _clock(moment: datetime) -> str:
