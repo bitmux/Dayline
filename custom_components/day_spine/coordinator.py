@@ -82,6 +82,7 @@ from .merge import (
     attach_weather,
     briefing,
     dedupe,
+    departure,
     from_alarms,
     from_gaps,
     from_calendars,
@@ -854,6 +855,12 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # is computed here rather than in an automation's template so that
             # no surface can ever disagree with another about what is next.
             "briefing": briefing(entries, now),
+            # A second sentence, for a second question. Told whether the
+            # feature is on, so "nothing to leave for" and "you never switched
+            # this on" can be told apart from across a room.
+            "departure": departure(
+                entries, now, bool(self._opts.get(OPT_LEAVE_BY))
+            ),
             "now": self._render(self._opts.get(OPT_NOW_TEMPLATE) or ""),
             "sources": self._sources(),
             "stale_message": self._stale_message(),

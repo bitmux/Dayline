@@ -43,6 +43,7 @@ tags_seen = merge.tags_seen
 travel_targets = merge.travel_targets
 from_alarms = merge.from_alarms
 briefing = merge.briefing
+departure = merge.departure
 _similar = merge._similar
 
 TZ = timezone(timedelta(hours=-5))
@@ -1075,3 +1076,71 @@ def test_a_sticky_row_still_ahead_of_its_time_is_not_overdue():
         NOW,
     )
     assert said == "Move the laundry in 21 minutes."
+
+
+# --- when do I need to leave ----------------------------------------------
+#
+# A separate question, and these tests exist mostly to hold it separate: the
+# failure that prompted them was a departure question answered with a chore.
+
+
+def test_a_departure_ahead_names_the_drive_too():
+    said = departure(
+        [
+            _row(
+                start=_at(15, 30),
+                title="Dentist",
+                leave_by=_at(14, 50),
+                travel={"minutes": 25, "buffer": 10},
+            )
+        ],
+        NOW,
+    )
+    assert said == "Leave in 11 minutes for Dentist. It's 25 minutes away."
+
+
+def test_a_departure_without_a_priced_drive_just_says_when():
+    said = departure([_row(start=_at(17, 0), title="Dentist", leave_by=_at(16, 20))], NOW)
+    assert said == "Leave at 4:20 PM for Dentist."
+
+
+def test_a_missed_departure_says_how_late():
+    said = departure(
+        [_row(start=_at(14, 45), title="School run", leave_by=_at(14, 30))], NOW
+    )
+    assert said == "You're 9 minutes late leaving for School run."
+
+
+def test_a_chore_is_never_a_departure():
+    """The whole reason this is a second sentence and not a branch of the first."""
+    said = departure(
+        [_row(start=_at(13, 0), title="move the laundry", kind="todo", sticky=True)],
+        NOW,
+    )
+    assert said == "Nothing to leave for today."
+
+
+def test_a_journey_to_something_already_started_is_not_a_departure():
+    said = departure(
+        [_row(start=_at(9, 0), end=_at(16, 0), title="Conference", leave_by=_at(8, 20))],
+        NOW,
+    )
+    assert said == "Nothing to leave for today."
+
+
+def test_the_soonest_departure_wins_not_the_soonest_event():
+    """A long drive to a later event can need leaving before a short one."""
+    said = departure(
+        [
+            _row(start=_at(15, 30), title="Nearby", leave_by=_at(15, 10)),
+            _row(start=_at(16, 30), title="Far away", leave_by=_at(14, 55)),
+        ],
+        NOW,
+    )
+    assert said == "Leave in 16 minutes for Far away."
+
+
+def test_switched_off_says_so_rather_than_saying_nothing():
+    assert departure([], NOW, enabled=False) == (
+        "Leave-by is switched off in Dayline's settings."
+    )

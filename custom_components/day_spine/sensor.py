@@ -48,6 +48,7 @@ class DaySpineSensor(CoordinatorEntity[DaySpineCoordinator], SensorEntity):
             # themselves unrecorded. Its history would be a very long list of
             # slightly different countdowns.
             "briefing",
+            "departure",
         }
     )
 
@@ -78,6 +79,7 @@ class DaySpineSensor(CoordinatorEntity[DaySpineCoordinator], SensorEntity):
             "entries": data.get("entries", []),
             "headline": data.get("headline", ""),
             "briefing": data.get("briefing", ""),
+            "departure": data.get("departure", ""),
             "now": data.get("now", ""),
             "sources": data.get("sources", []),
             "stale_message": data.get("stale_message", ""),

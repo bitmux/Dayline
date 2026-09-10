@@ -841,6 +841,51 @@ def briefing(entries: list[Entry], now: datetime) -> str:
     return "Nothing left today."
 
 
+def departure(entries: list[Entry], now: datetime, enabled: bool = True) -> str:
+    """When to leave, and nothing else.
+
+    Split from the briefing rather than folded into it because *when do I need
+    to leave* is a different question, and it was answered wrong for an
+    afternoon by an automation that treated it as the same one. A question about
+    going somewhere should never come back about the laundry.
+
+    So this one is allowed to say there is nothing — the briefing never is, and
+    that difference is the whole reason for two sentences. "Nothing to leave for
+    today" is a useful answer. It is also why the off switch gets said out loud:
+    a silent nothing and a switched-off feature sound identical from across a
+    room, and one of them is a five-minute fix.
+    """
+    if not enabled:
+        return "Leave-by is switched off in Dayline's settings."
+
+    journeys: list[tuple[datetime, Entry]] = []
+    for entry in entries:
+        start = _parse(entry["start"])
+        leave = _parse(entry.get("leave_by"))
+        if start is None or leave is None or start <= now:
+            # A journey to somewhere you should already be at is a journey you
+            # either made or missed, and neither is a departure.
+            continue
+        journeys.append((leave, entry))
+    if not journeys:
+        return "Nothing to leave for today."
+
+    journeys.sort(key=lambda pair: pair[0])
+    leave, entry = journeys[0]
+    title = entry.get("title") or "your next thing"
+    drive = (entry.get("travel") or {}).get("minutes")
+    # The drive is the one extra fact worth the words: it is what turns "leave
+    # at half four" from an instruction into something you can argue with.
+    ride = f" It's {_minutes(int(drive))} away." if drive else ""
+
+    if leave < now:
+        late = int((now - leave).total_seconds() // 60)
+        if late < 1:
+            return _said(f"Leave now for {title}.{ride}")
+        return _said(f"You're {_minutes(late)} late leaving for {title}.{ride}")
+    return _said(f"Leave {_when(leave, now)} for {title}.{ride}")
+
+
 def _said(sentence: str) -> str:
     """A sentence starts with a capital, even when the row it names does not.
 
