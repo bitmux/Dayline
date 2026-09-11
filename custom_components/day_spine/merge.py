@@ -795,16 +795,37 @@ def briefing(entries: list[Entry], now: datetime) -> str:
     # sticky means, and the headline is still counting it. Saying what is next
     # while something is sitting there undone would be the spoken answer
     # disagreeing with the card the person is looking at.
+    #
+    # A pushed row is excluded: `standing` rows are sticky by construction, and
+    # calling one overdue the second it appears turns "Bus leaves at 7:40" into
+    # "Bus leaves at 7:40, overdue" — said, on the test instance, about a row
+    # two seconds old. They are conditions, not things with a due time.
     overdue = sorted(
         (
             (start, entry)
             for entry, start in (
-                (e, _parse(e["start"])) for e in entries if e.get("sticky")
+                (e, _parse(e["start"]))
+                for e in entries
+                if e.get("sticky") and e.get("kind") != "standing"
             )
             if start is not None and start < now
         ),
         key=lambda pair: pair[0],
     )
+
+    # An alert outranks everything, including bad news about a journey, because
+    # alert is the one level whose entire meaning is "say this first". It is
+    # said as written: an automation that chose those words was answering this
+    # question, and dressing them up would be arguing with it.
+    for entry in entries:
+        if entry.get("level") != "alert" or entry.get("kind") != "standing":
+            continue
+        start = _parse(entry["start"])
+        if start is None or start > now:
+            continue
+        title = str(entry.get("title") or "").strip()
+        if title:
+            return _said(title if title.endswith((".", "!", "?")) else f"{title}.")
 
     # A departure already gone, for something not yet started. Said first
     # because it is the only answer here that is bad news, and bad news that

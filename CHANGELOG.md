@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+**A card each.** Eight calendars is the right day for whoever runs the household
+and the wrong day for a nine-year-old. Add a second Dayline, give it a label of
+its own — `Kid`, `Wife` — and it reads the calendars carrying that label and
+nothing else. Everything else was already per card; the label was the one thing
+shared, which meant a second spine showed exactly the same day as the first.
+
+Permissions follow it and do not leak: a card labelled `Kid` takes its `#tag`
+permissions from `Kid Control`, a label that does not exist until someone makes
+it. A per-person card can therefore put events on a spine and cannot act on the
+house, which is the right default for the card most likely to be handed to a
+child.
+
+`day_spine.show` and `day_spine.dismiss` gain an optional `spine`. Without it
+they still go to every card, because *the garage is open* belongs on all of
+them; with it, a row lands on one.
+
+**Also:** a pushed row is no longer called "overdue" — they are sticky by
+construction, and the spoken briefing was saying it about rows two seconds old.
+An `alert` row is now said first and said as written, since alert is the one
+level whose whole meaning is "say this first".
+
 **A live event keeps its colour.** The dot on an in-progress row and the
 progress bar under it both followed the theme accent, so the one moment the
 spine was most worth looking at was the one moment it forgot whose event it

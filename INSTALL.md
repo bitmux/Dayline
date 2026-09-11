@@ -794,6 +794,61 @@ frontend targets newer browsers than this card does.
 
 ---
 
+## One card each
+
+Eight calendars is the right day for whoever runs the household and the wrong
+day for a nine-year-old. Dayline handles that by **adding a second Dayline**,
+not by adding filters to the first one: *Settings → Devices & services → Dayline
+→ Add entry*, name it after the person, and it gets its own sensor —
+`sensor.kid_s_day`, `sensor.wife_s_day`.
+
+Everything that makes a day is already per card: calendars, to-do list, weather,
+which phones' alarms to read, leave-by, free time, wording. The one thing that
+was not is **the label**, and it is the thing that matters most here — so under
+**Weather, to-do, and which label this card answers to** there is now a label
+box. Set it to `Kid`, apply the `Kid` label to their calendars, and that spine
+reads those and nothing else.
+
+```
+Dayline          → calendar.family, calendar.house, calendar.bills …
+Kid              → calendar.kid
+Wife             → calendar.wife, calendar.family
+```
+
+A calendar can carry two labels, which is how the shared family calendar
+appears on both cards without being duplicated anywhere.
+
+**Permissions follow the label, and do not leak.** A card labelled `Kid` takes
+its `#tag` permissions from `Kid Control` — a label that does not exist until
+you make it, so a fresh per-person card can put events on a spine and cannot
+act on the house. That is the right default for the card most likely to be
+handed to a child.
+
+Then point each card at its own sensor:
+
+```yaml
+type: custom:day-spine-card
+entity: sensor.kid_s_day
+```
+
+### Pushing a row to one card
+
+`day_spine.show` still goes to every spine by default — *the garage is open*
+belongs on all of them. Name `spine` to aim it:
+
+```yaml
+action: day_spine.show
+data:
+  id: bus
+  message: Bus leaves at 7:40
+  level: alert
+  spine: sensor.kid_s_day
+```
+
+The same field works on `day_spine.dismiss`.
+
+---
+
 ## Asking out loud
 
 `sensor.dayline` carries a **`briefing`** attribute: the next thing, as one

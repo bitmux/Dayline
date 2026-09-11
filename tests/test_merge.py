@@ -1176,3 +1176,43 @@ def test_one_hour_is_not_plural():
         NOW,
     )
     assert said == "Leave at 5 PM for Airport. It's 1 hour away."
+
+
+def test_a_pushed_row_is_not_called_overdue():
+    """Straight off the test instance: said about a row two seconds old."""
+    said = briefing(
+        [
+            _row(start=_at(14, 38), kind="standing", title="Bus leaves at 7:40", sticky=True),
+            _row(start=_at(17, 0), title="Dinner"),
+        ],
+        NOW,
+    )
+    assert said == "Dinner at 5 PM."
+
+
+def test_an_alert_is_said_first_and_said_as_written():
+    said = briefing(
+        [
+            _row(
+                start=_at(14, 38),
+                kind="standing",
+                title="Garage door still open",
+                level="alert",
+                sticky=True,
+            ),
+            _row(start=_at(14, 45), title="School run", leave_by=_at(14, 30)),
+        ],
+        NOW,
+    )
+    assert said == "Garage door still open."
+
+
+def test_an_alert_that_has_not_started_yet_is_not_said():
+    said = briefing(
+        [
+            _row(start=_at(18, 0), kind="standing", title="Later", level="alert", sticky=True),
+            _row(start=_at(17, 0), title="Dinner"),
+        ],
+        NOW,
+    )
+    assert said == "Dinner at 5 PM."
