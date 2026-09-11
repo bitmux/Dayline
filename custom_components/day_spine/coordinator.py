@@ -49,6 +49,7 @@ from .const import (
     HOUSE_CONTEXT_TTL,
     LABEL_CONTROL,
     LABEL_INCLUDE,
+    OPT_LABEL,
     OPT_ALARMS,
     OPT_ALARM_HORIZON,
     OPT_ALARM_PACKAGES,
@@ -265,6 +266,24 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._unsub_house = []
         self._cancel_fires()
 
+    @property
+    def label_include(self) -> str:
+        """The label this spine answers to. `Dayline` unless someone said otherwise."""
+        return str(self._opts.get(OPT_LABEL) or LABEL_INCLUDE).strip() or LABEL_INCLUDE
+
+    @property
+    def label_control(self) -> str:
+        """Derived, never configured separately.
+
+        Two free-text boxes where one would do is two chances to typo a label
+        into silence, and the pair has to stay legible in a label list anyway:
+        `Wife` and `Wife Control` read as a set, `Wife` and `Partner tags` do
+        not. The default pair comes out as `Dayline` / `Dayline Control`, which
+        is what it has always been.
+        """
+        include = self.label_include
+        return LABEL_CONTROL if include == LABEL_INCLUDE else f"{include} Control"
+
     @callback
     def _resolve(self) -> None:
         """Work out what we are watching, from labels first.
@@ -277,7 +296,8 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         The same label on anything that is not a calendar means the opposite
         direction: explain that entity when it changes on its own.
         """
-        labelled = labels.resolve(self.hass, LABEL_INCLUDE, "calendar")
+        include = self.label_include
+        labelled = labels.resolve(self.hass, include, "calendar")
         configured = list(self.entry.data.get(CONF_CALENDARS) or [])
         if labelled:
             self._calendar_ids, self._calendar_source = labelled, "label"
@@ -291,14 +311,19 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         self._watched_ids = [
             entity_id
-            for entity_id in labels.resolve(self.hass, LABEL_INCLUDE)
+            for entity_id in labels.resolve(self.hass, include)
             if not entity_id.startswith("calendar.")
         ]
-        self._control = set(labels.resolve(self.hass, LABEL_CONTROL, "calendar"))
+        self._control = set(labels.resolve(self.hass, self.label_control, "calendar"))
 
     @callback
     def _snapshot(self) -> tuple:
-        return (tuple(self._calendar_ids), tuple(self._watched_ids), tuple(sorted(self._control)))
+        return (
+            tuple(self._calendar_ids),
+            tuple(self._watched_ids),
+            tuple(sorted(self._control)),
+            self.label_include,
+        )
 
     @callback
     def _on_registry_change(self) -> None:

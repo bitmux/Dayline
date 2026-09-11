@@ -54,6 +54,7 @@ from .const import (
     DOMAIN,
     LABEL_CONTROL,
     LABEL_INCLUDE,
+    OPT_LABEL,
     OPT_ALARMS,
     OPT_ALARM_HORIZON,
     OPT_ALARM_PACKAGES,
@@ -90,17 +91,20 @@ DONE = "__done__"
 
 # How the calendar list was arrived at, said in a sentence rather than a word,
 # because "config" on its own does not tell anyone what to do next.
-_HOW = {
-    "label": f"the **{LABEL_INCLUDE}** label — the list below is whatever carries it",
-    "config": (
-        "the list picked during setup, because nothing carries the "
-        f"**{LABEL_INCLUDE}** label yet"
-    ),
-    "all": (
-        "nothing — every calendar in this instance is on the spine, because "
-        f"neither the **{LABEL_INCLUDE}** label nor the setup list has been used"
-    ),
-}
+def _how(source: str, label: str) -> str:
+    """Takes the label rather than assuming it: with a card each, the sentence
+    has to name the label that spine actually answers to."""
+    return {
+        "label": f"the **{label}** label — the list below is whatever carries it",
+        "config": (
+            "the list picked during setup, because nothing carries the "
+            f"**{label}** label yet"
+        ),
+        "all": (
+            "nothing — every calendar in this instance is on the spine, because "
+            f"neither the **{label}** label nor the setup list has been used"
+        ),
+    }.get(source, source)
 
 
 def _names(hass: Any, entity_ids: list[str]) -> str:
@@ -258,6 +262,15 @@ class DaySpineOptionsFlow(OptionsFlow):
             return coordinator.calendar_ids
         return list(self.config_entry.data.get(CONF_CALENDARS) or [])
 
+    def _label(self) -> str:
+        """This entry's include label, for any page that names it in prose.
+
+        Read from options rather than the constant: on a household with a card
+        each, telling someone to apply `Dayline` when their spine answers to
+        `Kid` is the kind of wrong instruction that takes an evening to unpick.
+        """
+        return str(self._opts.get(OPT_LABEL) or LABEL_INCLUDE).strip() or LABEL_INCLUDE
+
     def _labelled_calendars(self) -> list[str]:
         """Only the ones a label put there.
 
@@ -293,9 +306,9 @@ class DaySpineOptionsFlow(OptionsFlow):
             step_id="labels",
             data_schema=vol.Schema({}),
             description_placeholders={
-                "include": LABEL_INCLUDE,
-                "control": LABEL_CONTROL,
-                "how": _HOW.get(source, source),
+                "include": getattr(coordinator, "label_include", LABEL_INCLUDE),
+                "control": getattr(coordinator, "label_control", LABEL_CONTROL),
+                "how": _how(source, self._label()),
                 "calendars": _names(self.hass, calendars),
                 "controls": _names(self.hass, control),
                 "watched": _names(self.hass, watched),
@@ -326,6 +339,10 @@ class DaySpineOptionsFlow(OptionsFlow):
                 )
                 for entity_id in keep
             }
+            # An empty box means the default, not a spine labelled "".
+            self._opts[OPT_LABEL] = (
+                str(user_input.get(OPT_LABEL) or "").strip() or LABEL_INCLUDE
+            )
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data={
@@ -343,6 +360,11 @@ class DaySpineOptionsFlow(OptionsFlow):
         }
         _optional(schema, CONF_WEATHER, data.get(CONF_WEATHER), _entity("weather"))
         _optional(schema, CONF_TODO, data.get(CONF_TODO), _entity("todo"))
+        schema[
+            vol.Optional(
+                OPT_LABEL, default=self._opts.get(OPT_LABEL) or LABEL_INCLUDE
+            )
+        ] = selector.TextSelector()
         return self.async_show_form(step_id="sources", data_schema=vol.Schema(schema))
 
     # -- per-calendar label, priority, role ---------------------------------
@@ -397,7 +419,7 @@ class DaySpineOptionsFlow(OptionsFlow):
             data_schema=vol.Schema(schema),
             description_placeholders={
                 "count": str(len(calendars)),
-                "label": LABEL_INCLUDE,
+                "label": self._label(),
             },
         )
 
@@ -497,7 +519,7 @@ class DaySpineOptionsFlow(OptionsFlow):
             step_id="recent",
             data_schema=vol.Schema({vol.Required("selection", default=ADD): _options(options)}),
             description_placeholders={
-                "label": LABEL_INCLUDE,
+                "label": self._label(),
                 "watched": _names(self.hass, list(getattr(self._coordinator(), "watched_ids", []))),
             },
         )

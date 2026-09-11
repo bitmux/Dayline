@@ -7,6 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.start import async_at_started
 
 from .const import DOMAIN, LEVELS, PRIORITIES, SERVICE_DISMISS, SERVICE_SHOW
@@ -45,6 +46,9 @@ SHOW_SCHEMA = vol.Schema(
         vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=1)),
         vol.Optional("start"): cv.string,
         vol.Optional("entity_id"): cv.entity_id,
+        # Which spine, when there is more than one. Sensor entity ids, because
+        # that is the name a person can see and point at.
+        vol.Optional("spine"): vol.All(cv.ensure_list, [cv.entity_id]),
         vol.Optional("confirm_label"): cv.string,
         vol.Optional("confirm_action"): _ACTION,
         vol.Optional("cancel_label"): cv.string,
@@ -54,26 +58,58 @@ SHOW_SCHEMA = vol.Schema(
     }
 )
 
-DISMISS_SCHEMA = vol.Schema({vol.Required("id"): cv.string})
+DISMISS_SCHEMA = vol.Schema(
+    {
+        vol.Required("id"): cv.string,
+        vol.Optional("spine"): vol.All(cv.ensure_list, [cv.entity_id]),
+    }
+)
+
+
+@callback
+def _targets(hass: HomeAssistant, call: ServiceCall) -> list[DaySpineCoordinator]:
+    """The feeds this call is for.
+
+    Every feed unless `spine` names some. Broadcasting was the right default
+    when there was one spine and stayed right for a household sharing one card
+    — "the garage is open" belongs on all of them. It stops being right the
+    moment everyone has their own: a row aimed at one person should not turn up
+    on a nine-year-old's wall panel.
+
+    Named by sensor entity id, which is the name visible in the UI. An id that
+    resolves to nothing is dropped rather than raising, because the alternative
+    is an automation that fails silently at 3am over a renamed entity.
+    """
+    coordinators = hass.data.get(DOMAIN, {})
+    wanted = call.data.get("spine")
+    if not wanted:
+        return list(coordinators.values())
+
+    registry = er.async_get(hass)
+    out = []
+    for entity_id in wanted:
+        entry = registry.async_get(entity_id)
+        unique = (entry.unique_id or "") if entry else ""
+        entry_id = unique[: -len("_spine")] if unique.endswith("_spine") else ""
+        found = coordinators.get(entry_id)
+        if found is not None:
+            out.append(found)
+    return out
 
 
 @callback
 def _async_register_services(hass: HomeAssistant) -> None:
-    """Register once for the integration, not once per config entry.
-
-    Both go to every configured feed. There is normally one, and someone running
-    two spines almost certainly wants a row on both rather than a target
-    selector to get wrong from inside an automation.
-    """
+    """Register once for the integration, not once per config entry."""
     if hass.services.has_service(DOMAIN, SERVICE_SHOW):
         return
 
     async def _show(call: ServiceCall) -> None:
-        for coordinator in hass.data.get(DOMAIN, {}).values():
-            coordinator.async_show(dict(call.data))
+        data = {k: v for k, v in call.data.items() if k != "spine"}
+        for coordinator in _targets(hass, call):
+            coordinator.async_show(dict(data))
 
     async def _dismiss(call: ServiceCall) -> None:
-        for coordinator in hass.data.get(DOMAIN, {}).values():
+        for coordinator in _targets(hass, call):
             coordinator.async_dismiss(call.data["id"])
 
     hass.services.async_register(DOMAIN, SERVICE_SHOW, _show, schema=SHOW_SCHEMA)

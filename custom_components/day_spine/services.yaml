@@ -73,6 +73,18 @@ show:
       example: "2026-09-04T10:42:00-05:00"
       selector:
         text:
+    spine:
+      name: Which spine
+      description: >-
+        Optional. Leave empty and the row goes on every Dayline card, which is
+        what you want for "the garage is open". Name one or more Dayline sensors
+        to aim it at those cards only — the point of a card each is that not
+        everything belongs on all of them.
+      selector:
+        entity:
+          multiple: true
+          integration: day_spine
+          domain: sensor
     entity_id:
       name: Related entity
       description: >-
@@ -139,3 +151,15 @@ dismiss:
       example: garage_open
       selector:
         text:
+    spine:
+      name: Which spine
+      description: >-
+        Optional. Leave empty and the row goes on every Dayline card, which is
+        what you want for "the garage is open". Name one or more Dayline sensors
+        to aim it at those cards only — the point of a card each is that not
+        everything belongs on all of them.
+      selector:
+        entity:
+          multiple: true
+          integration: day_spine
+          domain: sensor

@@ -45,6 +45,12 @@ OPT_SCAN_MINUTES = "scan_minutes"
 LABEL_INCLUDE = "Dayline"
 LABEL_CONTROL = "Dayline Control"
 
+# Which is only the *default*. A household where everyone gets their own card
+# needs a label each, or every spine resolves to the same eight calendars and
+# the kid reads the mortgage renewal. Per config entry, so the first one is
+# `Dayline` and nobody who wanted one card ever meets this setting.
+OPT_LABEL = "label_include"
+
 # --- the tag primitive -------------------------------------------------------
 # Fired when a tagged event starts, and that is the entire integration point.
 # The binding from tag to script lives in an ordinary automation, which is Home

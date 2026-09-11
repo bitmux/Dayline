@@ -34,12 +34,16 @@
         "data": {}
       },
       "sources": {
-        "title": "Weather and to-do",
-        "description": "The weather entity supplies the hourly forecast joined onto upcoming entries; the to-do list supplies the sticky rows with a Done button. One of each — these are genuine choices, not something a label can answer.\n\nThe calendar list below is the fallback only. If anything carries the **Dayline** label, this list is not consulted at all.",
+        "title": "Weather, to-do, and which label this card answers to",
+        "description": "The weather entity supplies the hourly forecast joined onto upcoming entries; the to-do list supplies the sticky rows with a Done button. One of each — these are genuine choices, not something a label can answer.\n\n**One card each.** Everything on this page is per card, including the label. Add a second Dayline from the integrations page, give it its own label — `Wife`, `Kid` — and apply that label to their calendars, and they get a spine with their day on it instead of everybody's. Their card points at their own sensor. Leave this alone and it stays `Dayline`, which is what a single card has always used.\n\nThe calendar list below is the fallback only. If anything carries this card's label, this list is not consulted at all.",
         "data": {
           "calendars": "Fallback calendars",
           "weather_entity": "Weather",
-          "todo_entity": "To-do list"
+          "todo_entity": "To-do list",
+          "label_include": "Label this card answers to"
+        },
+        "data_description": {
+          "label_include": "Default `Dayline`. Change it only when you want more than one card. The matching permission label follows it automatically — a card labelled `Kid` takes its tag permissions from `Kid Control`."
         }
       },
       "calendars": {
