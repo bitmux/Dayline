@@ -414,7 +414,10 @@ export class DaylineGlanceCard extends LitElement {
     // started was this card claiming a state the other one reserves.
     const dot = calStyle(entry.color);
     const dotClass = running ? "dot" : "dot ring";
-    return html`<div class="next">
+    // --cal rides on the container rather than on the dot, because the progress
+    // bar wants it too: a running event is the one row where "how far through"
+    // and "whose" are the same question.
+    return html`<div class="next" style=${dot}>
       <div class="next-when">
         ${this._config.show_eyebrow
           ? html`<div class="next-eyebrow">${eyebrow}</div>`
@@ -438,7 +441,7 @@ export class DaylineGlanceCard extends LitElement {
           ${entry.kind === "alarm"
             ? html`<span class="next-ico">${icon("alarm-clock", 20)}</span>`
             : dot
-              ? html`<span class=${dotClass} style=${dot}></span>`
+              ? html`<span class=${dotClass}></span>`
               : nothing}${entry.title}${entry.kind === "alarm" && entry.source
             ? html`<span class="next-whose">${entry.source}</span>`
             : nothing}${entry.when_empty ? html`<span class="next-whose">tomorrow</span>` : nothing}

@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+**A live event keeps its colour.** The dot on an in-progress row and the
+progress bar under it both followed the theme accent, so the one moment the
+spine was most worth looking at was the one moment it forgot whose event it
+was. Past rows keep a muted trace of the calendar colour and future rows ring
+themselves in it; live now does too, on both cards.
+
+The spine's bar takes the colour down into the dark half of its own hue — the
+swatch is a dot colour, meant to be a few pixels, and a full-strength bar of it
+would shout louder than the row it belongs to with the percentage sitting on
+top in light text. The glance card's 6px bar has nothing written on it and wears
+the colour at full strength.
+
+The rail itself stays accent. That line is continuity rather than identity, and
+two overlapping events in different colours would stripe it.
+
 **The day, spoken — as one sentence.** `sensor.dayline` gains a `briefing`
 attribute: the next thing, in as few words as it can be said in. *"Dentist in
 21 minutes."* *"Leave in 11 minutes for School run."* *"Nothing left today.

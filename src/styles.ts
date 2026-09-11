@@ -378,6 +378,14 @@ export const styles = css`
   .row.live.live-start .rail {
     background: linear-gradient(var(--ds-rail-past) 0 23px, var(--color-accent-500) 23px 100%);
   }
+  /*
+   * The dot is whose event it is, at every point on the spine. Past keeps a
+   * muted trace of it and future rings it, so a live event painting itself the
+   * theme accent was the one moment the day forgot who it belonged to --
+   * exactly when it matters most, since a live row is the thing being looked
+   * at. The rail keeps the accent: that line is continuity, not identity, and
+   * two overlapping events of different colours would stripe it.
+   */
   .row.live .rail::after {
     content: "";
     position: absolute;
@@ -386,7 +394,7 @@ export const styles = css`
     width: 12px;
     height: 12px;
     border-radius: 999px;
-    background: var(--color-accent-500);
+    background: var(--cal, var(--color-accent-500));
     box-sizing: border-box;
   }
   .row.live .c {
@@ -413,9 +421,16 @@ export const styles = css`
     position: absolute;
     inset: 0 auto 0 0;
     border-radius: 999px;
-    /* One step up from the rail's accent-800: at bar size that reads as filled
-       rather than as a slightly different shade of dark. */
-    background: var(--color-accent-700);
+    /*
+     * The calendar's colour, taken down into the dark half of its own hue. The
+     * raw swatch is a dot colour -- bright, meant to be a few pixels -- and a
+     * bar of it would shout louder than the live row it belongs to, with the
+     * percentage chip sitting on top of it in light text.
+     *
+     * 60% is chosen so that an event with no colour lands within a shade of the
+     * accent-700 this used to be: the uncoloured day should not have changed.
+     */
+    background: color-mix(in srgb, var(--cal, var(--color-accent-500)) 60%, var(--ds-bg));
   }
   .prog-chip {
     position: absolute;

@@ -273,7 +273,12 @@ export const glanceStyles = css`
   .prog-fill {
     height: 100%;
     border-radius: 3px;
-    background: var(--ds-now-dot, var(--color-accent-500));
+    /*
+     * Whose event it is, same as the dot two lines above it. Not taken down the
+     * way the spine's bar is: this one is 6px with nothing written on it, so
+     * the swatch can be worn at full strength.
+     */
+    background: var(--cal, var(--ds-now-dot, var(--color-accent-500)));
   }
   .prog-left {
     flex: none;
