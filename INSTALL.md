@@ -809,17 +809,41 @@ was not is **the label**, and it is the thing that matters most here — so unde
 box. Set it to `Kid`, apply the `Kid` label to their calendars, and that spine
 reads those and nothing else.
 
+**`Dayline` is not a master switch.** It is only the default *name* of the first
+card's label, and it is not a prerequisite for anything. Each card resolves
+exactly one label, and a calendar carries **one label per card it should appear
+on** — so read the table by column, not as a hierarchy:
+
 ```
-Dayline          → calendar.family, calendar.house, calendar.bills …
-Kid              → calendar.kid
-Wife             → calendar.wife, calendar.family
+                  Dayline    Kid    Wife     ← the three cards
+calendar.house       •
+calendar.bills       •
+calendar.family      •        •       •
+calendar.kid                  •
+calendar.wife                         •
 ```
 
-A calendar can carry two labels, which is how the shared family calendar
-appears on both cards without being duplicated anywhere.
+The shared family calendar appears on all three by carrying all three labels,
+and is duplicated nowhere. The kid's own calendar carries `Kid` and nothing
+else — it does **not** also need `Dayline`, and if you give it `Dayline` it
+turns up on your card too.
 
-**Permissions follow the label, and do not leak.** A card labelled `Kid` takes
-its `#tag` permissions from `Kid Control` — a label that does not exist until
+The mistake this makes easy is the opposite one: label a calendar `Kid`, forget
+to leave `Dayline` on it, and it quietly vanishes from your own card. That is
+the first thing to check when something disappears.
+
+Label names are free text and matched case-insensitively — `Kid`, `kid` and
+`KID` are the same label. Nothing is reserved; `Dude` works exactly as well.
+
+**Permissions follow the label, and do not leak.** This is the one label that is
+genuinely additive: a calendar needs `Kid` to appear on the kid's spine, and
+`Kid Control` *as well* before its `#tags` may act on the house. (Labels and
+`#tags` are otherwise unrelated — a label is applied to a calendar entity and
+decides which card reads it; a `#tag` is typed into an event's title and fires
+an event an automation can act on. `#wife` in an event title has nothing to do
+with a `Wife` label.)
+
+A card labelled `Kid` takes its `#tag` permissions from `Kid Control` — a label that does not exist until
 you make it, so a fresh per-person card can put events on a spine and cannot
 act on the house. That is the right default for the card most likely to be
 handed to a child.
