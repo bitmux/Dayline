@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+**An alert's button now looks like an alert, on both cards.** The glance card
+filled it with the level colour — visible from the far side of a room, without
+glasses, which is the entire job of a wall panel. The spine drew the same
+request in the same grey it uses for *Done* on the laundry.
+
+This is not a reversal of "a level takes the dot and nothing else". That rule
+protects the *timeline*: a red band across a row would stop the day reading as a
+day. A button is not the timeline, it is the thing being asked for. The decline
+button stays quiet on both — making both of them shout puts the emphasis back
+to nowhere.
+
+Fixed on the way past: the glance card's buttons were filled with `--ds-alert`,
+a dark brown that only turned red because a theme maps it to `--error-color`.
+So an **info** row got a blue stripe and red buttons. The red was right by
+accident; it is now right on purpose, and info is blue the whole way through.
+
+Two new screenshots, because nothing in the set would have caught either of
+these: `14-card-pushed-rows.png` and `09-card-overlapping.png`.
+
 **A card each.** Eight calendars is the right day for whoever runs the household
 and the wrong day for a nine-year-old. Add a second Dayline, give it a label of
 its own — `Kid`, `Wife` — and it reads the calendars carrying that label and

@@ -104,6 +104,11 @@ export const tokens = css`
      */
     --ds-level-alert: #e5645f;
     --ds-level-info: #7fb2d9;
+    /* Text sitting *on* a level fill, the same problem --ds-on-accent solves
+       for the accent: a button filled with the level colour needs a foreground
+       that is guaranteed to read on it, and the level is the one colour on
+       either card whose whole job is being seen from across a room. */
+    --ds-on-level: #1a1714;
 
     display: block;
     /*
@@ -190,6 +195,8 @@ export const tokens = css`
        more useful than our two guesses; take it. */
     --ds-level-alert: var(--error-color, #e5645f);
     --ds-level-info: var(--info-color, #7fb2d9);
+    /* A theme that fills anything with its error colour writes on it with this. */
+    --ds-on-level: var(--text-primary-color, #1a1714);
 
     /*
      * The surface itself, on the same terms every other card gets.

@@ -592,6 +592,38 @@ export const styles = css`
   .row.lvl-alert .rail::after {
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--ds-level-alert) 22%, transparent);
   }
+  /*
+   * The button is the exception to "a level takes the dot and nothing else",
+   * and it is not a contradiction of it. That rule protects the *timeline* --
+   * a red band across a row would stop the day reading as a day. A control is
+   * not the timeline; it is the thing being asked for, and on the glance card
+   * it is already filled with the level colour and can be seen from the far
+   * side of a room without glasses. The spine was drawing the same request in
+   * the same grey it uses for "Done" on the laundry.
+   *
+   * The decline button stays quiet. Making both of them shout would put the
+   * emphasis back to nowhere.
+   */
+  .row.lvl-alert .act,
+  .row.lvl-info .act {
+    background: var(--lvl);
+    color: var(--ds-on-level);
+  }
+  .row.lvl-alert .act:hover,
+  .row.lvl-info .act:hover {
+    background: color-mix(in srgb, var(--lvl) 85%, #fff);
+  }
+  .row.lvl-alert .act.act-alt,
+  .row.lvl-info .act.act-alt {
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--lvl) 45%, transparent);
+    color: var(--color-neutral-400);
+  }
+  .row.lvl-alert .act.act-alt:hover,
+  .row.lvl-info .act.act-alt:hover {
+    background: color-mix(in srgb, var(--lvl) 14%, transparent);
+    color: var(--color-neutral-300);
+  }
 
   /* last row — the rail fades out rather than stopping hard */
   .row.last .rail {

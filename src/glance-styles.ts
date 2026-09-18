@@ -479,8 +479,15 @@ export const glanceStyles = css`
     font-family: inherit;
     font-size: 16px;
     font-size: clamp(14px, 3.4cqw, 20px);
-    color: var(--color-accent-300);
-    background: var(--ds-alert);
+    /*
+     * The level, not a surface colour. This used to be --ds-alert, which is a
+     * dark brown of its own and only turned red because a theme maps it to
+     * --error-color -- so an *info* alert got a blue stripe and red buttons.
+     * The red was right by accident; now it is right on purpose, and info is
+     * blue all the way through.
+     */
+    color: var(--ds-on-level);
+    background: var(--lv, var(--ds-alert));
     border: 1px solid transparent;
     border-radius: 999px;
     /* Sized for a thumb on a wall, not a cursor on a desk. Below about 44px
@@ -497,7 +504,7 @@ export const glanceStyles = css`
   button.quiet-btn {
     color: var(--color-neutral-400);
     background: transparent;
-    border-color: var(--ds-divider);
+    border-color: color-mix(in srgb, var(--lv, var(--ds-divider)) 45%, transparent);
   }
   button:focus-visible {
     outline: 2px solid var(--color-accent-400);
