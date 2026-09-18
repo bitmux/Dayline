@@ -696,6 +696,178 @@ can print `5h 6m`; a speaker cannot.
 
 ---
 
+## The settings dialog — one page per mechanism, and mechanisms outlived their pages
+
+Eight complaints arrived together in September 2026 and seven of them are the
+same complaint. None is a bug. The dialog grew a page every time a mechanism was
+added, and **no page was ever retired when the mechanism it configured moved
+somewhere better**. What is left is a menu where some pages configure something,
+one only explains, one configures a thing that has been superseded, and three
+are named after their implementation rather than the question they answer.
+
+Two rules to hold it to from here:
+
+1. **A settings page exists to change something.** Anything that only explains
+   belongs in the docs, or on the card where the confusion actually happens.
+2. **A page is named for the question it answers**, not for the code behind it.
+   "Calendar wording" is what the page does to a string; "Calendar settings" is
+   what the person came to do.
+
+And one rule that would have prevented all of it: **when a mechanism is
+replaced, the old one is deleted in the same change.** Every item below is a
+scaffold that was left standing because leaving it standing was free.
+
+### Calendars: admission, then filtering — two labels, not one
+
+**This supersedes the per-card label shipped in `0.3.0-beta.4`, six days after
+it shipped.** That version made the include label per config entry, so a second
+card carried its own label and read the calendars bearing it. It works, and it
+is the wrong shape.
+
+The better model separates two questions that were being answered with one
+label:
+
+- **`Dayline` admits a calendar to the system at all.** No label, never
+  fetched, by any instance. It is the answer to "don't process extra data", and
+  it is a promise that adding a card can never quietly start reading twenty
+  calendars.
+- **A second, configurable filter label decides which cards it lands on.**
+  `Kid`, `Wife`. Empty on a card means "everything admitted", which is what the
+  household card wants.
+
+So the family calendar carries `Dayline` and nothing else and appears
+everywhere; the kid's carries `Dayline` + `Kid`.
+
+This also kills the failure the shipped model makes easy — label a calendar
+`Kid`, forget to leave `Dayline` on it, and it silently vanishes from your own
+card. Under admission-plus-filter that cannot happen, because the two labels
+are answering different questions instead of competing to answer one.
+
+Migration has to be explicit: an existing entry whose label is not `Dayline`
+becomes a filter, and its calendars need `Dayline` adding. Small, and it is one
+calendar on the test instance, but it is registry work a person has to do and
+must not be guessed at.
+
+### The fallback calendar list: delete it
+
+Three mechanisms answer "which calendars" — the label, the setup list, and an
+implicit every-calendar-in-the-instance — resolved by a silent precedence chain
+nothing surfaces. The list is not a design; it is the **original** design, from
+before labels existed, left in place because removing it felt like removing a
+capability.
+
+It is not one. Delete the list, delete the chain, and when nothing resolves say
+so **on the card**: `No calendars configured`, in the warn footer that already
+exists for a stale source. That is where the person is looking when the card is
+empty, which is the one thing the settings page could never claim.
+
+Weather and to-do stay exactly as they are — single dropdowns for genuine
+choices that no label can answer.
+
+### "What just happened": delete the mechanism, keep the idea
+
+The original plan called this "the one genuinely new mechanism" and predicted
+"the trigger list will be wrong before it is right". That prediction is now in.
+
+Worth being accurate about what exists, because it is more than nothing: an
+entity carrying the label, changed by something other than a hand, gets a line
+automatically — `Porch light turned on` — and the context-tracking behind it is
+the only approach that works for time- and sun-triggered automations. It is
+genuinely automatic and it needs no configuration.
+
+**It can say what changed. It can never say why.** That is the same wall the
+tabled automation work hit, for the same reason: the entity knows its new state
+and nothing else, and "the porch light turned on" is not an explanation, it is
+the thing that made someone go looking for one.
+
+The only thing that knows why is the automation that did it. So the explanation
+belongs in an action *inside that automation*, which is a service this project
+already has — `day_spine.show`, with the sage sentence as a field. Deleting the
+accumulator removes:
+
+- the `recent` page and its editor step,
+- the per-entity phrase rules,
+- the context tracking and the state subscriptions,
+- and **the entire meaning of the `Dayline` label on anything that is not a
+  calendar** — which makes the label model above simpler on its way past.
+
+A second service, `day_spine.explain`, is worth considering and probably not
+worth building: explanations are always past and always short-lived, but `show`
+already takes `start` and `duration`, so the second service would be a thin
+wrapper around different defaults. One primitive with good defaults beats two
+that overlap — the mistake this whole section is about.
+
+### Sentences match the title with the tags already stripped
+
+**Measured, because the assumption in the room was the opposite.** A sentence
+rule matching `#coffee` matches nothing, and so does one matching `coffee`,
+because `split_tags` runs before `_match_sentence` and the tag is gone by then:
+
+    "Morning routine #coffee"  ->  title "Morning routine", tags ["coffee"]
+    sentence rule "#coffee"    ->  no match
+    sentence rule "coffee"     ->  no match
+
+Matching on a tag is the most useful thing a sentence rule can do — a tag is
+already the deliberate marker on the event, so `#coffee` -> *"Kettle on"* wants
+to be the ordinary way to write one. It is also, going by the pages people
+reach for, the way the feature is assumed to work.
+
+The fix is small and belongs before anything is built on top: match against the
+tags as well as the stripped title. Whether the rule is written `#coffee` or
+`coffee` should not matter, for the same reason label names are matched
+case-insensitively.
+
+### Roles: presentation wearing a functional name
+
+`role: schedule` changes how a calendar's rows are drawn and where the sage line
+comes from. It does not fire anything. The firing is a hand-written
+`trigger: calendar` automation with a `summary ==` condition — documented in
+INSTALL.md, which is the tell: a documented workaround is a design saying what
+it is missing.
+
+Meanwhile `#tags` do fire, through one primitive, gated by one label.
+
+The consistent shape is **one firing primitive, two ways of addressing it**: a
+`#tag` on an event for the occasional case, and a schedule calendar where every
+event's summary *is* the instruction. Both firing `day_spine_tag`, both gated by
+the same Control label, and the hand-written calendar trigger disappears.
+
+This one changes behaviour rather than clarifying it, so it needs its own
+version and a migration that leaves existing schedule calendars presentational
+until each is opted in. Arming somebody's house as a side effect of an upgrade
+is the one failure this project cannot have.
+
+### Tags on a phone alarm
+
+Not possible today, and the reason is narrow: `from_alarms` never calls
+`split_tags`. The row's title is the literal string `Alarm` and the phone's
+label goes into `source`, so `Wake up #coffee` reaches the card as decoration.
+
+Worth doing — an alarm is the most reliable thing in the house to hang a routine
+on, and it is already on the spine. It needs a permission answer first, because
+Control is currently a property of a *calendar* and a phone alarm has no
+calendar. The clean generalisation is that **Control is a property of any source
+entity**: put it on the `next_alarm` sensor and that phone's alarms may act.
+That is the same rule, not a second one.
+
+### Renames
+
+- `Labels and tags` — keeps its name, loses everything it cannot change.
+- `Calendar wording` -> **Calendar settings**.
+- `Leaving` -> **Leave by**, matching what the row on the card is called.
+- `What just happened` — deleted.
+- `Weather and to-do — and the fallback calendar list` -> **Weather and to-do**.
+
+### Not available: walking
+
+`vehicle_type` offers car, taxi and motorcycle because that is Waze's enum, and
+Waze does not route pedestrians. A walking estimate needs a second routing
+provider, which means a second integration and a second failure mode for the one
+feature here that already talks off-LAN. Left alone deliberately; noted so the
+question does not get asked twice.
+
+---
+
 ## Phase 4 — Reach
 
 Dayline currently waits to be looked at. These give it hands.
