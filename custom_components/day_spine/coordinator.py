@@ -24,29 +24,23 @@ from . import labels
 from . import tags as tagging
 from .travel import Travel
 from .const import (
-    CONF_CALENDARS,
     CONF_TODO,
     CONF_WEATHER,
     DEFAULT_ALARM_HORIZON,
     DEFAULT_TOMORROW,
     DEFAULT_TOMORROW_HORIZON,
+    DEFAULT_EXPLAIN_TTL,
     DEFAULT_MIN_GAP,
     DEFAULT_LEAVE_BUFFER,
     DEFAULT_LEAVE_MAX,
     DEFAULT_LEAVE_ORIGIN,
     DEFAULT_LEAVE_REGION,
     DEFAULT_LEAVE_VEHICLE,
-    DEFAULT_RECENT_MAX,
-    DEFAULT_RECENT_TTL,
     DEFAULT_SCAN_MINUTES,
     DEFAULT_SIMILARITY,
     DEFAULT_TITLE_NOISE,
     DOMAIN,
-    EVENT_AUTOMATION_TRIGGERED,
-    EVENT_SCRIPT_STARTED,
     EVENT_TAG,
-    HOUSE_CONTEXT_MAX,
-    HOUSE_CONTEXT_TTL,
     LABEL_CONTROL,
     LABEL_INCLUDE,
     OPT_LABEL,
@@ -66,9 +60,6 @@ from .const import (
     OPT_LEAVE_REGION,
     OPT_LEAVE_VEHICLE,
     OPT_NOW_TEMPLATE,
-    OPT_RECENT,
-    OPT_RECENT_MAX,
-    OPT_RECENT_TTL,
     OPT_SCAN_MINUTES,
     OPT_SENTENCES,
     OPT_SHOW_SUN,
@@ -111,21 +102,12 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.entry = entry
         self._base: list[Entry] = []
-        self._recent: list[Entry] = []
-        self._unsub_states = None
         self._unsub_alarms = None
         self._unsub_registries = None
-        self._unsub_house: list[Callable[[], None]] = []
-
-        # Context ids of automations and scripts currently running, and the
-        # name of each. A state change carrying one of these was the house
-        # acting, and we can say which automation did it.
-        self._house_ctx: dict[str, tuple[float, str]] = {}
 
         # Resolved from labels, refreshed whenever a registry moves.
         self._calendar_ids: list[str] = []
-        self._calendar_source = "all"
-        self._watched_ids: list[str] = []
+        self._calendar_source = "none"
         self._control: set[str] = set()
 
         # Which tags have already fired today, and the timers for the ones that
@@ -177,11 +159,6 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         its tags and fires nothing."""
         return sorted(self._control)
 
-    @property
-    def watched_ids(self) -> list[str]:
-        """Non-calendar entities labelled for explanation."""
-        return list(self._watched_ids)
-
     # -- options ------------------------------------------------------------
 
     @property
@@ -195,14 +172,15 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def _meta(self) -> dict[str, dict[str, Any]]:
         """Per-calendar wording and priority, in the order the merge should see.
 
-        Configured order comes first, because it decides whose phrasing wins a
-        dedupe and that is the one thing a label cannot express. Everything the
-        label turned up follows, alphabetically. A calendar nobody has ever
-        configured still gets a pill — its own name, which is the name the
-        person who labelled it was looking at.
+        Anything with stored wording comes first, in the order it was stored,
+        because that order decides whose phrasing wins a dedupe and it is the
+        one thing a label cannot express. Everything else the label turned up
+        follows, alphabetically. A calendar nobody has ever configured still
+        gets a pill — its own name, which is the name the person who labelled it
+        was looking at.
         """
         configured = self._opts.get(OPT_CALENDAR_META) or {}
-        order = [e for e in self.entry.data.get(CONF_CALENDARS, []) if e in self._calendar_ids]
+        order = [e for e in configured if e in self._calendar_ids]
         order += [e for e in self._calendar_ids if e not in order]
 
         out: dict[str, dict[str, Any]] = {}
@@ -244,26 +222,16 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._unsub_registries = labels.async_track_registries(
             self.hass, self._on_registry_change
         )
-        self._unsub_house = [
-            self.hass.bus.async_listen(event, self._on_house_action)
-            for event in (EVENT_AUTOMATION_TRIGGERED, EVENT_SCRIPT_STARTED)
-        ]
         self.entry.async_on_unload(self._teardown)
 
     @callback
     def _teardown(self) -> None:
-        if self._unsub_states:
-            self._unsub_states()
-            self._unsub_states = None
         if self._unsub_alarms:
             self._unsub_alarms()
             self._unsub_alarms = None
         if self._unsub_registries:
             self._unsub_registries()
             self._unsub_registries = None
-        for unsub in self._unsub_house:
-            unsub()
-        self._unsub_house = []
         self._cancel_fires()
 
     @property
@@ -286,41 +254,28 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @callback
     def _resolve(self) -> None:
-        """Work out what we are watching, from labels first.
+        """Which calendars are on this spine. The label, and nothing else.
 
-        A calendar carrying the `Dayline` label is on the spine. With no such
-        label anywhere, fall back to whatever the config flow was told, and
-        failing that to every calendar in the instance — a first run should
-        render a day, not interrogate you about one.
+        There used to be a chain — the label, else a list chosen during setup,
+        else every calendar in the instance — and it answered one question three
+        ways with a precedence nothing on screen ever stated. The setup list was
+        not a design, it was the *original* design, left standing after labels
+        replaced it because deleting it felt like deleting a capability.
 
-        The same label on anything that is not a calendar means the opposite
-        direction: explain that entity when it changes on its own.
+        An empty result is now a real answer and the card says so. That is the
+        honest version of the every-calendar fallback: it rendered *a* day on a
+        first run, but a day made of twenty calendars nobody chose is not the
+        day anyone wanted, and it hid the one instruction that would have fixed
+        it.
         """
-        include = self.label_include
-        labelled = labels.resolve(self.hass, include, "calendar")
-        configured = list(self.entry.data.get(CONF_CALENDARS) or [])
-        if labelled:
-            self._calendar_ids, self._calendar_source = labelled, "label"
-        elif configured:
-            self._calendar_ids, self._calendar_source = configured, "config"
-        else:
-            self._calendar_ids = sorted(
-                state.entity_id for state in self.hass.states.async_all("calendar")
-            )
-            self._calendar_source = "all"
-
-        self._watched_ids = [
-            entity_id
-            for entity_id in labels.resolve(self.hass, include)
-            if not entity_id.startswith("calendar.")
-        ]
+        self._calendar_ids = labels.resolve(self.hass, self.label_include, "calendar")
+        self._calendar_source = "label" if self._calendar_ids else "none"
         self._control = set(labels.resolve(self.hass, self.label_control, "calendar"))
 
     @callback
     def _snapshot(self) -> tuple:
         return (
             tuple(self._calendar_ids),
-            tuple(self._watched_ids),
             tuple(sorted(self._control)),
             self.label_include,
         )
@@ -343,26 +298,9 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @callback
     def _resubscribe(self) -> None:
-        if self._unsub_states:
-            self._unsub_states()
-            self._unsub_states = None
-        watched = [
-            rule["entity_id"]
-            for rule in (self._opts.get(OPT_RECENT) or [])
-            if rule.get("entity_id")
-        ]
-        watched += self._watched_ids
-        if watched:
-            self._unsub_states = async_track_state_change_event(
-                self.hass, list(dict.fromkeys(watched)), self._on_state_change
-            )
-
-        # Alarms get their own subscription rather than joining the list above:
-        # that one feeds the "what just happened" lines, which need a phrase and
-        # a house context an alarm sensor will never have. This one only wants
-        # to know the value moved. Without it, setting an alarm at 10:50pm and
-        # looking at the panel shows the old answer until the next cycle, which
-        # reads as the card being broken.
+        # Alarms are the only thing this feed watches by state now. Without it,
+        # setting an alarm at 10:50pm and looking at the panel shows the old
+        # answer until the next cycle, which reads as the card being broken.
         if self._unsub_alarms:
             self._unsub_alarms()
             self._unsub_alarms = None
@@ -379,105 +317,6 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if new is not None and old is not None and new.state == old.state:
             return
         self.hass.async_create_task(self.async_request_refresh())
-
-    @callback
-    def _on_house_action(self, event: Event) -> None:
-        """Remember that an automation or script is running, and its name.
-
-        This is how the logbook attributes a change, and it is the only thing
-        that works. An automation on a *state* trigger inherits a parent
-        context from whatever changed; one on a time, sun, template or MQTT
-        trigger starts a fresh context with no parent, and its state changes
-        are indistinguishable from a hand on a wall switch. Which meant the
-        automations most worth explaining were the ones we said nothing about.
-        """
-        name = str(event.data.get("name") or "").strip()
-        now = self.hass.loop.time()
-        if len(self._house_ctx) >= HOUSE_CONTEXT_MAX:
-            self._house_ctx = {
-                ctx: seen for ctx, seen in self._house_ctx.items() if seen[0] > now
-            }
-            if len(self._house_ctx) >= HOUSE_CONTEXT_MAX:
-                self._house_ctx.pop(next(iter(self._house_ctx)), None)
-        self._house_ctx[event.context.id] = (now + HOUSE_CONTEXT_TTL, name)
-
-    @callback
-    def _house_actor(self, event: Event) -> tuple[bool, str | None]:
-        """Did the house do this, and can we name what did it?
-
-        Returns `(house_acted, name)`. A change carrying a user id was asked
-        for by a person, and a person does not need telling what they just did.
-        """
-        context = event.data["new_state"].context
-        if context.user_id is not None:
-            return False, None
-
-        now = self.hass.loop.time()
-        for ctx in (context.id, context.parent_id):
-            if ctx is None:
-                continue
-            seen = self._house_ctx.get(ctx)
-            if seen is None:
-                continue
-            if seen[0] <= now:
-                self._house_ctx.pop(ctx, None)
-                continue
-            return True, seen[1] or None
-
-        # Downstream of *something* — an automation whose run we missed, or a
-        # chain we cannot follow. Worth a line, without a name on it.
-        return context.parent_id is not None, None
-
-    @callback
-    def _on_state_change(self, event: Event) -> None:
-        new = event.data.get("new_state")
-        old = event.data.get("old_state")
-        if new is None or old is None or new.state == old.state:
-            return
-
-        house, actor = self._house_actor(event)
-        if not house:
-            return
-
-        phrase = self._phrase(event.data["entity_id"], new.state)
-        if not phrase:
-            return
-
-        now = dt_util.now()
-        ttl = int(self._opts.get(OPT_RECENT_TTL, DEFAULT_RECENT_TTL))
-        self._recent.append(
-            {
-                "id": f"evt:{event.data['entity_id']}:{now.timestamp():.0f}",
-                "start": now.isoformat(),
-                "end": None,
-                "expires": (now + timedelta(seconds=ttl)).isoformat(),
-                "all_day": False,
-                "kind": "event",
-                "source": "House",
-                "title": phrase,
-                "automation": actor,
-                "entity_id": event.data["entity_id"],
-            }
-        )
-        self.async_set_updated_data(self._compose())
-
-    def _phrase(self, entity_id: str, state: str) -> str | None:
-        """What to say about a change nobody made by hand.
-
-        A written rule wins, because someone chose those words. A labelled
-        entity with no rule still gets a line — the entity's own name and what
-        it did. Plainer than a person would write, and enormously better than
-        the silence that made them go looking in the logbook.
-        """
-        for rule in self._opts.get(OPT_RECENT) or []:
-            if rule.get("entity_id") == entity_id and rule.get("state") == state:
-                return rule.get("phrase")
-        if entity_id not in self._watched_ids:
-            return None
-        name = self._friendly(entity_id)
-        if state in ("on", "off"):
-            return f"{name} turned {state}"
-        return f"{name} changed to {state}"
 
     def _log_fetch_failure(self, what: str) -> None:
         """A failed fetch while Home Assistant is still starting is an ordering
@@ -694,7 +533,34 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     # -- rows an automation put there ---------------------------------------
 
     @callback
-    def async_show(self, data: dict[str, Any]) -> None:
+    def async_explain(self, data: dict[str, Any]) -> None:
+        """Say what the house just did, from inside the thing that did it.
+
+        The feed used to work this out by watching labelled entities and
+        attributing state changes to a running automation. It was genuinely
+        automatic and it could only ever say *what* changed — "porch light
+        turned on" — which is not an explanation, it is the sentence that sends
+        someone looking for one. Only the automation knows why, so the
+        automation says it.
+
+        Separate from `show` because an explanation is a different row in five
+        ways at once: it belongs to the past, it fades on its own, it is never a
+        task, it is never counted among what is left today, and it takes the
+        sage treatment rather than a level. One service with five overridden
+        defaults would be a worse version of two.
+        """
+        row = dict(data)
+        row.setdefault("duration", DEFAULT_EXPLAIN_TTL)
+        self.async_show(row, kind="event", sticky=False, priority="low")
+
+    @callback
+    def async_show(
+        self,
+        data: dict[str, Any],
+        kind: str = "standing",
+        sticky: bool = True,
+        priority: str = "high",
+    ) -> None:
         """Put a row on the spine on behalf of an automation.
 
         The general case behind every specific one. Dayline cannot anticipate
@@ -736,13 +602,13 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "start": _when(data.get("start"), now),
             "end": None,
             "all_day": False,
-            "kind": "standing",
+            "kind": kind,
             "source": "House",
             "title": str(data.get("message") or "").strip() or "(no message)",
             "automation": (str(data.get("sentence") or "").strip() or None),
-            "priority": data.get("priority") or "high",
+            "priority": data.get("priority") or priority,
             "level": data.get("level") or "normal",
-            "sticky": True,
+            "sticky": sticky,
             "entity_id": data.get("entity_id"),
             "expires": expires,
         }
@@ -848,15 +714,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _compose(self) -> dict[str, Any]:
         now = dt_util.now()
-        cap = int(self._opts.get(OPT_RECENT_MAX, DEFAULT_RECENT_MAX))
-        self._recent = [
-            e
-            for e in self._recent
-            if (dt_util.parse_datetime(e["expires"]) or now) > now
-        ][-cap:]
-
-        # Pushed rows expire the same way the "what just happened" lines do,
-        # when they were given a duration at all. Most are not.
+        # A pushed row expires only when it was given a duration. Most are not.
         kept = [
             row
             for row in self._pushed
@@ -867,9 +725,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._pushed = kept
             self._save_pushed()
 
-        entries = sorted(
-            self._base + self._recent + self._pushed, key=lambda e: e["start"]
-        )
+        entries = sorted(self._base + self._pushed, key=lambda e: e["start"])
         left = remaining_count(entries, now)
 
         return {
@@ -988,6 +844,14 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         ]
 
     def _stale_message(self) -> str:
+        # Said on the card, because the card is where somebody is standing when
+        # they notice it is empty. A settings page can describe this state; only
+        # the card can catch the person actually looking at it.
+        if not self._calendar_ids:
+            return (
+                f"No calendars configured. Apply the {self.label_include} label "
+                "to a calendar in Settings → Areas & labels, and it appears here."
+            )
         bad = [s["label"] for s in self._sources() if s["stale"]]
         if not bad:
             return ""

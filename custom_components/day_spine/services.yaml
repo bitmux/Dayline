@@ -163,3 +163,75 @@ dismiss:
           multiple: true
           integration: day_spine
           domain: sensor
+
+explain:
+  name: Explain what just happened
+  description: >-
+    Put a short sage line on the spine saying what the house just did, from
+    inside the automation that did it. It sits at its own moment among the past
+    rows, is never struck through and never counted among what is left today,
+    and fades on its own.
+
+    Dayline used to watch labelled entities and write this line itself. It could
+    say what changed and never why, and why is the only part anyone went looking
+    for — which only the automation knows.
+  fields:
+    message:
+      name: Message
+      description: What happened, in a sentence someone would say out loud.
+      required: true
+      example: Living room lights turned off by the motion sensor
+      selector:
+        text:
+    sentence:
+      name: Credit
+      description: >-
+        Optional. What did it — usually the automation's own name, so the line
+        can be traced back without opening the logbook.
+      example: Evening wind-down
+      selector:
+        text:
+    duration:
+      name: Fades after
+      description: Seconds before the row disappears. Defaults to five minutes.
+      example: 300
+      selector:
+        number:
+          min: 30
+          max: 3600
+          step: 30
+          unit_of_measurement: s
+          mode: box
+    id:
+      name: Id
+      description: >-
+        Optional. Calling again with the same id replaces the line rather than
+        stacking a second copy.
+      example: lr_lights
+      selector:
+        text:
+    start:
+      name: Start
+      description: >-
+        When it happened, as an ISO timestamp. Defaults to now, which is almost
+        always right for an explanation.
+      example: "2026-09-04T10:42:00-05:00"
+      selector:
+        text:
+    entity_id:
+      name: Related entity
+      description: >-
+        Optional. What the line is about, so tapping it opens the right
+        more-info dialog when the card has interactive rows switched on.
+      selector:
+        entity:
+    spine:
+      name: Which spine
+      description: >-
+        Optional. Leave empty and the line goes on every Dayline card. Name one
+        or more Dayline sensors to aim it at those cards only.
+      selector:
+        entity:
+          multiple: true
+          integration: day_spine
+          domain: sensor
