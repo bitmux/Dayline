@@ -1216,3 +1216,52 @@ def test_an_alert_that_has_not_started_yet_is_not_said():
         NOW,
     )
     assert said == "Dinner at 5 PM."
+
+
+# --- sentence rules and tags ----------------------------------------------
+#
+# Every one of these failed before the rule looked at tags, and the first two
+# are the way people actually assume this works.
+
+
+def _tagged(summary: str, rules: list[dict]) -> dict:
+    events = {"calendar.family": [{"summary": summary, "start": "2026-09-02T07:00:00-05:00",
+                                   "end": "2026-09-02T07:30:00-05:00"}]}
+    out = from_calendars(cfg(sentences=rules), events, DAY_START)
+    return out[0]
+
+
+def test_a_rule_written_with_the_hash_matches_the_tag():
+    row = _tagged("Morning routine #coffee", [{"match": "#coffee", "automation": "Kettle on"}])
+    assert row["automation"] == "Kettle on"
+    assert row["title"] == "Morning routine"
+
+
+def test_a_bare_rule_matches_the_tag_too():
+    """`split_tags` runs first, so `coffee` used to match nothing at all here."""
+    row = _tagged("Morning routine #coffee", [{"match": "coffee", "automation": "Kettle on"}])
+    assert row["automation"] == "Kettle on"
+
+
+def test_a_bare_rule_still_matches_the_title():
+    row = _tagged("Coffee with Sam", [{"match": "coffee", "automation": "Kettle on"}])
+    assert row["automation"] == "Kettle on"
+
+
+def test_a_hash_rule_does_not_match_a_bare_word_in_the_title():
+    """Writing the hash is how you say you meant the tag and not the words."""
+    row = _tagged("Coffee with Sam", [{"match": "#coffee", "automation": "Kettle on"}])
+    assert row["automation"] is None
+
+
+def test_tag_matching_ignores_case_the_way_the_title_does():
+    row = _tagged("Morning routine #Coffee", [{"match": "#COFFEE", "automation": "Kettle on"}])
+    assert row["automation"] == "Kettle on"
+
+
+def test_the_first_matching_rule_still_wins():
+    row = _tagged(
+        "Morning routine #coffee",
+        [{"match": "morning", "automation": "First"}, {"match": "#coffee", "automation": "Second"}],
+    )
+    assert row["automation"] == "First"

@@ -83,18 +83,17 @@ Assistant.
 
 ### `Dayline` — what goes on the card
 
-Apply it to a **calendar** and that calendar joins the spine. As soon as any
-calendar carries it, the setup list stops being consulted entirely — adding a
-calendar next month is a label, not a trip through Configure.
+Apply it to a **calendar** and that calendar joins the spine. That is the only
+way a calendar gets on a card — there is no list to keep in step with it, and
+adding a calendar next month is a label rather than a trip through Configure.
 
-Apply it to **anything that is not a calendar** — a light, a lock, a media
-player — and it means the other thing: explain that entity when it changes on
-its own. You get a plain sentence built from the entity's own name
-("Porch light turned off"), and **Configure → What just happened** is where you
-write a better one.
+With no `Dayline` label anywhere the card says so, in the warn footer:
+*No calendars configured.* An empty card naming the one thing that fixes it is
+more use than a full one made of twenty calendars nobody chose.
 
-With no `Dayline` label anywhere, the setup list is used; with neither, every
-calendar is.
+The label means nothing on anything that is not a calendar. It used to — it
+marked an entity as worth explaining when it changed on its own — and that
+mechanism is gone; see **Explaining what the house did** below.
 
 ### `Dayline Control` — what is allowed to act
 
@@ -183,18 +182,17 @@ calendar is not allowed to fire" — never "nothing is listening".
 
 - **Labels and tags** — read-only. What is labelled right now, which calendars
   may act, which tags have been seen today, and where to change each.
-- **Calendar wording** — each calendar's pill label, colour, default priority,
+- **Calendar settings** — each calendar's pill label, colour, default priority,
   and whether it is a *schedule* calendar. Order matters: when two calendars carry
   the same event worded differently, the first one listed supplies the wording.
   Which calendars appear here is the `Dayline` label's business, not this page's.
-- **Sentences** — what the house does, in plain words, matched against text in
-  an event's title. First match wins, so the order of the list is the order of
-  precedence. This *describes*; to make an event act, use a `#tag`.
-- **What just happened** — better wording for the automatic changes of entities
-  carrying the `Dayline` label. The label decides what is watched; this decides
-  how it reads.
-- **Weather and to-do** — the two entity pickers, plus the fallback calendar
-  list for anyone not using labels.
+- **Sentences** — what the house does, in plain words, matched against an
+  event's title **or its `#tags`**. A rule written `#coffee` means the tag and
+  only the tag; written `coffee` it means either. First match wins, so the
+  order of the list is the order of precedence. This *describes*; to make an
+  event act, use a `#tag`.
+- **Weather and to-do** — the two entity pickers, and the label this card
+  answers to.
 - **Tuning** — sun rows, merge similarity, excluded titles, timings, and
   optional templates for the headline and the "Now" subline.
 
@@ -240,7 +238,7 @@ information and becomes an instruction, so it is the only one that changes
 colour.
 
 Turn it on in **Settings → Devices & services → Dayline → Configure →
-Leaving**. It is off until you do, because it is the one part of Dayline that
+Leave by**. It is off until you do, because it is the one part of Dayline that
 talks to a server outside your house.
 
 **There is nothing to install.** No account, no API key, no billing. It uses
@@ -267,6 +265,34 @@ Three things it does on purpose:
   make sense of — "Kid's school" — simply gets no line, and is not asked about
   again for six hours. Locations that are obviously not places (`Zoom`, a
   meeting link, `TBD`) are never sent anywhere at all.
+
+---
+
+## Explaining what the house did
+
+When an automation does something people notice, it can say so on the spine:
+
+```yaml
+action: day_spine.explain
+data:
+  message: Living room lights turned off by the motion sensor
+  sentence: Evening wind-down
+```
+
+A short sage line at its own moment among the past rows — not struck through,
+never counted among what is left today, gone after five minutes. `duration`
+changes that, `spine` aims it at one card, `id` replaces a line rather than
+stacking a second copy.
+
+**Put it inside the automation that did the thing.** Dayline used to work this
+out for itself, by labelling entities and attributing their state changes to
+whatever was running. That was genuinely automatic, and it could only ever say
+*what* changed — "porch light turned on" — which is not an explanation, it is
+the sentence that makes someone go looking for one. Why is the only part anyone
+wants, and the automation is the only thing that knows it.
+
+It is deliberately not `day_spine.show`: an explanation has no buttons, no
+level, no priority and nothing to press. It is a statement about the past.
 
 ---
 
@@ -479,11 +505,11 @@ dashboard is where people go to change how a dashboard looks; what the feed
 | `max_past` | `3` | Struck-through entries kept above "now" |
 | `max_future` | `6` | Upcoming entries shown before collapsing |
 | `collapse_low_priority` | `true` | Drop `low` entries from the window before `normal` ones |
-| `recent_events` | `true` | The short-lived "what just happened" lines |
-| `recent_ttl` | `300` | Seconds a recent line lives if the feed did not set `expires` |
+| `recent_events` | `true` | Whether to draw the short-lived explanation lines |
+| `recent_ttl` | `300` | Seconds an explanation lives if the feed did not set `expires` |
 | `show_weather` | `true` | Condition icon and temperature under the time, on upcoming entries |
 | `show_duration` | `true` | The duration chip on upcoming entries that have an end |
-| `show_leave_by` | `true` | The "leave by" line, on events the feed could price a journey to. Nothing appears unless **Leaving** is switched on in the integration's options. |
+| `show_leave_by` | `true` | The "leave by" line, on events the feed could price a journey to. Nothing appears unless **Leave by** is switched on in the integration's options. |
 | `use_ha_theme` | `false`, but a newly added card starts with `true` in its YAML | Take colors *and the card surface* from the active HA theme instead of the Organic palette — including a frosted theme's blur, shadow and border, so the card is made of the same material as everything around it. Geometry and typefaces stay fixed either way. |
 | `load_fonts` | `true` | Fetch Caprasimo and Figtree from Google Fonts. Set `false` on an offline tablet — the card falls back to Georgia and the system sans. |
 
@@ -931,7 +957,7 @@ Leave-by is switched off in Dayline's settings.
 
 Kept apart from the briefing deliberately. Folded together, *when do I need to
 leave* came back with an overdue chore — the briefing is never allowed to say
-"nothing", and this one has to be. It needs **Leaving in time** switched on, and
+"nothing", and this one has to be. It needs **Leave by** switched on, and
 it says so rather than saying nothing, because a silent nothing and an unset
 option sound identical from across a room.
 

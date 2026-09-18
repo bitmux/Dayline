@@ -16,7 +16,7 @@ pill wording, the sentences, the dials — and the first thing in the menu is no
 a setting at all. It is a page that says what is currently labelled, and where
 to go to change it.
 
-The lists (sentences, watched entities) are edited one item at a time through a
+The lists (sentences, exclusions) are edited one item at a time through a
 pick-or-add step rather than a textarea of delimited lines. A textarea would be
 less code and would still be YAML wearing a costume; the point of this whole
 piece of work is that the second person in the house can change what the card
@@ -34,7 +34,6 @@ from homeassistant.helpers import selector
 
 from .const import (
     CALENDAR_COLORS,
-    CONF_CALENDARS,
     CONF_TODO,
     CONF_WEATHER,
     DEFAULT_ALARM_HORIZON,
@@ -46,8 +45,6 @@ from .const import (
     DEFAULT_LEAVE_ORIGIN,
     DEFAULT_LEAVE_REGION,
     DEFAULT_LEAVE_VEHICLE,
-    DEFAULT_RECENT_MAX,
-    DEFAULT_RECENT_TTL,
     DEFAULT_SCAN_MINUTES,
     DEFAULT_SIMILARITY,
     DEFAULT_TITLE_NOISE,
@@ -71,9 +68,6 @@ from .const import (
     OPT_LEAVE_REGION,
     OPT_LEAVE_VEHICLE,
     OPT_NOW_TEMPLATE,
-    OPT_RECENT,
-    OPT_RECENT_MAX,
-    OPT_RECENT_TTL,
     OPT_SCAN_MINUTES,
     OPT_SENTENCES,
     OPT_SHOW_SUN,
@@ -96,13 +90,9 @@ def _how(source: str, label: str) -> str:
     has to name the label that spine actually answers to."""
     return {
         "label": f"the **{label}** label — the list below is whatever carries it",
-        "config": (
-            "the list picked during setup, because nothing carries the "
-            f"**{label}** label yet"
-        ),
-        "all": (
-            "nothing — every calendar in this instance is on the spine, because "
-            f"neither the **{label}** label nor the setup list has been used"
+        "none": (
+            f"nothing yet. No calendar carries the **{label}** label, so this "
+            "card has no day to draw. Apply it in Settings → Areas & labels"
         ),
     }.get(source, source)
 
@@ -158,34 +148,24 @@ class DaySpineConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         if user_input is not None:
-            calendars = user_input.get(CONF_CALENDARS) or []
             return self.async_create_entry(
                 title=user_input.get("name") or "Dayline",
                 data={
-                    CONF_CALENDARS: calendars,
                     CONF_WEATHER: user_input.get(CONF_WEATHER),
                     CONF_TODO: user_input.get(CONF_TODO),
                 },
                 # Sensible defaults so the card works before anything is tuned.
-                # Labels default to each calendar's own name.
+                # No calendars are chosen here: a calendar joins a spine by
+                # carrying the label, and asking the same question twice was
+                # the thing that made this dialog hard to reason about.
                 options={
-                    OPT_CALENDAR_META: {
-                        entity_id: {
-                            "label": self._friendly(entity_id),
-                            "priority": "normal",
-                            "role": "people",
-                        }
-                        for entity_id in calendars
-                    },
+                    OPT_CALENDAR_META: {},
                     OPT_SENTENCES: [],
                     OPT_EXCLUDE: [],
-                    OPT_RECENT: [],
                     OPT_SHOW_SUN: True,
                     OPT_SUN_PRIORITY: "low",
                     OPT_SIMILARITY: DEFAULT_SIMILARITY,
                     OPT_TITLE_NOISE: DEFAULT_TITLE_NOISE,
-                    OPT_RECENT_TTL: DEFAULT_RECENT_TTL,
-                    OPT_RECENT_MAX: DEFAULT_RECENT_MAX,
                     OPT_SCAN_MINUTES: DEFAULT_SCAN_MINUTES,
                     OPT_NOW_TEMPLATE: "",
                     OPT_HEADLINE_TEMPLATE: "",
@@ -197,9 +177,6 @@ class DaySpineConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Optional("name", default="Dayline"): selector.TextSelector(),
-                    vol.Optional(CONF_CALENDARS, default=[]): _entity(
-                        "calendar", multiple=True
-                    ),
                     vol.Optional(CONF_WEATHER): _entity("weather"),
                     vol.Optional(CONF_TODO): _entity("todo"),
                 }
@@ -234,7 +211,6 @@ class DaySpineOptionsFlow(OptionsFlow):
                 "labels",
                 "calendars",
                 "sentences",
-                "recent",
                 "leaving",
                 "alarms",
                 "sources",
@@ -258,9 +234,7 @@ class DaySpineOptionsFlow(OptionsFlow):
     def _resolved_calendars(self) -> list[str]:
         """What the feed is actually reading — labelled, configured, or all."""
         coordinator = self._coordinator()
-        if coordinator is not None and coordinator.calendar_ids:
-            return coordinator.calendar_ids
-        return list(self.config_entry.data.get(CONF_CALENDARS) or [])
+        return list(coordinator.calendar_ids) if coordinator is not None else []
 
     def _label(self) -> str:
         """This entry's include label, for any page that names it in prose.
@@ -297,9 +271,8 @@ class DaySpineOptionsFlow(OptionsFlow):
 
         coordinator = self._coordinator()
         calendars = self._resolved_calendars()
-        source = getattr(coordinator, "calendar_source", "config")
+        source = getattr(coordinator, "calendar_source", "none")
         control = getattr(coordinator, "control_ids", [])
-        watched = getattr(coordinator, "watched_ids", [])
         seen = list((getattr(coordinator, "data", None) or {}).get("tags_seen") or [])
 
         return self.async_show_form(
@@ -311,7 +284,6 @@ class DaySpineOptionsFlow(OptionsFlow):
                 "how": _how(source, self._label()),
                 "calendars": _names(self.hass, calendars),
                 "controls": _names(self.hass, control),
-                "watched": _names(self.hass, watched),
                 "tags": ", ".join(f"#{tag}" for tag in seen) or "— none seen today",
                 "scan": str(
                     self.config_entry.options.get(OPT_SCAN_MINUTES, DEFAULT_SCAN_MINUTES)
@@ -324,13 +296,10 @@ class DaySpineOptionsFlow(OptionsFlow):
     async def async_step_sources(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         data = dict(self.config_entry.data)
         if user_input is not None:
-            calendars = user_input.get(CONF_CALENDARS) or []
-            # Keep metadata for anything still in play — configured here *or*
-            # carrying the label — seed it for new arrivals, and drop the rest
-            # so stale wording cannot linger. Pruning by this list alone was
-            # right when this list was the only way in; it would now throw away
-            # the pill wording of every labelled calendar.
-            keep = set(calendars) | set(self._labelled_calendars())
+            # Keep wording for every calendar the label still turns up, seed it
+            # for new arrivals, and drop the rest so stale wording cannot
+            # linger.
+            keep = set(self._labelled_calendars())
             meta = self._opts.get(OPT_CALENDAR_META) or {}
             self._opts[OPT_CALENDAR_META] = {
                 entity_id: meta.get(
@@ -346,18 +315,13 @@ class DaySpineOptionsFlow(OptionsFlow):
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data={
-                    CONF_CALENDARS: calendars,
                     CONF_WEATHER: user_input.get(CONF_WEATHER),
                     CONF_TODO: user_input.get(CONF_TODO),
                 },
             )
             return self._save()
 
-        schema: dict[Any, Any] = {
-            vol.Optional(CONF_CALENDARS, default=data.get(CONF_CALENDARS, [])): _entity(
-                "calendar", multiple=True
-            )
-        }
+        schema: dict[Any, Any] = {}
         _optional(schema, CONF_WEATHER, data.get(CONF_WEATHER), _entity("weather"))
         _optional(schema, CONF_TODO, data.get(CONF_TODO), _entity("todo"))
         schema[
@@ -488,74 +452,6 @@ class DaySpineOptionsFlow(OptionsFlow):
             ),
         )
 
-    # -- "what just happened" -----------------------------------------------
-
-    async def async_step_recent(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Better words for a change the house made on its own.
-
-        No longer how you *choose* what gets explained — the `Dayline` label on
-        any non-calendar entity does that, and gets a serviceable sentence built
-        from the entity's own name. This list is for the ones where that
-        sentence is not good enough, which is most of the ones that matter.
-        """
-        items = self._opts.get(OPT_RECENT) or []
-        if user_input is not None:
-            choice = user_input["selection"]
-            if choice == DONE:
-                return self._save()
-            self._index = None if choice == ADD else int(choice)
-            return await self.async_step_recent_edit()
-
-        options = [
-            selector.SelectOptionDict(
-                value=str(i),
-                label=f"{rule.get('entity_id', '?')} → {rule.get('state', '?')}: {rule.get('phrase', '')}",
-            )
-            for i, rule in enumerate(items)
-        ]
-        options.append(selector.SelectOptionDict(value=ADD, label="➕  Add a line"))
-        options.append(selector.SelectOptionDict(value=DONE, label="✔  Done"))
-        return self.async_show_form(
-            step_id="recent",
-            data_schema=vol.Schema({vol.Required("selection", default=ADD): _options(options)}),
-            description_placeholders={
-                "label": self._label(),
-                "watched": _names(self.hass, list(getattr(self._coordinator(), "watched_ids", []))),
-            },
-        )
-
-    async def async_step_recent_edit(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        items = list(self._opts.get(OPT_RECENT) or [])
-        current = items[self._index] if self._index is not None else {}
-
-        if user_input is not None:
-            if user_input.get("delete") and self._index is not None:
-                items.pop(self._index)
-            else:
-                rule = {
-                    "entity_id": user_input["entity_id"],
-                    "state": user_input["state"].strip(),
-                    "phrase": user_input["phrase"].strip(),
-                }
-                if self._index is None:
-                    items.append(rule)
-                else:
-                    items[self._index] = rule
-            self._opts[OPT_RECENT] = items
-            return await self.async_step_recent()
-
-        schema: dict[Any, Any] = {}
-        if current.get("entity_id"):
-            schema[vol.Required("entity_id", default=current["entity_id"])] = _entity(None)
-        else:
-            schema[vol.Required("entity_id")] = _entity(None)
-        schema[vol.Required("state", default=current.get("state", "off"))] = selector.TextSelector()
-        schema[vol.Required("phrase", default=current.get("phrase", ""))] = selector.TextSelector()
-        schema[vol.Optional("delete", default=False)] = selector.BooleanSelector()
-        return self.async_show_form(step_id="recent_edit", data_schema=vol.Schema(schema))
-
     # -- when to leave ------------------------------------------------------
 
     async def async_step_leaving(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -680,14 +576,6 @@ class DaySpineOptionsFlow(OptionsFlow):
                     vol.Optional(
                         OPT_TITLE_NOISE, default=o.get(OPT_TITLE_NOISE) or DEFAULT_TITLE_NOISE
                     ): _words(),
-                    vol.Optional(
-                        OPT_RECENT_TTL, default=o.get(OPT_RECENT_TTL, DEFAULT_RECENT_TTL)
-                    ): selector.NumberSelector(
-                        selector.NumberSelectorConfig(min=30, max=3600, step=30, unit_of_measurement="s")
-                    ),
-                    vol.Optional(
-                        OPT_RECENT_MAX, default=o.get(OPT_RECENT_MAX, DEFAULT_RECENT_MAX)
-                    ): selector.NumberSelector(selector.NumberSelectorConfig(min=1, max=20, step=1)),
                     vol.Optional(
                         OPT_SCAN_MINUTES, default=o.get(OPT_SCAN_MINUTES, DEFAULT_SCAN_MINUTES)
                     ): selector.NumberSelector(

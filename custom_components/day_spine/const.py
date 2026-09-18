@@ -5,7 +5,6 @@ from __future__ import annotations
 DOMAIN = "day_spine"
 
 # --- config entry data (set once, at setup) ---------------------------------
-CONF_CALENDARS = "calendars"
 CONF_WEATHER = "weather_entity"
 CONF_TODO = "todo_entity"
 
@@ -17,9 +16,6 @@ OPT_SHOW_SUN = "show_sun"
 OPT_SUN_PRIORITY = "sun_priority"
 OPT_SIMILARITY = "similarity"
 OPT_TITLE_NOISE = "title_noise"
-OPT_RECENT = "recent"  # [{entity_id, state, phrase}]
-OPT_RECENT_TTL = "recent_ttl"
-OPT_RECENT_MAX = "recent_max"
 OPT_LEAVE_BY = "leave_by"  # price journeys to events that name a place
 OPT_LEAVE_ORIGIN = "leave_origin"  # address, coordinates, or an entity to ask
 OPT_LEAVE_BUFFER = "leave_buffer"  # minutes of parking-and-walking-in
@@ -57,18 +53,17 @@ OPT_LABEL = "label_include"
 # Assistant's job and not ours.
 EVENT_TAG = "dayline_tag"
 
-# Home Assistant fires these when an automation or script starts. Their
-# context ids are how we tell "the house did this" from "someone pressed a
-# switch" — see DaySpineCoordinator._on_house_action.
-EVENT_AUTOMATION_TRIGGERED = "automation_triggered"
-EVENT_SCRIPT_STARTED = "script_started"
-
 # --- services ----------------------------------------------------------------
 # The way in for anything Dayline has no opinion about. An automation that has
 # already decided something is worth saying can put a row on the spine itself,
 # with up to two buttons, without that shape having to be predicted here first.
 SERVICE_SHOW = "show"
 SERVICE_DISMISS = "dismiss"
+SERVICE_EXPLAIN = "explain"
+
+# How long an explanation stays on the spine. Long enough to be seen by someone
+# walking back into the room, short enough that the day is not a logbook.
+DEFAULT_EXPLAIN_TTL = 300
 
 # How a pushed row carries itself. `normal` is the default and looks like the
 # rest of the card; the other two are for rows that are not simply another
@@ -120,8 +115,6 @@ DEFAULT_TITLE_NOISE = [
     "of",
     "appointment",
 ]
-DEFAULT_RECENT_TTL = 300
-DEFAULT_RECENT_MAX = 6
 DEFAULT_LEAVE_ORIGIN = "zone.home"
 DEFAULT_LEAVE_BUFFER = 10
 DEFAULT_LEAVE_MAX = 3
@@ -135,11 +128,6 @@ DEFAULT_TOMORROW = True
 DEFAULT_TOMORROW_HORIZON = 16
 DEFAULT_MIN_GAP = 90
 
-# How long a running automation stays attributable, and how many we keep.
-# Long enough for an action with a `delay` in it; short enough that a
-# coincidence half an hour later is never blamed on it.
-HOUSE_CONTEXT_TTL = 300
-HOUSE_CONTEXT_MAX = 256
 DEFAULT_SCAN_MINUTES = 5
 
 # Left empty rather than guessed at. A wrong sentence about the house is worse

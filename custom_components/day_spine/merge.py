@@ -48,13 +48,35 @@ class MergeConfig:
 # ---------------------------------------------------------------------------
 
 
-def _match_sentence(cfg: MergeConfig, title: str) -> dict[str, Any]:
-    """First sentence whose `match` appears in the title. First wins, so the
-    order of the list is the order of precedence — visible in the UI."""
+def _match_sentence(
+    cfg: MergeConfig, title: str, tags: Iterable[str] = ()
+) -> dict[str, Any]:
+    """First sentence whose `match` applies. First wins, so the order of the
+    list is the order of precedence — visible in the UI.
+
+    Tags count, and that is the important half. A `#tag` is already the
+    deliberate mark someone put on an event, so `#coffee` -> *"Kettle on"* is
+    the most natural rule anybody will ever write — and until this looked at
+    tags it was the one rule that could not work, because `split_tags` runs
+    first and the tag is gone from the title by the time a rule sees it.
+    Matching `coffee` against `Morning routine #coffee` failed for the same
+    reason, which is worse: it fails the way a typo does.
+
+    A rule written with the hash means the tag and only the tag. Written
+    without one it means either, because someone who wrote `coffee` meant
+    coffee and should not have to know which half of the title it landed in.
+    """
     low = title.lower()
+    marks = {str(tag).strip().lower() for tag in tags if str(tag).strip()}
     for rule in cfg.sentences:
         match = str(rule.get("match", "")).strip().lower()
-        if match and match in low:
+        if not match:
+            continue
+        if match.startswith("#"):
+            if match[1:] in marks:
+                return rule
+            continue
+        if match in low or match in marks:
             return rule
     return {}
 
@@ -212,7 +234,7 @@ def from_calendars(
                     continue
                 start = day_start
 
-            rule = _match_sentence(cfg, title)
+            rule = _match_sentence(cfg, title, tags)
             # A schedule calendar describes the house, not the household: its
             # event descriptions are the sage sentences, written where the
             # automation that fires from them can be seen alongside.

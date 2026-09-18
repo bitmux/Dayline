@@ -2,6 +2,57 @@
 
 ## Unreleased
 
+**Sentence rules match `#tags`.** They never did, and everyone assumed they
+did: `split_tags` runs before the rule looks, so an event titled
+`Morning routine #coffee` reached the matcher as `Morning routine` — and a rule
+written `#coffee` matched nothing, while a rule written `coffee` also matched
+nothing. It failed the way a typo fails.
+
+A rule written with the hash now means the tag and only the tag. Written
+without one it means either, because someone who typed `coffee` meant coffee
+and should not have to know which half of the title it landed in.
+
+**The fallback calendar list is gone.** Three mechanisms answered "which
+calendars" — the label, a list chosen during setup, and an implicit
+every-calendar-in-the-instance — resolved by a precedence chain nothing on
+screen ever stated. The list was not a design; it was the *original* design,
+left standing after labels replaced it.
+
+Now there is one way in, and an empty result is a real answer: the card says
+**No calendars configured**, naming the label to apply, in the warn footer that
+already existed for a stale source. That is where somebody is standing when
+they notice the card is empty — which a settings page could never claim.
+
+**"What just happened" is deleted, and explanations move into the automation
+that did the thing.** The feed used to watch labelled entities and attribute
+their changes to whatever was running. It was genuinely automatic, and it could
+only ever say *what* changed — *"porch light turned on"* — which is not an
+explanation, it is the sentence that sends someone looking for one. Why is the
+only part anyone wants, and the automation is the only thing that knows it.
+
+Replaced by **`day_spine.explain`**: a message, optionally who to credit, and it
+draws the same sage line it always did.
+
+```yaml
+action: day_spine.explain
+data:
+  message: Living room lights turned off by the motion sensor
+  sentence: Evening wind-down
+```
+
+Separate from `day_spine.show` because an explanation differs from a pushed row
+in five ways at once — it belongs to the past, it fades on its own, it is never
+a task, it is never counted among what is left today, and there is nothing to
+press. One service with five overridden defaults would be a worse version of
+two.
+
+Gone with it: the per-entity phrase rules, the automation-context tracking, the
+state subscriptions, the *What just happened* page, and **the meaning of the
+`Dayline` label on anything that is not a calendar**. Retired option and data
+keys are stripped from the config entry on startup rather than left inert.
+
+Renamed: *Calendar wording* → **Calendar settings**, *Leaving* → **Leave by**.
+
 **An alert's button now looks like an alert, on both cards.** The glance card
 filled it with the level colour — visible from the far side of a room, without
 glasses, which is the entire job of a wall panel. The spine drew the same

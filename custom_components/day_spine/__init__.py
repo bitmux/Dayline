@@ -10,7 +10,14 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.start import async_at_started
 
-from .const import DOMAIN, LEVELS, PRIORITIES, SERVICE_DISMISS, SERVICE_SHOW
+from .const import (
+    DOMAIN,
+    LEVELS,
+    PRIORITIES,
+    SERVICE_DISMISS,
+    SERVICE_EXPLAIN,
+    SERVICE_SHOW,
+)
 from .coordinator import DaySpineCoordinator
 
 PLATFORMS = [Platform.SENSOR]
@@ -55,6 +62,22 @@ SHOW_SCHEMA = vol.Schema(
         vol.Optional("cancel_action"): _ACTION,
         vol.Optional("confirm"): _BUTTON,
         vol.Optional("cancel"): _BUTTON,
+    }
+)
+
+# An explanation is a message and, optionally, who to credit. Everything that
+# makes `show` a control surface — buttons, levels, priority, stickiness — is
+# absent on purpose: this row is a statement about the past and there is nothing
+# to press.
+EXPLAIN_SCHEMA = vol.Schema(
+    {
+        vol.Required("message"): cv.string,
+        vol.Optional("id"): cv.string,
+        vol.Optional("sentence"): cv.string,
+        vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=1)),
+        vol.Optional("start"): cv.string,
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Optional("spine"): vol.All(cv.ensure_list, [cv.entity_id]),
     }
 )
 
@@ -112,11 +135,34 @@ def _async_register_services(hass: HomeAssistant) -> None:
         for coordinator in _targets(hass, call):
             coordinator.async_dismiss(call.data["id"])
 
+    async def _explain(call: ServiceCall) -> None:
+        data = {k: v for k, v in call.data.items() if k != "spine"}
+        for coordinator in _targets(hass, call):
+            coordinator.async_explain(dict(data))
+
     hass.services.async_register(DOMAIN, SERVICE_SHOW, _show, schema=SHOW_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_EXPLAIN, _explain, schema=EXPLAIN_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_DISMISS, _dismiss, schema=DISMISS_SCHEMA)
 
 
+# Keys this integration used to store and no longer reads. Stripped on setup
+# rather than left inert: a stale key in .storage is the same species of thing
+# as a settings page for a mechanism that has gone, and this whole change is
+# about not leaving those behind.
+_RETIRED_DATA = ("calendars",)
+_RETIRED_OPTIONS = ("recent", "recent_ttl", "recent_max")
+
+
+@callback
+def _retire(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    data = {k: v for k, v in entry.data.items() if k not in _RETIRED_DATA}
+    options = {k: v for k, v in entry.options.items() if k not in _RETIRED_OPTIONS}
+    if len(data) != len(entry.data) or len(options) != len(entry.options):
+        hass.config_entries.async_update_entry(entry, data=data, options=options)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    _retire(hass, entry)
     # This integration is the feed and nothing else. The card is a separate HACS
     # Dashboard repository, installed and registered as a Lovelace resource by
     # HACS itself — which owns that registration and does it through supported
