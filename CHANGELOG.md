@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.3.0-beta.7 — 19 September 2026
+
+Everything below landed between `0.3.0-beta.1` and here. The intermediate betas
+were never tagged, so this is one release rather than six.
 
 **A phone alarm can fire a `#tag`.** An alarm is the one appointment people
 actually keep, and it was already on the spine being looked at and nothing
@@ -295,7 +298,7 @@ what you do not want. No shipped allow-list: the Pixel we built against reports
 guess, and a wrong default would have matched nothing while looking broken
 rather than wrong.
 
-## 0.3.0 — beta, 6 September 2026
+## 0.3.0-beta.1 — 6 September 2026
 
 **The glance card gets a tense, and the weather.** A bare time and a title is a
 fact with no tense on it — read in passing, "3:50 Kid out of school" could as
