@@ -599,6 +599,37 @@ app that set it, and the package filter is empty by default: a shipped
 allow-list would quietly match nothing on somebody else's phone. Ours reports
 `com.android.deskclock`; yours may not.
 
+#### Making an alarm do something
+
+Put a `#tag` in the **sensor's name** and give that sensor the `Dayline Control`
+label, and the tag fires when the alarm goes off:
+
+```
+Settings → Devices & services → Entities → Pixel 6a Next alarm
+  Name:  Pixel 6a #coffee Next alarm
+  Label: Dayline Control
+```
+
+The row still reads `Alarm · Pixel 6a` — the tag is lifted out of the name the
+same way it is lifted out of an event title — and the `dayline_tag` event
+arrives with `kind: alarm` and the phone's name as the summary, so one
+automation can serve calendars and alarms and still tell them apart.
+
+**This is per phone, not per alarm, and that is a limit of Android rather than
+a choice.** The Companion app's Next alarm sensor publishes three things — the
+time, the time in milliseconds, and the package that set it. **The alarm's own
+label is not among them**, so `#coffee` typed into the alarm on the phone cannot
+reach Home Assistant at all. What a tag here means is *"when this phone's alarm
+goes off"*.
+
+Which makes the **package filter** the thing that keeps it honest: without it,
+a 2pm reminder from a fitness app fires the morning routine. Set it to your
+clock app and only real alarms count.
+
+Permission works the way it does everywhere else: no `Dayline Control` on the
+sensor, no firing. Control is a property of the thing that said it — a calendar
+or a phone — never of the card drawing it.
+
 ### The evening — what tomorrow starts with
 
 The alarm rule generalises. Once today is spent, the card can name tomorrow's
