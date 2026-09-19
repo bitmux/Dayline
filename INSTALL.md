@@ -828,51 +828,52 @@ not by adding filters to the first one: *Settings → Devices & services → Day
 → Add entry*, name it after the person, and it gets its own sensor —
 `sensor.kid_s_day`, `sensor.wife_s_day`.
 
-Everything that makes a day is already per card: calendars, to-do list, weather,
-which phones' alarms to read, leave-by, free time, wording. The one thing that
-was not is **the label**, and it is the thing that matters most here — so under
-**Weather, to-do, and which label this card answers to** there is now a label
-box. Set it to `Kid`, apply the `Kid` label to their calendars, and that spine
-reads those and nothing else.
+Everything that makes a day is already per card: to-do list, weather, which
+phones' alarms to read, leave-by, free time, wording. What narrows the
+*calendars* is the **filter label**, under **Weather, to-do, and who this card
+is for**. Set it to `Kid`, apply a `Kid` label alongside `Dayline` on the
+calendars they should see, and that spine draws those and nothing else.
 
-**`Dayline` is not a master switch.** It is only the default *name* of the first
-card's label, and it is not a prerequisite for anything. Each card resolves
-exactly one label, and a calendar carries **one label per card it should appear
-on** — so read the table by column, not as a hierarchy:
+**Two labels, answering two different questions.** `Dayline` **admits** a
+calendar — without it nothing is fetched, by any card. A **filter** label then
+narrows one card to a subset of what was admitted.
 
 ```
-                  Dayline    Kid    Wife     ← the three cards
+                  Dayline   + Kid   + Wife
 calendar.house       •
 calendar.bills       •
-calendar.family      •        •       •
-calendar.kid                  •
-calendar.wife                         •
+calendar.family      •        •        •
+calendar.kid         •        •
+calendar.wife        •                 •
 ```
 
-The shared family calendar appears on all three by carrying all three labels,
-and is duplicated nowhere. The kid's own calendar carries `Kid` and nothing
-else — it does **not** also need `Dayline`, and if you give it `Dayline` it
-turns up on your card too.
+Every row starts with `Dayline`; the filter columns say which cards also see
+it. The household card has **no filter** and draws the whole first column —
+including the kid's calendar, which is usually what the person running the
+house wants.
 
-The mistake this makes easy is the opposite one: label a calendar `Kid`, forget
-to leave `Dayline` on it, and it quietly vanishes from your own card. That is
-the first thing to check when something disappears.
+**A filter narrows, it never admits.** A calendar carrying `Kid` and not
+`Dayline` appears nowhere, and the card says so by naming both labels rather
+than resolving quietly to nothing.
 
-Label names are free text and matched case-insensitively — `Kid`, `kid` and
+Filter names are free text and matched case-insensitively — `Kid`, `kid` and
 `KID` are the same label. Nothing is reserved; `Dude` works exactly as well.
 
-**Permissions follow the label, and do not leak.** This is the one label that is
-genuinely additive: a calendar needs `Kid` to appear on the kid's spine, and
-`Kid Control` *as well* before its `#tags` may act on the house. (Labels and
-`#tags` are otherwise unrelated — a label is applied to a calendar entity and
-decides which card reads it; a `#tag` is typed into an event's title and fires
-an event an automation can act on. `#wife` in an event title has nothing to do
-with a `Wife` label.)
+**Permission is a property of the calendar, not of the card.** There is one
+control label, `Dayline Control`, whatever the filters say — a calendar either
+may act on the house or may not, and which card happens to be drawing it does
+not change that. Leave it off the kid's calendar and their `#tags` show a chip
+and fire nothing.
 
-A card labelled `Kid` takes its `#tag` permissions from `Kid Control` — a label that does not exist until
-you make it, so a fresh per-person card can put events on a spine and cannot
-act on the house. That is the right default for the card most likely to be
-handed to a child.
+(Labels and `#tags` are otherwise unrelated — a label is applied to a calendar
+entity and decides which cards read it; a `#tag` is typed into an event's title
+and fires an event an automation can act on. `#wife` in an event title has
+nothing to do with a `Wife` filter.)
+
+The practical effect is the same one that mattered: a calendar nobody has given
+`Dayline Control` can put events on a spine and cannot act on the house, which
+is the right default for the calendar most likely to end up behind a child's
+card.
 
 Then point each card at its own sensor:
 

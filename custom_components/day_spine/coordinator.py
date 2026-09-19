@@ -43,7 +43,7 @@ from .const import (
     EVENT_TAG,
     LABEL_CONTROL,
     LABEL_INCLUDE,
-    OPT_LABEL,
+    OPT_FILTER,
     OPT_ALARMS,
     OPT_ALARM_HORIZON,
     OPT_ALARM_PACKAGES,
@@ -235,22 +235,14 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._cancel_fires()
 
     @property
-    def label_include(self) -> str:
-        """The label this spine answers to. `Dayline` unless someone said otherwise."""
-        return str(self._opts.get(OPT_LABEL) or LABEL_INCLUDE).strip() or LABEL_INCLUDE
+    def label_filter(self) -> str:
+        """Which subset of the admitted calendars this card draws.
 
-    @property
-    def label_control(self) -> str:
-        """Derived, never configured separately.
-
-        Two free-text boxes where one would do is two chances to typo a label
-        into silence, and the pair has to stay legible in a label list anyway:
-        `Wife` and `Wife Control` read as a set, `Wife` and `Partner tags` do
-        not. The default pair comes out as `Dayline` / `Dayline Control`, which
-        is what it has always been.
+        Empty means all of them, and that is the household card: it should see
+        everything the house has admitted without anybody having to remember to
+        label it twice.
         """
-        include = self.label_include
-        return LABEL_CONTROL if include == LABEL_INCLUDE else f"{include} Control"
+        return str(self._opts.get(OPT_FILTER) or "").strip()
 
     @callback
     def _resolve(self) -> None:
@@ -268,16 +260,23 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         day anyone wanted, and it hid the one instruction that would have fixed
         it.
         """
-        self._calendar_ids = labels.resolve(self.hass, self.label_include, "calendar")
-        self._calendar_source = "label" if self._calendar_ids else "none"
-        self._control = set(labels.resolve(self.hass, self.label_control, "calendar"))
+        admitted = labels.resolve(self.hass, LABEL_INCLUDE, "calendar")
+        narrow = self.label_filter
+        if narrow:
+            keep = set(labels.resolve(self.hass, narrow, "calendar"))
+            self._calendar_ids = [e for e in admitted if e in keep]
+            self._calendar_source = "filter" if self._calendar_ids else "filter-empty"
+        else:
+            self._calendar_ids = admitted
+            self._calendar_source = "label" if admitted else "none"
+        self._control = set(labels.resolve(self.hass, LABEL_CONTROL, "calendar"))
 
     @callback
     def _snapshot(self) -> tuple:
         return (
             tuple(self._calendar_ids),
             tuple(sorted(self._control)),
-            self.label_include,
+            self.label_filter,
         )
 
     @callback
@@ -848,9 +847,18 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # they notice it is empty. A settings page can describe this state; only
         # the card can catch the person actually looking at it.
         if not self._calendar_ids:
+            narrow = self.label_filter
+            if narrow:
+                # Naming both is the whole point. The failure this model exists
+                # to prevent is a calendar carrying the filter and not the
+                # admission, which looks from here exactly like no calendars.
+                return (
+                    f"No calendars configured. A calendar needs both the "
+                    f"{LABEL_INCLUDE} label and {narrow} to appear on this card."
+                )
             return (
-                f"No calendars configured. Apply the {self.label_include} label "
-                "to a calendar in Settings → Areas & labels, and it appears here."
+                f"No calendars configured. Apply the {LABEL_INCLUDE} label to a "
+                "calendar in Settings → Areas & labels, and it appears here."
             )
         bad = [s["label"] for s in self._sources() if s["stale"]]
         if not bad:

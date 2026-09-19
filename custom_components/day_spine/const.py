@@ -41,11 +41,14 @@ OPT_SCAN_MINUTES = "scan_minutes"
 LABEL_INCLUDE = "Dayline"
 LABEL_CONTROL = "Dayline Control"
 
-# Which is only the *default*. A household where everyone gets their own card
-# needs a label each, or every spine resolves to the same eight calendars and
-# the kid reads the mortgage renewal. Per config entry, so the first one is
-# `Dayline` and nobody who wanted one card ever meets this setting.
-OPT_LABEL = "label_include"
+# Admission and filtering are two questions, and answering them with one label
+# was the mistake in the first attempt at this: a card told to read `Kid` no
+# longer read `Dayline`, so taking a calendar off one card silently took it off
+# the other. `Dayline` admits a calendar to the system -- without it nothing is
+# ever fetched, by any card. A filter label then narrows a card to a subset of
+# what was admitted. Empty means the whole of it, which is what the household
+# card wants.
+OPT_FILTER = "filter_label"
 
 # --- the tag primitive -------------------------------------------------------
 # Fired when a tagged event starts, and that is the entire integration point.
