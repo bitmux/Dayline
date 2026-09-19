@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+**Two labels: one admits, one filters.** `Dayline` admits a calendar to the
+system — without it nothing is fetched, by any card. A per-card **filter**
+label then narrows one card to a subset of what was admitted, and an empty
+filter means the whole of it, which is what the household card wants.
+
+```
+                  Dayline   + Kid   + Wife
+calendar.house       •
+calendar.family      •        •        •
+calendar.kid         •        •
+calendar.wife        •                 •
+```
+
+This replaces the per-card include label from `0.3.0-beta.4`, which answered
+both questions with one label and so made a real trap: label a calendar `Kid`,
+take `Dayline` off it, and it silently vanished from your own card. A filter
+now narrows and never admits, and a calendar carrying only a filter appears
+nowhere — with the card saying which two labels it needs rather than resolving
+quietly to nothing.
+
+Existing entries migrate themselves: an old label that was not `Dayline`
+becomes a filter of that name. The **calendars** still need `Dayline` applying,
+which is registry work and not something this integration will do behind your
+back — so the card asks for it by name.
+
+**Permission went back to being a property of the calendar.** The control label
+had been derived from the card's — `Kid` implying `Kid Control` — which quietly
+made "may this act on the house" depend on which card was drawing it. It never
+did. There is one `Dayline Control` again.
+
 **Sentence rules match `#tags`.** They never did, and everyone assumed they
 did: `split_tags` runs before the rule looks, so an event titled
 `Morning routine #coffee` reached the matcher as `Morning routine` — and a rule

@@ -719,8 +719,9 @@ scaffold that was left standing because leaving it standing was free.
 
 ### Calendars: admission, then filtering — two labels, not one
 
-**This supersedes the per-card label shipped in `0.3.0-beta.4`, six days after
-it shipped.** That version made the include label per config entry, so a second
+**Built in `0.3.0-beta.6`.** It supersedes the per-card label shipped in
+`0.3.0-beta.4`, ten days after it shipped and before production ever pulled it
+— which is the only reason the migration cost nothing. That version made the include label per config entry, so a second
 card carried its own label and read the calendars bearing it. It works, and it
 is the wrong shape.
 
@@ -743,10 +744,22 @@ This also kills the failure the shipped model makes easy — label a calendar
 card. Under admission-plus-filter that cannot happen, because the two labels
 are answering different questions instead of competing to answer one.
 
-Migration has to be explicit: an existing entry whose label is not `Dayline`
-becomes a filter, and its calendars need `Dayline` adding. Small, and it is one
-calendar on the test instance, but it is registry work a person has to do and
-must not be guessed at.
+Migration is explicit, and split on purpose: the option renames itself — an
+entry whose old label was not `Dayline` becomes a filter of that name — while
+the calendars themselves are left alone. Applying a label to somebody's
+calendar registry on their behalf is not ours to do quietly, so the card names
+**both** labels in its empty state instead. Observed doing exactly that on the
+test instance:
+
+    No calendars configured. A calendar needs both the Dayline label
+    and Kid to appear on this card.
+
+One other thing fell out of it. The control label had been derived from the
+card's label — `Kid` implied `Kid Control` — which made permission a property
+of the *card*. It is a property of the **calendar**: a calendar either may act
+on the house or may not, and which card happens to be drawing it changes
+nothing. There is one `Dayline Control` again, and a piece of cleverness is
+gone.
 
 ### The fallback calendar list: delete it
 
