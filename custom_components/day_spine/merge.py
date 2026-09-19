@@ -438,7 +438,13 @@ def from_alarms(
         if wanted and package.lower() not in wanted:
             continue
 
-        label = str(alarm.get("label") or "Alarm").strip() or "Alarm"
+        # The phone's own label, with any `#tags` taken out of it. An alarm is
+        # the most reliable thing in a house to hang a routine on — it is the
+        # one appointment people keep — and it was already on the spine doing
+        # nothing but being looked at. `Wake up #coffee` now means what it
+        # plainly reads as.
+        label, tags = split_tags(str(alarm.get("label") or "Alarm"))
+        label = label.strip() or "Alarm"
         entry: Entry = {
             "id": f"alarm:{alarm.get('entity_id') or label}",
             "start": _iso(moment),
@@ -455,6 +461,8 @@ def from_alarms(
             "sticky": False,
             "entity_id": alarm.get("entity_id"),
         }
+        if tags:
+            entry["tags"] = tags
         if not (day_start <= moment < day_end):
             entry["when_empty"] = True
         if package:
