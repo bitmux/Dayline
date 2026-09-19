@@ -852,16 +852,37 @@ is the one failure this project cannot have.
 
 ### Tags on a phone alarm
 
-Not possible today, and the reason is narrow: `from_alarms` never calls
-`split_tags`. The row's title is the literal string `Alarm` and the phone's
-label goes into `source`, so `Wake up #coffee` reaches the card as decoration.
+**Built in `0.3.0-beta.7`, and half of what was wanted is impossible.**
 
-Worth doing — an alarm is the most reliable thing in the house to hang a routine
-on, and it is already on the spine. It needs a permission answer first, because
-Control is currently a property of a *calendar* and a phone alarm has no
-calendar. The clean generalisation is that **Control is a property of any source
-entity**: put it on the `next_alarm` sensor and that phone's alarms may act.
-That is the same rule, not a second one.
+The permission half generalised cleanly, as expected: Control is now resolved
+over **any** entity rather than only calendars, so `Dayline Control` on a
+phone's `next_alarm` sensor means that phone's alarms may act. Same rule, wider
+domain, no second permission to keep in step. Widening it does re-read labels
+that were applied when it meant less — anything already carrying Control counts
+as a permitted source now — which is harmless, because only calendars and alarm
+sensors ever produce a row with tags on it, but it is worth knowing before it is
+noticed.
+
+**What cannot be built is the per-alarm version**, and the block is upstream.
+The Companion app's Next alarm sensor publishes exactly three things — Local
+Time, Time in Milliseconds, and Package. The alarm's own label is not among
+them, and asking for it is a standing community request rather than an
+oversight in how we read the sensor. So `#coffee` typed into an alarm on the
+phone cannot reach Home Assistant at all, by any route.
+
+What exists instead is a tag on the **sensor's name** — `Pixel 6a #coffee Next
+alarm` — which means *"when this phone's alarm goes off"*. That is per phone,
+and the honest mitigation is the package filter already there: without it a 2pm
+reminder from a fitness app fires the morning routine.
+
+Verified end to end on the test instance, with the event caught off the bus:
+
+    {"tag": "coffee", "kind": "alarm", "summary": "Pixel 6a",
+     "source": "sensor.pixel_6a_coffee_next_alarm", ...}
+
+The payload gained `source` and `kind` for this. `calendar` kept its old name
+and its old value because automations in the wild read it, but it stopped being
+the truth the moment something that is not a calendar could fire a tag.
 
 ### Renames
 

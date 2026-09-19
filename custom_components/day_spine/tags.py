@@ -121,8 +121,16 @@ def payload(fire: Fire) -> dict[str, Any]:
     entry = fire.entry
     return {
         "tag": fire.tag,
+        # `calendar` is kept as the name it has always had, because automations
+        # in the wild are reading it. `source` says what it really is now that
+        # a phone alarm can carry a tag too, and `kind` lets an automation tell
+        # the two apart without parsing an entity id.
         "calendar": entry.get("entity_id"),
-        "summary": entry.get("title"),
+        "source": entry.get("entity_id"),
+        "kind": entry.get("kind"),
+        # An alarm's summary is the phone's label with the tags taken out —
+        # "Wake up" from "Wake up #coffee" — which is the readable half.
+        "summary": entry.get("source") if entry.get("kind") == "alarm" else entry.get("title"),
         "start": entry.get("start"),
         "end": entry.get("end"),
         "all_day": bool(entry.get("all_day")),

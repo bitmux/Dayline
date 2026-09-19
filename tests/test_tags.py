@@ -180,6 +180,12 @@ def test_the_event_carries_enough_to_write_a_condition_against() -> None:
     assert body == {
         "tag": "Away",
         "calendar": "calendar.admin",
+        # `calendar` kept its name because automations in the wild read it;
+        # `source` and `kind` were added when a phone alarm could carry a tag
+        # too, so "which kind of thing said this" stopped being answerable by
+        # looking at the entity id.
+        "source": "calendar.admin",
+        "kind": "calendar",
         "summary": "Portland trip",
         "start": entry["start"],
         "end": entry["end"],
@@ -193,3 +199,55 @@ def test_the_tag_is_carried_as_typed() -> None:
     entry = event(NOW + timedelta(hours=1), tags_=["AwayForTheWeekend"])
 
     assert payload(plan([entry], CONTROL, set(), NOW).later[0])["tag"] == "AwayForTheWeekend"
+
+
+# --- an alarm is a source of instructions too -------------------------------
+#
+# Control used to be resolved over calendars only. These say what the wider
+# rule has to keep true: the permission is a property of the thing that said
+# it, and an unlabelled phone is as inert as an unlabelled calendar.
+
+
+def alarm(start: datetime, *, tags_: list[str], entity_id: str = "sensor.pixel_next_alarm") -> dict:
+    return {
+        "id": f"alarm:{entity_id}",
+        "start": start.isoformat(),
+        "end": None,
+        "all_day": False,
+        "kind": "alarm",
+        "source": "Wake up",
+        "title": "Alarm",
+        "entity_id": entity_id,
+        "tags": tags_,
+    }
+
+
+def test_a_labelled_phones_alarm_arms_its_tag():
+    row = alarm(NOW + timedelta(hours=16), tags_=["coffee"])
+    result = plan([row], {"sensor.pixel_next_alarm"}, set(), NOW)
+    assert result.states[row["id"]] == WILL_FIRE
+    assert [f.tag for f in result.later] == ["coffee"]
+
+
+def test_an_unlabelled_phone_is_as_inert_as_an_unlabelled_calendar():
+    row = alarm(NOW + timedelta(hours=16), tags_=["coffee"])
+    result = plan([row], {"calendar.admin"}, set(), NOW)
+    assert result.states[row["id"]] == INERT
+    assert result.later == []
+
+
+def test_the_payload_names_the_phone_and_says_it_was_an_alarm():
+    row = alarm(NOW + timedelta(hours=16), tags_=["coffee"])
+    body = payload(plan([row], {"sensor.pixel_next_alarm"}, set(), NOW).later[0])
+    assert body["kind"] == "alarm"
+    assert body["source"] == "sensor.pixel_next_alarm"
+    # The readable half of the phone's own label, not the literal "Alarm".
+    assert body["summary"] == "Wake up"
+
+
+def test_an_alarm_fires_once_per_alarm_not_once_per_poll():
+    row = alarm(NOW + timedelta(hours=16), tags_=["coffee"])
+    key = fire_key(row, "coffee")
+    result = plan([row], {"sensor.pixel_next_alarm"}, {key}, NOW)
+    assert result.states[row["id"]] == FIRED
+    assert result.later == []

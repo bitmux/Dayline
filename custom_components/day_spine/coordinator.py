@@ -269,7 +269,12 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         else:
             self._calendar_ids = admitted
             self._calendar_source = "label" if admitted else "none"
-        self._control = set(labels.resolve(self.hass, LABEL_CONTROL, "calendar"))
+        # Any entity, not only calendars. Control answers "may what this thing
+        # says act on the house", and a phone's next-alarm sensor is as much a
+        # source of instructions as a calendar is — `Wake up #coffee` on a
+        # labelled phone, and nothing on an unlabelled one. Same rule, wider
+        # domain, rather than a second permission to keep in step.
+        self._control = set(labels.resolve(self.hass, LABEL_CONTROL))
 
     @callback
     def _snapshot(self) -> tuple:

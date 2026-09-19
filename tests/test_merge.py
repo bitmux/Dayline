@@ -1265,3 +1265,49 @@ def test_the_first_matching_rule_still_wins():
         [{"match": "morning", "automation": "First"}, {"match": "#coffee", "automation": "Second"}],
     )
     assert row["automation"] == "First"
+
+
+# --- tags on a phone alarm -------------------------------------------------
+#
+# An alarm is the one appointment people actually keep, and it was already on
+# the spine doing nothing but being looked at.
+
+
+def _tagged_alarm(label: str):
+    """Named apart from the `_alarm` fixture above, which builds the raw dict."""
+    moment = datetime(2026, 9, 2, 22, 30, tzinfo=TZ)
+    rows = from_alarms(
+        cfg(),
+        [{"entity_id": "sensor.pixel_next_alarm", "label": label, "start": moment.isoformat()}],
+        NOW,
+        DAY_START,
+    )
+    return rows[0] if rows else None
+
+
+def test_a_tag_in_an_alarm_label_becomes_a_tag():
+    row = _tagged_alarm("Wake up #coffee")
+    assert row["tags"] == ["coffee"]
+    # The readable half survives, and it is what names the row.
+    assert row["source"] == "Wake up"
+    assert row["title"] == "Alarm"
+
+
+def test_an_alarm_labelled_with_nothing_but_a_tag_keeps_the_tag_as_its_name():
+    """The same rule `split_tags` applies to an event titled only with tags: a
+    row named by nothing would be worse than a row named by its tag."""
+    row = _tagged_alarm("#coffee")
+    assert row["tags"] == ["coffee"]
+    assert row["source"] == "#coffee"
+
+
+def test_an_untagged_alarm_gains_no_tags_key():
+    row = _tagged_alarm("Wake up")
+    assert "tags" not in row
+    assert row["source"] == "Wake up"
+
+
+def test_several_tags_on_one_alarm():
+    row = _tagged_alarm("Wake up #coffee #blinds")
+    assert row["tags"] == ["coffee", "blinds"]
+    assert row["source"] == "Wake up"

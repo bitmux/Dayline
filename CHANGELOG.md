@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+**A phone alarm can fire a `#tag`.** An alarm is the one appointment people
+actually keep, and it was already on the spine being looked at and nothing
+else. Put a tag in the sensor's name — `Pixel 6a #coffee Next alarm` — give
+that sensor the `Dayline Control` label, and the tag fires when the alarm goes
+off. The row still reads `Alarm · Pixel 6a`; the tag is lifted out of the name
+the same way it is lifted out of an event title.
+
+**Permission generalised rather than multiplied.** `Dayline Control` is now
+resolved over any entity instead of calendars only, because control answers
+"may what this thing says act on the house" and a phone is as much a source of
+instructions as a calendar. One rule, wider domain.
+
+The `dayline_tag` event gained `source` and `kind`, so one automation can serve
+calendars and alarms and still tell them apart. `calendar` keeps its old name
+and value — automations in the wild read it — but it stopped being the truth
+the moment something that is not a calendar could fire a tag.
+
+**It is per phone, not per alarm, and that is Android's limit rather than a
+choice.** The Companion app's Next alarm sensor publishes the time, the time in
+milliseconds, and the package that set it. The alarm's own label is not among
+them, so `#coffee` typed into the alarm itself cannot reach Home Assistant by
+any route. A tag here means *"when this phone's alarm goes off"* — which makes
+the package filter the thing that keeps it honest, or a fitness app's 2pm
+reminder starts the morning routine.
+
 **Two labels: one admits, one filters.** `Dayline` admits a calendar to the
 system — without it nothing is fetched, by any card. A per-card **filter**
 label then narrows one card to a subset of what was admitted, and an empty
