@@ -51,7 +51,7 @@ from .const import (
     DOMAIN,
     LABEL_CONTROL,
     LABEL_INCLUDE,
-    OPT_LABEL,
+    OPT_FILTER,
     OPT_ALARMS,
     OPT_ALARM_HORIZON,
     OPT_ALARM_PACKAGES,
@@ -86,13 +86,26 @@ DONE = "__done__"
 # How the calendar list was arrived at, said in a sentence rather than a word,
 # because "config" on its own does not tell anyone what to do next.
 def _how(source: str, label: str) -> str:
-    """Takes the label rather than assuming it: with a card each, the sentence
-    has to name the label that spine actually answers to."""
+    """Takes the filter rather than assuming it: with a card each, the sentence
+    has to name the label that card is actually narrowed by."""
     return {
-        "label": f"the **{label}** label — the list below is whatever carries it",
+        "label": (
+            f"the **{LABEL_INCLUDE}** label — this card has no filter, so it "
+            "draws everything admitted"
+        ),
+        "filter": (
+            f"the **{LABEL_INCLUDE}** label, narrowed to the calendars also "
+            f"carrying **{label}**"
+        ),
+        "filter-empty": (
+            f"nothing. No calendar carries both **{LABEL_INCLUDE}** and "
+            f"**{label}** — a filter narrows what was admitted, it does not "
+            "admit anything by itself"
+        ),
         "none": (
-            f"nothing yet. No calendar carries the **{label}** label, so this "
-            "card has no day to draw. Apply it in Settings → Areas & labels"
+            f"nothing yet. No calendar carries the **{LABEL_INCLUDE}** label, "
+            "so this card has no day to draw. Apply it in Settings → Areas & "
+            "labels"
         ),
     }.get(source, source)
 
@@ -236,14 +249,9 @@ class DaySpineOptionsFlow(OptionsFlow):
         coordinator = self._coordinator()
         return list(coordinator.calendar_ids) if coordinator is not None else []
 
-    def _label(self) -> str:
-        """This entry's include label, for any page that names it in prose.
-
-        Read from options rather than the constant: on a household with a card
-        each, telling someone to apply `Dayline` when their spine answers to
-        `Kid` is the kind of wrong instruction that takes an evening to unpick.
-        """
-        return str(self._opts.get(OPT_LABEL) or LABEL_INCLUDE).strip() or LABEL_INCLUDE
+    def _filter(self) -> str:
+        """This card's filter label, or empty for the household card."""
+        return str(self._opts.get(OPT_FILTER) or "").strip()
 
     def _labelled_calendars(self) -> list[str]:
         """Only the ones a label put there.
@@ -279,9 +287,10 @@ class DaySpineOptionsFlow(OptionsFlow):
             step_id="labels",
             data_schema=vol.Schema({}),
             description_placeholders={
-                "include": getattr(coordinator, "label_include", LABEL_INCLUDE),
-                "control": getattr(coordinator, "label_control", LABEL_CONTROL),
-                "how": _how(source, self._label()),
+                "include": LABEL_INCLUDE,
+                "control": LABEL_CONTROL,
+                "filter": self._filter() or "— none, so this card shows everything admitted",
+                "how": _how(source, self._filter()),
                 "calendars": _names(self.hass, calendars),
                 "controls": _names(self.hass, control),
                 "tags": ", ".join(f"#{tag}" for tag in seen) or "— none seen today",
@@ -309,9 +318,9 @@ class DaySpineOptionsFlow(OptionsFlow):
                 for entity_id in keep
             }
             # An empty box means the default, not a spine labelled "".
-            self._opts[OPT_LABEL] = (
-                str(user_input.get(OPT_LABEL) or "").strip() or LABEL_INCLUDE
-            )
+            # Empty is a real answer here and means "everything admitted", so
+            # it is stored as empty rather than defaulted to anything.
+            self._opts[OPT_FILTER] = str(user_input.get(OPT_FILTER) or "").strip()
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data={
@@ -325,9 +334,7 @@ class DaySpineOptionsFlow(OptionsFlow):
         _optional(schema, CONF_WEATHER, data.get(CONF_WEATHER), _entity("weather"))
         _optional(schema, CONF_TODO, data.get(CONF_TODO), _entity("todo"))
         schema[
-            vol.Optional(
-                OPT_LABEL, default=self._opts.get(OPT_LABEL) or LABEL_INCLUDE
-            )
+            vol.Optional(OPT_FILTER, default=self._opts.get(OPT_FILTER) or "")
         ] = selector.TextSelector()
         return self.async_show_form(step_id="sources", data_schema=vol.Schema(schema))
 
@@ -383,7 +390,7 @@ class DaySpineOptionsFlow(OptionsFlow):
             data_schema=vol.Schema(schema),
             description_placeholders={
                 "count": str(len(calendars)),
-                "label": self._label(),
+                "label": LABEL_INCLUDE,
             },
         )
 

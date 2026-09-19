@@ -12,7 +12,9 @@ from homeassistant.helpers.start import async_at_started
 
 from .const import (
     DOMAIN,
+    LABEL_INCLUDE,
     LEVELS,
+    OPT_FILTER,
     PRIORITIES,
     SERVICE_DISMISS,
     SERVICE_EXPLAIN,
@@ -150,14 +152,24 @@ def _async_register_services(hass: HomeAssistant) -> None:
 # as a settings page for a mechanism that has gone, and this whole change is
 # about not leaving those behind.
 _RETIRED_DATA = ("calendars",)
-_RETIRED_OPTIONS = ("recent", "recent_ttl", "recent_max")
+_RETIRED_OPTIONS = ("recent", "recent_ttl", "recent_max", "label_include")
 
 
 @callback
 def _retire(hass: HomeAssistant, entry: ConfigEntry) -> None:
     data = {k: v for k, v in entry.data.items() if k not in _RETIRED_DATA}
     options = {k: v for k, v in entry.options.items() if k not in _RETIRED_OPTIONS}
-    if len(data) != len(entry.data) or len(options) != len(entry.options):
+
+    # `label_include` was one label doing two jobs. Whatever it said that was
+    # not `Dayline` was somebody narrowing a card, so it becomes the filter.
+    # The calendars themselves still need `Dayline` adding, which is registry
+    # work and not ours to do behind someone's back — the card says so, naming
+    # both labels, rather than quietly resolving to nothing.
+    previous = str(entry.options.get("label_include") or "").strip()
+    if previous and previous != LABEL_INCLUDE and not options.get(OPT_FILTER):
+        options[OPT_FILTER] = previous
+
+    if data != dict(entry.data) or options != dict(entry.options):
         hass.config_entries.async_update_entry(entry, data=data, options=options)
 
 
