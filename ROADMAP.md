@@ -367,7 +367,7 @@ loud rather than silently skipping them, because "I labelled it and nothing
 happened" is the failure this was meant to fix.
 
 The forward half — *what the house will do* — is still answered by schedule
-calendars and by `day_spine.show`, both of which have a person writing the
+calendars and by `dayline.show`, both of which have a person writing the
 sentence at the point the intent is expressed.
 
 ## Countdowns — rows that end
@@ -383,7 +383,7 @@ have a View Assist implementation to defer to.
 fills up as the timer runs, and a progress bar is a thing this card already
 draws. Nothing supports it today, and the gap is small and specific.
 
-`day_spine.show` takes a `duration`, but that sets `expires` — when the row
+`dayline.show` takes a `duration`, but that sets `expires` — when the row
 should stop being drawn — and the row it builds is always `kind: standing` with
 no `end`. Standing rows are deliberately never drawn as live, because "the garage
 is open" with a progress bar would be nonsense. So a pushed row can appear and
@@ -795,7 +795,7 @@ the thing that made someone go looking for one.
 
 The only thing that knows why is the automation that did it. So the explanation
 belongs in an action *inside that automation*, which is a service this project
-already has — `day_spine.show`, with the sage sentence as a field. Deleting the
+already has — `dayline.show`, with the sage sentence as a field. Deleting the
 accumulator removes:
 
 - the `recent` page and its editor step,
@@ -804,7 +804,7 @@ accumulator removes:
 - and **the entire meaning of the `Dayline` label on anything that is not a
   calendar** — which makes the label model above simpler on its way past.
 
-A second service, `day_spine.explain`, is worth considering and probably not
+A second service, `dayline.explain`, is worth considering and probably not
 worth building: explanations are always past and always short-lived, but `show`
 already takes `start` and `duration`, so the second service would be a thin
 wrapper around different defaults. One primitive with good defaults beats two
@@ -842,7 +842,7 @@ Meanwhile `#tags` do fire, through one primitive, gated by one label.
 
 The consistent shape is **one firing primitive, two ways of addressing it**: a
 `#tag` on an event for the occasional case, and a schedule calendar where every
-event's summary *is* the instruction. Both firing `day_spine_tag`, both gated by
+event's summary *is* the instruction. Both firing `dayline_tag`, both gated by
 the same Control label, and the hand-written calendar trigger disappears.
 
 This one changes behaviour rather than clarifying it, so it needs its own
@@ -1024,6 +1024,13 @@ Everything here runs in the coordinator, off the render path, cached.
 ## Explicitly not doing
 
 Carried forward and still deferred: drag-to-reschedule, the card's own
-`getConfigElement`, the `day_spine` → `dayline` internal rename, Grocy as an
-actionable backend, security/awareness variants 2b/2c, a light theme, email or
-message ingest for flight confirmations.
+`getConfigElement`, Grocy as an actionable backend, security/awareness variants
+2b/2c, a light theme, email or message ingest for flight confirmations.
+
+**Done rather than deferred:** the internal rename, in `0.4.0-beta.1`. It sat
+on this list for weeks on the grounds that it was breaking and cosmetic. The
+second half was true and the first half got cheaper every time setup got
+simpler — by the time labels did the choosing and the options page was a name
+and two dropdowns, re-adding the integration cost about ninety seconds, and a
+tool carries the settings that are actually somebody's work. Waiting longer
+would only have meant more automations written against the wrong domain.

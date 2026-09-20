@@ -1,5 +1,63 @@
 # Changelog
 
+## 0.4.0-beta.1 — 19 September 2026
+
+**It is called Dayline everywhere now.** The integration's domain, its services
+and the card's element name all said `day_spine`, while the sensor, the tag
+event and both repositories said Dayline. Four names for one product, on a page
+that had just spent a week being told to say what it means.
+
+| was | is |
+|---|---|
+| `day_spine.show` / `.dismiss` / `.explain` | `dayline.show` / `.dismiss` / `.explain` |
+| `custom:day-spine-card` | `custom:dayline-card` |
+| `day-spine-card.js` | `dayline-card.js` |
+| `custom_components/day_spine/` | `custom_components/dayline/` |
+
+`sensor.dayline`, `dayline_tag` and the glance card are unchanged; they were
+already right.
+
+### Upgrading
+
+Home Assistant has no migration for a domain rename — the old config entry
+stops loading and a new one has to be added. Setup itself is a name and two
+dropdowns, but the sentence map, per-calendar wording, leave-by and the alarm
+list are real work, so there is a tool for them.
+
+**Read your settings out first, while the old entry still loads:**
+
+```bash
+python3 tools/carry-options.py --list
+python3 tools/carry-options.py --from <old_entry_id> --save dayline-settings.json
+```
+
+Then update through HACS, restart, and:
+
+1. Delete the old Dayline entries. Do this **before** adding the new ones, or
+   the new `sensor.dayline` is created as `sensor.dayline_2`.
+2. Add **Dayline** again, one entry per card, same names as before.
+3. Carry the settings back:
+   ```bash
+   python3 tools/carry-options.py --to <new_entry_id> --load dayline-settings.json
+   ```
+4. Delete the leftover `custom_components/day_spine/` folder. HACS installs the
+   directory the repository names and does not remove the one it replaced, so
+   the old integration sits there loadable until you take it out.
+
+**Your labels and calendars are untouched.** They live in Home Assistant's own
+registry, which is the whole argument for having put them there.
+
+Automations calling `day_spine.show` need the new domain. Dashboards do **not**
+need editing immediately: `custom:day-spine-card` still resolves, as a
+deliberate alias with a console notice, so a wall panel does not go blank the
+moment HACS updates. It will be removed in a later release.
+
+**Also fixed:** deleting the last Dayline entry left the services registered.
+An automation calling `dayline.show` would go on succeeding with nothing
+listening — the silent failure this project keeps saying it will not ship.
+Found by doing the rename.
+
+
 ## 0.3.0-beta.7 — 19 September 2026
 
 Everything below landed between `0.3.0-beta.1` and here. The intermediate betas
@@ -88,17 +146,17 @@ only ever say *what* changed — *"porch light turned on"* — which is not an
 explanation, it is the sentence that sends someone looking for one. Why is the
 only part anyone wants, and the automation is the only thing that knows it.
 
-Replaced by **`day_spine.explain`**: a message, optionally who to credit, and it
+Replaced by **`dayline.explain`**: a message, optionally who to credit, and it
 draws the same sage line it always did.
 
 ```yaml
-action: day_spine.explain
+action: dayline.explain
 data:
   message: Living room lights turned off by the motion sensor
   sentence: Evening wind-down
 ```
 
-Separate from `day_spine.show` because an explanation differs from a pushed row
+Separate from `dayline.show` because an explanation differs from a pushed row
 in five ways at once — it belongs to the past, it fades on its own, it is never
 a task, it is never counted among what is left today, and there is nothing to
 press. One service with five overridden defaults would be a worse version of
@@ -142,7 +200,7 @@ it. A per-person card can therefore put events on a spine and cannot act on the
 house, which is the right default for the card most likely to be handed to a
 child.
 
-`day_spine.show` and `day_spine.dismiss` gain an optional `spine`. Without it
+`dayline.show` and `dayline.dismiss` gain an optional `spine`. Without it
 they still go to every card, because *the garage is open* belongs on all of
 them; with it, a row lands on one.
 
@@ -457,8 +515,8 @@ order until it fits the rectangle it was given: sage lines, then the date, then
 the second alert, then the event band. The clock is last, and still ticks when
 the feed has gone unavailable.
 
-**Any automation can put a row on the spine.** `day_spine.show` and
-`day_spine.dismiss` are the first services this integration has had. A row takes
+**Any automation can put a row on the spine.** `dayline.show` and
+`dayline.dismiss` are the first services this integration has had. A row takes
 a message, an optional sage second line, a level, a priority, an optional
 duration, and up to two buttons — and every field is a selector, so it is filled
 in from the automation editor like any other action, with no YAML to write.
@@ -492,7 +550,7 @@ where "is this a problem" is the entire message.
 
 Together these answer the question Dayline could not otherwise answer honestly:
 **how does a script that declined tell you why?** It tells you itself, by calling
-`day_spine.show`. Dayline learns nothing about what happens inside a script —
+`dayline.show`. Dayline learns nothing about what happens inside a script —
 deliberately, the same way it never inspects what an automation does with a
 `#tag` — so the explanation is written by the only thing that knows.
 
@@ -750,7 +808,7 @@ there are two.
 - The integration is now only the feed. `frontend.py`, the bundled `www/` copy,
   and the `frontend` / `http` / `lovelace` manifest dependencies are gone.
 - Existing installs: HACS will not clean up the old Lovelace resource pointing
-  at `/day_spine_frontend/day-spine-card.js`. Delete it under **Settings →
+  at `/dayline_frontend/dayline-card.js`. Delete it under **Settings →
   Dashboards → ⋮ → Resources** after installing the card repository, or the
   dashboard will keep asking for a URL nothing serves any more.
 
@@ -807,14 +865,14 @@ Assistant 2026.8, set up through its config flow, drawing a real day.
 
 ### The feed
 
-- A config-flow integration (`day_spine`) with a five-section options UI:
+- A config-flow integration (`dayline`) with a five-section options UI:
   sources, per-calendar labels and roles, sage sentences, what-just-happened
   rules, and tuning.
 - Schedule calendars: a calendar whose events describe the house, with each
   event's description as its sage sentence — so the schedule, the words and the
   automation trigger are one thing you edit in the calendar panel.
 - The same feed is also available as a template-sensor package,
-  `ha/day_spine.yaml`, for anyone who would rather not install an integration.
+  `ha/dayline.yaml`, for anyone who would rather not install an integration.
 - Actions are service-call descriptors written by the feed, so repointing the
   Done button at something other than `todo` is a config change.
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Day Spine card — dev harness</title>
+<title>Dayline card — dev harness</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&display=swap">
@@ -14,7 +14,7 @@
   .col.narrow{width:360px}
   .lbl{font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;
        color:rgba(232,220,198,.45)}
-  day-spine-card{box-shadow:0 12px 32px rgba(0,0,0,.35);border-radius:28px}
+  dayline-card{box-shadow:0 12px 32px rgba(0,0,0,.35);border-radius:28px}
 </style>
 </head>
 <body>
@@ -33,8 +33,8 @@ function hass(attributes, { state = "3", unavailable = false } = {}) {
   return {
     locale: { language: "en-US" },
     states: unavailable ? {} : {
-      "sensor.day_spine": {
-        entity_id: "sensor.day_spine",
+      "sensor.dayline": {
+        entity_id: "sensor.dayline",
         state,
         last_updated: new Date().toISOString(),
         attributes,
@@ -52,8 +52,8 @@ function mount(label, attributes, opts = {}, config = {}, narrow = false, style 
   col.className = "col" + (narrow ? " narrow" : "");
   col.setAttribute("style", style);
   col.innerHTML = `<div class="lbl">${label}</div>`;
-  const card = document.createElement("day-spine-card");
-  card.setConfig({ type: "custom:day-spine-card", entity: "sensor.day_spine", ...config });
+  const card = document.createElement("dayline-card");
+  card.setConfig({ type: "custom:dayline-card", entity: "sensor.dayline", ...config });
   card.hass = hass(attributes, opts);
   col.appendChild(card);
   document.body.appendChild(col);
@@ -227,7 +227,7 @@ mount(
   "height:460px",
 );
 
-// The garage case, entirely from automations: one row day_spine.show pushed
+// The garage case, entirely from automations: one row dayline.show pushed
 // when the door opened, and the alert row its script pushed when it declined to
 // close. Buttons call whatever HA can call — a script, a cover service, a
 // more-info dialog.
@@ -276,11 +276,11 @@ mount("No all-day events · region omitted entirely", {
   sources: SOURCES,
 });
 
-// End to end: the actual attributes ha/day_spine.yaml produces, rendered by the
+// End to end: the actual attributes ha/dayline.yaml produces, rendered by the
 // actual card. Regenerate with scratchpad/render.py after editing the feed.
 try {
   const feed = await (await fetch("./feed-sample.json")).json();
-  mount("Real feed output · ha/day_spine.yaml → the card", feed);
+  mount("Real feed output · ha/dayline.yaml → the card", feed);
 } catch (e) {
   console.warn("feed-sample.json not found; skipping the end-to-end panel", e);
 }
@@ -289,7 +289,7 @@ try {
 // with tools/render-integration.py.
 try {
   const feed = await (await fetch("./integration-sample.json")).json();
-  mount("Integration output · custom_components/day_spine → the card", feed);
+  mount("Integration output · custom_components/dayline → the card", feed);
 } catch (e) {
   console.warn("integration-sample.json not found; skipping that panel", e);
 }

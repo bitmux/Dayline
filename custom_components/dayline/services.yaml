@@ -83,7 +83,7 @@ show:
       selector:
         entity:
           multiple: true
-          integration: day_spine
+          integration: dayline
           domain: sensor
     entity_id:
       name: Related entity
@@ -123,7 +123,7 @@ show:
       description: >-
         The second, quieter one — "not now". Leave it out for a row that only
         offers one thing. It can call any action too; dismissing the row is
-        usually day_spine.dismiss with this row's id.
+        usually dayline.dismiss with this row's id.
       collapsed: true
       fields:
         cancel_label:
@@ -146,7 +146,7 @@ dismiss:
   fields:
     id:
       name: Id
-      description: The id given to day_spine.show.
+      description: The id given to dayline.show.
       required: true
       example: garage_open
       selector:
@@ -161,7 +161,7 @@ dismiss:
       selector:
         entity:
           multiple: true
-          integration: day_spine
+          integration: dayline
           domain: sensor
 
 explain:
@@ -233,5 +233,5 @@ explain:
       selector:
         entity:
           multiple: true
-          integration: day_spine
+          integration: dayline
           domain: sensor

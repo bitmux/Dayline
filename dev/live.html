@@ -14,7 +14,7 @@
   .lbl{font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;
        color:rgba(232,220,198,.45)}
   .note{font:400 12px/1.5 "Figtree",system-ui;color:rgba(232,220,198,.4);max-width:520px}
-  day-spine-card{box-shadow:0 12px 32px rgba(0,0,0,.35);border-radius:28px}
+  dayline-card{box-shadow:0 12px 32px rgba(0,0,0,.35);border-radius:28px}
 </style>
 </head>
 <body>
@@ -28,8 +28,8 @@ function hass(attributes) {
   return {
     locale: { language: "en-US" },
     states: {
-      "sensor.day_spine": {
-        entity_id: "sensor.day_spine",
+      "sensor.dayline": {
+        entity_id: "sensor.dayline",
         state: String(attributes.entries?.length ?? 0),
         last_updated: new Date().toISOString(),
         attributes,
@@ -46,8 +46,8 @@ function mount(label, attributes, config = {}) {
   const col = document.createElement("div");
   col.className = "col";
   col.innerHTML = `<div class="lbl">${label}</div>`;
-  const card = document.createElement("day-spine-card");
-  card.setConfig({ type: "custom:day-spine-card", entity: "sensor.day_spine", ...config });
+  const card = document.createElement("dayline-card");
+  card.setConfig({ type: "custom:dayline-card", entity: "sensor.dayline", ...config });
   card.hass = hass(attributes);
   col.appendChild(card);
   document.body.appendChild(col);

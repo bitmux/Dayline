@@ -137,7 +137,7 @@ def _words() -> selector.SelectSelector:
     )
 
 
-class DaySpineConfigFlow(ConfigFlow, domain=DOMAIN):
+class DaylineConfigFlow(ConfigFlow, domain=DOMAIN):
     """Setup: the shortest path to a card that renders.
 
     Nothing here is required any more. Submitting the form untouched gives you
@@ -195,10 +195,10 @@ class DaySpineConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(entry: ConfigEntry) -> OptionsFlow:
-        return DaySpineOptionsFlow()
+        return DaylineOptionsFlow()
 
 
-class DaySpineOptionsFlow(OptionsFlow):
+class DaylineOptionsFlow(OptionsFlow):
     """Everything you might want to change later, grouped by what it affects."""
 
     def __init__(self) -> None:

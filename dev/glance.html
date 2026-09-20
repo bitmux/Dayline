@@ -44,8 +44,8 @@ function hass(attributes, { unavailable = false } = {}) {
   return {
     locale: { language: "en-US" },
     states: unavailable ? {} : {
-      "sensor.day_spine": {
-        entity_id: "sensor.day_spine",
+      "sensor.dayline": {
+        entity_id: "sensor.dayline",
         state: "3",
         last_updated: new Date().toISOString(),
         attributes,
@@ -75,7 +75,7 @@ function mount(label, entries, { size = "tablet", config = {}, unavailable = fal
   col.innerHTML = `<div class="lbl">${label}</div>`;
   const card = document.createElement("dayline-glance-card");
   card.className = size;
-  card.setConfig({ type: "custom:dayline-glance-card", entity: "sensor.day_spine", ...config });
+  card.setConfig({ type: "custom:dayline-glance-card", entity: "sensor.dayline", ...config });
   card.hass = hass({ entries, weather }, { unavailable });
   col.appendChild(card);
   document.body.appendChild(col);

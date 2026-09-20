@@ -22,10 +22,10 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import ha  # noqa: E402
 
-# Loaded by path, not as `day_spine.merge` — importing the package would run its
+# Loaded by path, not as `dayline.merge` — importing the package would run its
 # __init__ and pull in Home Assistant.
 _spec = _il.spec_from_file_location(
-    "day_spine_merge", ROOT / "custom_components" / "day_spine" / "merge.py"
+    "dayline_merge", ROOT / "custom_components" / "dayline" / "merge.py"
 )
 merge = _il.module_from_spec(_spec)
 assert _spec.loader is not None

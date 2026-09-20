@@ -90,7 +90,7 @@ _LOGGER = logging.getLogger(__name__)
 UNAVAILABLE = ("unavailable", "unknown")
 
 
-class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class DaylineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Builds the payload the card reads.
 
     Two update paths, on purpose. The slow one polls calendars every few
@@ -118,7 +118,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._fired_day = ""
         self._unsub_fires: list[Callable[[], None]] = []
 
-        # Rows pushed in by `day_spine.show`. Persisted, because a row an
+        # Rows pushed in by `dayline.show`. Persisted, because a row an
         # automation put there is a claim about the house that a restart does
         # not make untrue — and losing it silently is worse than the row itself
         # ever was.
@@ -831,7 +831,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             return str(Template(tpl, self.hass).async_render(parse_result=False)).strip()
         except Exception:  # noqa: BLE001 - a broken template must not blank the card
-            _LOGGER.exception("Day Spine template failed: %s", tpl)
+            _LOGGER.exception("Dayline template failed: %s", tpl)
             return ""
 
     def _sources(self) -> list[dict[str, Any]]:
@@ -973,7 +973,7 @@ def _when(raw: Any, now: datetime) -> str:
             ).isoformat()
     if parsed is None:
         _LOGGER.warning(
-            "day_spine.show: could not read start %r, using now instead", text
+            "dayline.show: could not read start %r, using now instead", text
         )
         return now.isoformat()
     if parsed.tzinfo is None:

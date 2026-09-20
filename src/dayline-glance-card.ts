@@ -297,7 +297,7 @@ export class DaylineGlanceCard extends LitElement {
     );
     return {
       type: "custom:dayline-glance-card",
-      entity: found ?? "sensor.day_spine",
+      entity: found ?? "sensor.dayline",
       use_ha_theme: true,
     };
   }

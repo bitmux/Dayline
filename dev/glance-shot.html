@@ -69,12 +69,12 @@ const [entries, size] = STATES[key];
 const card = document.createElement("dayline-glance-card");
 card.style.width = `${size.w}px`;
 card.style.height = `${size.h}px`;
-card.setConfig({ type: "custom:dayline-glance-card", entity: "sensor.day_spine" });
+card.setConfig({ type: "custom:dayline-glance-card", entity: "sensor.dayline" });
 card.hass = {
   locale: { language: "en-US" },
   states: {
-    "sensor.day_spine": {
-      entity_id: "sensor.day_spine",
+    "sensor.dayline": {
+      entity_id: "sensor.dayline",
       state: String(entries.length),
       last_updated: new Date().toISOString(),
       attributes: { entries, weather: NOW_WX },

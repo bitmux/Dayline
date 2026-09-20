@@ -13,7 +13,7 @@ export type EntryKind =
    * True for as long as something is true, rather than at a time.
    *
    * A door that is open, or a row an automation pushed in with
-   * `day_spine.show`. Distinct from `event` — which is the five-minute "what
+   * `dayline.show`. Distinct from `event` — which is the five-minute "what
    * just happened" line — because these do not expire on their own and must not
    * be drawn as history. They read as live: full-strength title, no
    * strikethrough, never collapsed by the budget.
@@ -37,7 +37,7 @@ export interface SpineAction {
   data?: Record<string, unknown>;
   /**
    * The rest of Home Assistant's `tap_action` vocabulary, for buttons an
-   * automation supplied through `day_spine.show`. The feed translates HA's
+   * automation supplied through `dayline.show`. The feed translates HA's
    * action schema into these, so the card never has to learn it.
    */
   more_info?: string;
@@ -158,7 +158,7 @@ export interface SpineSource {
   color?: string;
 }
 
-export interface DaySpineCardConfig {
+export interface DaylineCardConfig {
   type: string;
   entity: string;
   show_all_day?: boolean;
@@ -275,7 +275,7 @@ export interface SpineRow {
  * The glance card: the same feed read from across a room.
  *
  * Deliberately a separate config type rather than a superset of
- * `DaySpineCardConfig`. Nearly every key on that one is about the spine — the
+ * `DaylineCardConfig`. Nearly every key on that one is about the spine — the
  * density budget, the legend, the source pills — and none of it has any meaning
  * on a card whose whole content is a clock, one event and at most two alerts.
  * The four that do overlap are spelled the same way so nobody has to learn two

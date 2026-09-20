@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 _spec = _il.spec_from_file_location(
-    "day_spine_tags", ROOT / "custom_components" / "day_spine" / "tags.py"
+    "dayline_tags", ROOT / "custom_components" / "dayline" / "tags.py"
 )
 tags = _il.module_from_spec(_spec)
 assert _spec.loader is not None

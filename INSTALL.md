@@ -44,7 +44,7 @@ the HACS list as Dayline — open it, **Download**, and restart Home Assistant.
 
 ### By hand
 
-Copy `custom_components/day_spine/` to `/config/custom_components/day_spine/`
+Copy `custom_components/dayline/` to `/config/custom_components/dayline/`
 and restart Home Assistant.
 
 ### Either way
@@ -273,7 +273,7 @@ Three things it does on purpose:
 When an automation does something people notice, it can say so on the spine:
 
 ```yaml
-action: day_spine.explain
+action: dayline.explain
 data:
   message: Living room lights turned off by the motion sensor
   sentence: Evening wind-down
@@ -291,7 +291,7 @@ whatever was running. That was genuinely automatic, and it could only ever say
 the sentence that makes someone go looking for one. Why is the only part anyone
 wants, and the automation is the only thing that knows it.
 
-It is deliberately not `day_spine.show`: an explanation has no buttons, no
+It is deliberately not `dayline.show`: an explanation has no buttons, no
 level, no priority and nothing to press. It is a statement about the past.
 
 ---
@@ -305,7 +305,7 @@ Any automation can put those on the spine, and take them away again.
 Both are ordinary Home Assistant actions, filled in from the UI like anything
 else — every field is a selector, so there is no YAML to write.
 
-### `day_spine.show`
+### `dayline.show`
 
 | Field | |
 |---|---|
@@ -341,7 +341,7 @@ gets this right for you.
 Calling `show` again with the same **id** *replaces* the row rather than stacking
 a copy, so it is safe from an automation that runs on every state change.
 
-### `day_spine.dismiss`
+### `dayline.dismiss`
 
 Takes the **id** and removes the row. An id that is not there is not an error, so
 an automation tidying up after itself does not have to check first. This is the
@@ -367,16 +367,16 @@ Two automations and a script, none of them knowing anything about Dayline beyond
 the two actions.
 
 **When it opens** — an automation triggered on `cover.garage` becoming `open`
-calls `day_spine.show`: message *Garage is open*, id `garage_open`, level
+calls `dayline.show`: message *Garage is open*, id `garage_open`, level
 *Information*, confirm button *Close it* performing `script.turn_on` on your safe
-script, cancel button *Leave it* performing `day_spine.dismiss` with id
+script, cancel button *Leave it* performing `dayline.dismiss` with id
 `garage_open`.
 
 **When it closes** — the same automation on the other trigger calls
-`day_spine.dismiss` with id `garage_open`.
+`dayline.dismiss` with id `garage_open`.
 
 **When the script declines** — the branch of `script.close_garage_safely` that
-finds a person in the camera calls `day_spine.show` itself: level *Alert*,
+finds a person in the camera calls `dayline.show` itself: level *Alert*,
 message *Garage did not close — someone is in the driveway*, and a **Show me**
 button whose action is more-info on the camera.
 
@@ -411,7 +411,7 @@ the failure mode a hand-kept list of times always eventually hits.
 
 ## Option B — the YAML package
 
-Copy `ha/day_spine.yaml` to `/config/packages/day_spine.yaml`. If you have never
+Copy `ha/dayline.yaml` to `/config/packages/dayline.yaml`. If you have never
 used packages, add this to `configuration.yaml` first:
 
 ```yaml
@@ -444,19 +444,19 @@ from, not how the card gets to the browser.
 card → Manual**:
 
 ```yaml
-type: custom:day-spine-card
-entity: sensor.day_spine
+type: custom:dayline-card
+entity: sensor.dayline
 ```
 
 > **Check that entity id.** The sensor is named after the config entry's title,
 > so an integration you named "Dayline" gives you `sensor.dayline`, not
-> `sensor.day_spine`. Whatever appears under **Settings → Devices & services →
+> `sensor.dayline`. Whatever appears under **Settings → Devices & services →
 > Dayline → 1 entity** is the right answer.
 
 > **If the card says "Custom element doesn't exist" and Dayline is missing from
 > the card picker**, the bundle did not reach your browser — which is about the
 > card repository, not the integration. Check **Settings → Dashboards → ⋮ →
-> Resources** lists one `/hacsfiles/Dayline-card/day-spine-card.js` of type
+> Resources** lists one `/hacsfiles/Dayline-card/dayline-card.js` of type
 > **module**; if it is missing, HACS did not finish installing the Dashboard
 > repository. If it is there and the card still does not appear, hard-refresh
 > (Ctrl/Cmd-Shift-R). On a YAML dashboard nothing is registered for you: add
@@ -540,7 +540,7 @@ in a dashboard column happily enough.
 
 ```yaml
 type: custom:dayline-glance-card
-entity: sensor.day_spine
+entity: sensor.dayline
 ```
 
 ### While something is running
@@ -730,7 +730,7 @@ underneath still says the time and the drive in words.
 ### What counts as an alert
 
 Only rows an automation put there deliberately: `level: alert` from
-`day_spine.show`, and standing rows — the ones that stay true until something
+`dayline.show`, and standing rows — the ones that stay true until something
 changes, which is what *the garage is open* is. Nothing the feed generates on its
 own can reach that list, so a busy calendar can never crowd out a door. Alerts
 sort before info, newest first.
@@ -909,17 +909,17 @@ card.
 Then point each card at its own sensor:
 
 ```yaml
-type: custom:day-spine-card
+type: custom:dayline-card
 entity: sensor.kid_s_day
 ```
 
 ### Pushing a row to one card
 
-`day_spine.show` still goes to every spine by default — *the garage is open*
+`dayline.show` still goes to every spine by default — *the garage is open*
 belongs on all of them. Name `spine` to aim it:
 
 ```yaml
-action: day_spine.show
+action: dayline.show
 data:
   id: bus
   message: Bus leaves at 7:40
@@ -927,7 +927,7 @@ data:
   spine: sensor.kid_s_day
 ```
 
-The same field works on `day_spine.dismiss`.
+The same field works on `dayline.dismiss`.
 
 ---
 
@@ -1007,7 +1007,7 @@ turning off the on-device timer that survives a Home Assistant restart.
 npm install && npm run build
 ```
 
-`npm run build` writes `dist/day-spine-card.js`. `npm run watch` rebuilds on
+`npm run build` writes `dist/dayline-card.js`. `npm run watch` rebuilds on
 save. To publish a card change, `npm run stage-card` copies that bundle into the
 sibling `Dayline-card/` checkout, which is the HACS Dashboard repository and
 holds the built file and nothing else — commit and push it there.

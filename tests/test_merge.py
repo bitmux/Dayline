@@ -13,13 +13,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# merge.py is loaded by path rather than as `day_spine.merge`, because importing
+# merge.py is loaded by path rather than as `dayline.merge`, because importing
 # the package would run its __init__ and pull in Home Assistant. Keeping the
 # merge logic importable on its own is the point of having no HA imports in it.
 import importlib.util as _il
 
 _spec = _il.spec_from_file_location(
-    "day_spine_merge", ROOT / "custom_components" / "day_spine" / "merge.py"
+    "dayline_merge", ROOT / "custom_components" / "dayline" / "merge.py"
 )
 merge = _il.module_from_spec(_spec)
 assert _spec.loader is not None

@@ -11,17 +11,17 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .coordinator import DaySpineCoordinator
+from .coordinator import DaylineCoordinator
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    coordinator: DaySpineCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([DaySpineSensor(coordinator, entry)])
+    coordinator: DaylineCoordinator = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities([DaylineSensor(coordinator, entry)])
 
 
-class DaySpineSensor(CoordinatorEntity[DaySpineCoordinator], SensorEntity):
+class DaylineSensor(CoordinatorEntity[DaylineCoordinator], SensorEntity):
     """State is the count of what is left; the day itself rides in attributes.
 
     That split is not cosmetic. Home Assistant truncates state strings at 255
@@ -56,14 +56,14 @@ class DaySpineSensor(CoordinatorEntity[DaySpineCoordinator], SensorEntity):
     _attr_icon = "mdi:timeline-clock-outline"
     _attr_native_unit_of_measurement = "entries"
 
-    def __init__(self, coordinator: DaySpineCoordinator, entry: ConfigEntry) -> None:
+    def __init__(self, coordinator: DaylineCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._attr_name = None
         self._attr_unique_id = f"{entry.entry_id}_spine"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": entry.title,
-            "manufacturer": "Day Spine",
+            "manufacturer": "Dayline",
             "entry_type": "service",
         }
 

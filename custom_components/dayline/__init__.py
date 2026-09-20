@@ -1,4 +1,4 @@
-"""The Day Spine integration."""
+"""The Dayline integration."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from .const import (
     SERVICE_EXPLAIN,
     SERVICE_SHOW,
 )
-from .coordinator import DaySpineCoordinator
+from .coordinator import DaylineCoordinator
 
 PLATFORMS = [Platform.SENSOR]
 
@@ -92,7 +92,7 @@ DISMISS_SCHEMA = vol.Schema(
 
 
 @callback
-def _targets(hass: HomeAssistant, call: ServiceCall) -> list[DaySpineCoordinator]:
+def _targets(hass: HomeAssistant, call: ServiceCall) -> list[DaylineCoordinator]:
     """The feeds this call is for.
 
     Every feed unless `spine` names some. Broadcasting was the right default
@@ -181,7 +181,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # paths. Serving the bundle from here meant writing into Lovelace's own
     # storage collection from outside, with no public API and no contract, and
     # it behaved accordingly.
-    coordinator = DaySpineCoordinator(hass, entry)
+    coordinator = DaylineCoordinator(hass, entry)
     await coordinator.async_setup()
     await coordinator.async_config_entry_first_refresh()
 
@@ -207,6 +207,15 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id, None)
+        # The services are registered once for the integration, so they have to
+        # go once for it too. Left behind, they stay callable with nothing
+        # listening: an automation would go on succeeding and putting nothing
+        # on any spine, which is the silent failure this project keeps saying
+        # it will not ship. Noticed during the 0.4.0 rename, where deleting the
+        # last entry left `day_spine.show` answering cheerfully to no one.
+        if not hass.data[DOMAIN]:
+            for service in (SERVICE_SHOW, SERVICE_DISMISS, SERVICE_EXPLAIN):
+                hass.services.async_remove(DOMAIN, service)
     return unloaded
 
 

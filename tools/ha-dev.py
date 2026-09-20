@@ -150,7 +150,7 @@ async def cmd_resources(_args) -> int:
 async def cmd_logs(args) -> int:
     async with ha.WS() as ws:
         entries = await ws.cmd("system_log/list")
-    ours = [e for e in entries if "day_spine" in str(e.get("name", ""))]
+    ours = [e for e in entries if "dayline" in str(e.get("name", ""))]
     rest = [e for e in entries if e not in ours]
     for e in ours + (rest if args.all else []):
         when = time.strftime("%H:%M:%S", time.localtime(e["timestamp"]))
@@ -159,7 +159,7 @@ async def cmd_logs(args) -> int:
         if e.get("count", 1) > 1:
             print(f"           (x{e['count']})")
     if not ours:
-        print("  nothing from day_spine" + ("" if args.all else " — --all for the rest"))
+        print("  nothing from dayline" + ("" if args.all else " — --all for the rest"))
     return 0
 
 
@@ -217,7 +217,7 @@ async def cmd_doctor(_args) -> int:
             bad += not ok
 
         resources = await ws.cmd("lovelace/resources")
-        card = [r for r in resources if "day-spine-card" in r.get("url", "")]
+        card = [r for r in resources if "dayline-card" in r.get("url", "")]
         if not card:
             _print(False, "Lovelace resource", "the card is not registered")
             bad += 1
@@ -230,16 +230,16 @@ async def cmd_doctor(_args) -> int:
             ok = code == 200
             _print(ok, "Lovelace resource", f"{url} -> {code}")
             bad += not ok
-            if url.startswith("/day_spine_frontend/"):
+            if url.startswith("/dayline_frontend/"):
                 _print(False, "stale resource", "left over from before the card "
                                                 "moved to its own repository — delete it under "
                                                 "Settings → Dashboards → ⋮ → Resources")
                 bad += 1
 
         errs = [e for e in await ws.cmd("system_log/list")
-                if "day_spine" in str(e.get("name", ""))]
-        _print(not errs, "log", f"{len(errs)} day_spine entries"
-                                if errs else "nothing from day_spine")
+                if "dayline" in str(e.get("name", ""))]
+        _print(not errs, "log", f"{len(errs)} dayline entries"
+                                if errs else "nothing from dayline")
         bad += bool(errs)
 
     print()

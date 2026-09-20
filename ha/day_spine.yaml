@@ -1,7 +1,7 @@
 # ============================================================================
-# Day Spine — the feed
+# Dayline — the feed
 #
-# Copy to /config/packages/day_spine.yaml. If you have never used packages,
+# Copy to /config/packages/dayline.yaml. If you have never used packages,
 # add this to configuration.yaml first:
 #
 #   homeassistant:
@@ -11,8 +11,8 @@
 # Nothing below them needs changing to get the card working.
 #
 # Produces two entities:
-#   sensor.day_spine         — the merged day, what the card reads
-#   sensor.day_spine_recent  — the short-lived "what just happened" lines
+#   sensor.dayline         — the merged day, what the card reads
+#   sensor.dayline_recent  — the short-lived "what just happened" lines
 # ============================================================================
 
 template:
@@ -26,7 +26,7 @@ template:
         event: start
       # A house event should reach the card now, not up to five minutes from now.
       - trigger: state
-        entity_id: sensor.day_spine_recent
+        entity_id: sensor.dayline_recent
 
     action:
       # ---------------------------------------------------------------- EDIT ME
@@ -299,7 +299,7 @@ template:
             {% endfor %}
 
             {# ---------- what just happened ---------- #}
-            {% for e in state_attr('sensor.day_spine_recent', 'events') | default([], true) %}
+            {% for e in state_attr('sensor.dayline_recent', 'events') | default([], true) %}
               {% set ns.out = ns.out + [e] %}
             {% endfor %}
 
@@ -438,8 +438,8 @@ template:
             {{ out.pills }}
 
     sensor:
-      - name: Day Spine
-        unique_id: day_spine_feed
+      - name: Dayline
+        unique_id: dayline_feed
         # State stays short on purpose — HA truncates state strings at 255 chars,
         # so the payload belongs in attributes.
         state: "{{ remaining }}"
@@ -514,9 +514,9 @@ template:
               "off": "Kitchen lights turned off by motion sensor"
 
     sensor:
-      - name: Day Spine Recent
-        unique_id: day_spine_recent
-        state: "{{ state_attr('sensor.day_spine_recent', 'events') | default([], true) | count }}"
+      - name: Dayline Recent
+        unique_id: dayline_recent
+        state: "{{ state_attr('sensor.dayline_recent', 'events') | default([], true) | count }}"
         attributes:
           events: >
             {# Carry forward what has not expired, then append this one. Reading

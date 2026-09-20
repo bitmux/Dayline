@@ -1,8 +1,8 @@
-"""Constants and option keys for the Day Spine integration."""
+"""Constants and option keys for the Dayline integration."""
 
 from __future__ import annotations
 
-DOMAIN = "day_spine"
+DOMAIN = "dayline"
 
 # --- config entry data (set once, at setup) ---------------------------------
 CONF_WEATHER = "weather_entity"

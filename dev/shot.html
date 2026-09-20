@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Day Spine card — one state, for capture</title>
+<title>Dayline card — one state, for capture</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&display=swap">
@@ -11,7 +11,7 @@
      capture can be cropped to exactly the card. tools/shots.py does the rest. */
   html,body{margin:0;padding:0;background:transparent}
   body{width:520px;font-family:"Figtree",system-ui,sans-serif}
-  day-spine-card{display:block;border-radius:28px;overflow:hidden}
+  dayline-card{display:block;border-radius:28px;overflow:hidden}
 </style>
 </head>
 <body>
@@ -85,13 +85,13 @@ const STATES = {
 const key = new URLSearchParams(location.search).get("state") || "ordinary";
 const [attributes, config = {}] = STATES[key];
 
-const card = document.createElement("day-spine-card");
-card.setConfig({ type: "custom:day-spine-card", entity: "sensor.day_spine", ...config });
+const card = document.createElement("dayline-card");
+card.setConfig({ type: "custom:dayline-card", entity: "sensor.dayline", ...config });
 card.hass = {
   locale: { language: "en-US" },
   states: {
-    "sensor.day_spine": {
-      entity_id: "sensor.day_spine",
+    "sensor.dayline": {
+      entity_id: "sensor.dayline",
       state: String(attributes.entries?.length ?? 0),
       last_updated: new Date().toISOString(),
       attributes,

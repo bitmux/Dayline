@@ -8,6 +8,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 npm run build
 tar --exclude='__pycache__' --exclude='*.pyc' \
-    -czf dayline-integration.tar.gz -C custom_components day_spine
+    -czf dayline-integration.tar.gz -C custom_components dayline
 echo "wrote dayline-integration.tar.gz ($(du -h dayline-integration.tar.gz | cut -f1))"
 tar tzf dayline-integration.tar.gz

@@ -1,4 +1,4 @@
-"""Render the day_spine.yaml templates against stub HA globals, to catch Jinja
+"""Render the dayline.yaml templates against stub HA globals, to catch Jinja
 errors before they land in a live instance."""
 import re, sys, yaml, datetime as dt
 from jinja2 import Environment, StrictUndefined
@@ -16,7 +16,7 @@ ATTRS = {
     ("sun.sun", "next_rising"): "2026-09-03T06:58:00-05:00",
     ("sun.sun", "next_setting"): "2026-09-02T19:47:00-05:00",
     ("climate.house", "current_temperature"): 71.4,
-    ("sensor.day_spine_recent", "events"): [
+    ("sensor.dayline_recent", "events"): [
         {"id": "evt:1", "start": "2026-09-02T14:36:00-05:00",
          "expires": "2026-09-02T14:41:00-05:00", "all_day": False, "kind": "event",
          "source": "House", "title": "Living room lights turned off by motion sensor"},
@@ -155,7 +155,7 @@ for k, v in sensor["attributes"].items():
     print(f"{k:<9} = {' '.join(env.from_string(v).render(**ctx).split())!r}")
 
 # ---- block 2: what just happened ---------------------------------------------
-print("\n=== day_spine_recent ===")
+print("\n=== dayline_recent ===")
 
 
 class Ctxt:

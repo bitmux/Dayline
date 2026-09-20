@@ -99,14 +99,14 @@ Full instructions, the YAML alternative, and every card option:
 decide the arguments: **[ROADMAP.md](ROADMAP.md)**.
 
 ```
-custom_components/day_spine/   the feed — fetches, merges, decides
+custom_components/dayline/   the feed — fetches, merges, decides
   merge.py                     all the decisions, zero HA imports (so: testable)
   coordinator.py               fetching, and the fast path for house events
   config_flow.py               setup and the options UI
 src/                           the card — renders, decides nothing
-  day-spine-card.ts            the Lit element
+  dayline-card.ts            the Lit element
   styles.ts                    the design system, transcribed
-ha/day_spine.yaml              the same feed as a template-sensor package
+ha/dayline.yaml              the same feed as a template-sensor package
 design/                        the original design reference and screenshots
 ```
 

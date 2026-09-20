@@ -5,7 +5,7 @@ import { icon, conditionIcon } from "./icons";
 import { calStyle } from "./cal";
 import { loadFonts } from "./fonts";
 import type {
-  DaySpineCardConfig,
+  DaylineCardConfig,
   HassEntity,
   HomeAssistant,
   Priority,
@@ -58,9 +58,9 @@ const DEFAULTS = {
 const WET_THRESHOLD = 40;
 
 /** Config with every default filled in — what the render code actually sees. */
-type ResolvedConfig = DaySpineCardConfig & typeof DEFAULTS;
+type ResolvedConfig = DaylineCardConfig & typeof DEFAULTS;
 
-export class DaySpineCard extends LitElement {
+export class DaylineCard extends LitElement {
   static override styles = styles;
 
   @state() private _config!: ResolvedConfig;
@@ -79,9 +79,9 @@ export class DaySpineCard extends LitElement {
 
   // ---------------------------------------------------------------- lifecycle
 
-  public setConfig(config: DaySpineCardConfig): void {
+  public setConfig(config: DaylineCardConfig): void {
     if (!config?.entity) {
-      throw new Error("day-spine-card: `entity` is required (the merged feed sensor).");
+      throw new Error("dayline-card: `entity` is required (the merged feed sensor).");
     }
     this._config = { ...DEFAULTS, ...config };
     this._expanded = false;
@@ -169,10 +169,10 @@ export class DaySpineCard extends LitElement {
     return { columns: 12, rows: 10, min_columns: 6, min_rows: 4 };
   }
 
-  public static getStubConfig(hass?: HomeAssistant): DaySpineCardConfig {
+  public static getStubConfig(hass?: HomeAssistant): DaylineCardConfig {
     // The sensor is named after the config entry's title, so an integration set
     // up as "Dayline" produces `sensor.dayline` and one left at the default
-    // produces `sensor.day_spine`. Guessing either one is wrong half the time,
+    // produces `sensor.dayline`. Guessing either one is wrong half the time,
     // so find the feed by its shape: a sensor carrying an `entries` list.
     const found = Object.keys(hass?.states ?? {}).find(
       (id) => id.startsWith("sensor.") && Array.isArray(hass?.states[id]?.attributes?.entries),
@@ -182,8 +182,8 @@ export class DaySpineCard extends LitElement {
     // the line is visible and deletable by whoever wants the Organic palette
     // back. A new card should look like the dashboard it was dropped onto.
     return {
-      type: "custom:day-spine-card",
-      entity: found ?? "sensor.day_spine",
+      type: "custom:dayline-card",
+      entity: found ?? "sensor.dayline",
       use_ha_theme: true,
     };
   }
@@ -904,16 +904,35 @@ declare global {
 // second execution would take out the picker registration below it, and the
 // browser would report an error for a card that is in fact perfectly fine.
 // Whichever copy arrives first wins; they are the same code.
-if (!customElements.get("day-spine-card")) {
-  customElements.define("day-spine-card", DaySpineCard);
+if (!customElements.get("dayline-card")) {
+  customElements.define("dayline-card", DaylineCard);
 
   window.customCards = window.customCards || [];
   window.customCards.push({
-    type: "day-spine-card",
+    type: "dayline-card",
     name: "Dayline",
     description: "Today as one vertical spine: calendar, sun, and what the house will do on its own.",
     preview: false,
   });
 
   console.info("%c DAYLINE %c 0.1.1 ", "background:#d67f48;color:#1a1714", "");
+}
+
+// The name this card had until 0.4.0, kept working on purpose. A rename that
+// blanks somebody's dashboard the moment HACS updates is a rename that gets
+// reverted, and the one place a card is least welcome to fail is a wall panel
+// nobody is standing at. `type: custom:day-spine-card` therefore still
+// resolves; it is the same class, registered twice.
+//
+// Not permanent. It goes when the deprecation notice in the changelog says it
+// does, and the console line is what makes that removable rather than
+// indefinite — a silent alias would still be here in two years.
+if (!customElements.get("day-spine-card")) {
+  customElements.define("day-spine-card", class extends DaylineCard {});
+  console.info(
+    "%c DAYLINE %c custom:day-spine-card is the old name and still works. " +
+      "Rename it to custom:dayline-card when convenient. ",
+    "background:#d67f48;color:#1a1714",
+    "",
+  );
 }

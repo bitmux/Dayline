@@ -14,7 +14,7 @@ import json
 import pathlib
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parents[1] / "custom_components" / "day_spine"
+ROOT = pathlib.Path(__file__).resolve().parents[1] / "custom_components" / "dayline"
 
 
 def const_strings() -> dict[str, str]:

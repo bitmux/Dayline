@@ -10,7 +10,7 @@ const ts = () => typescript({ tsconfig: "./tsconfig.json", noEmit: false, declar
 export default [
   {
     input: "src/index.ts",
-    output: { file: "dist/day-spine-card.js", format: "es", sourcemap: false },
+    output: { file: "dist/dayline-card.js", format: "es", sourcemap: false },
     plugins: [resolve(), ts(), terser({ format: { comments: false } })],
   },
   // The harness: same cards, plus the mock feeds, unminified so it can be read in

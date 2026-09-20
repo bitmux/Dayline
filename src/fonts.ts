@@ -6,7 +6,7 @@
  * two constants, adding a family to one card silently gave the other card
  * whichever list happened to load first.
  */
-const FONT_LINK_ID = "day-spine-card-fonts";
+const FONT_LINK_ID = "dayline-card-fonts";
 const FONT_HREF =
   "https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700" +
   // Roboto is what Home Assistant's own frontend is set in, so a clock in it

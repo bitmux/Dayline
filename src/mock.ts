@@ -472,7 +472,7 @@ export const standing: SpineEntry[] = [
         service: "script.turn_on",
         target: { entity_id: "script.close_garage_safely" },
       },
-      { label: "Leave it", service: "day_spine.dismiss", data: { id: "garage_open" } },
+      { label: "Leave it", service: "dayline.dismiss", data: { id: "garage_open" } },
     ],
   },
   {
