@@ -155,9 +155,20 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @property
     def control_ids(self) -> list[str]:
-        """Calendars whose `#tags` may act. Default deny: everything else shows
-        its tags and fires nothing."""
-        return sorted(self._control)
+        """The things whose `#tags` may act. Default deny: everything else shows
+        its tags and fires nothing.
+
+        Narrowed to the entities that can actually say something — calendars and
+        the phones whose alarms are being read. The permission itself is checked
+        against any entity, because that is one rule rather than two, but the
+        label was applied to other entities back when it meant less and a light
+        listed under *allowed to act* is a question nobody should have to
+        answer. Nothing else ever produces a row with tags on it.
+        """
+        alarms = set(self._opts.get(OPT_ALARMS) or [])
+        return sorted(
+            e for e in self._control if e.startswith("calendar.") or e in alarms
+        )
 
     # -- options ------------------------------------------------------------
 
@@ -757,7 +768,7 @@ class DaySpineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # does not involve reading the log.
             "calendars": list(self._calendar_ids),
             "calendar_source": self._calendar_source,
-            "tag_control": sorted(self._control),
+            "tag_control": self.control_ids,
             # What it is doing outside right now, as opposed to what it will be
             # doing when an event starts. Both come from the same entity, and
             # neither is worth a second integration.
