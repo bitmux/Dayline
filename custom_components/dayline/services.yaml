@@ -73,6 +73,17 @@ show:
       example: "2026-09-04T10:42:00-05:00"
       selector:
         text:
+    ends_at:
+      name: Ends at
+      description: >-
+        For something that runs for a known length of time — a wash cycle, the
+        oven, a ten minute timer. Give it an ISO timestamp and the row is drawn
+        live with a progress bar until it gets there, then sits in the past like
+        any finished thing. Leave it empty for a row that is simply true until
+        something changes, which is most of them.
+      example: "{{ (now() + timedelta(minutes=10)).isoformat() }}"
+      selector:
+        text:
     spine:
       name: Which spine
       description: >-

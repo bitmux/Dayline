@@ -612,10 +612,32 @@ class DaylineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if button
         ]
 
+        start = _when(data.get("start"), now)
+        # A row that declared an end is a span rather than a condition, and the
+        # card draws it live with a progress bar for as long as it runs. That is
+        # the whole of the timer feature: a blueprint on `timer.started` pushes
+        # one, and the integration never learns what a timer is — which also
+        # gets the wash cycle, the oven and the sprinkler zone for free.
+        #
+        # An end that is not after the start is dropped rather than honoured.
+        # It would divide by zero on the way to a progress bar, and a template
+        # that produced one has already got the arithmetic wrong; a row with no
+        # bar is a better answer than a row claiming to be 100% done.
+        ends_at = str(data.get("ends_at") or "").strip()
+        end = _when(ends_at, now) if ends_at else None
+        if end is not None:
+            # Compared as moments, not as text. Both strings carry an offset and
+            # the two offsets need not match — a template that built one in UTC
+            # and took the other from `now()` would sort backwards as text on
+            # every instance that is not on UTC.
+            a, b = dt_util.parse_datetime(start), dt_util.parse_datetime(end)
+            if a is None or b is None or b <= a:
+                end = None
+
         entry: Entry = {
             "id": f"push:{row_id}",
-            "start": _when(data.get("start"), now),
-            "end": None,
+            "start": start,
+            "end": end,
             "all_day": False,
             "kind": kind,
             "source": "House",

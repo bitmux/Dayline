@@ -1,0 +1,151 @@
+blueprint:
+  name: "Dayline: put a timer on the spine"
+  description: >
+    A running timer becomes a row that fills up as it counts down, and an alert
+    row when it goes off.
+
+
+    This works on `timer.*` helper entities — the ones you make in Settings, or
+    that a script starts. **Assist's voice timers are not these.** "Hey Jarvis,
+    ten minutes for the cookies" is held by the voice satellite and never
+    reaches the state machine, so there is nothing here for this to watch. If
+    your voice assistant runs a script that starts a real timer helper, point
+    this at that helper and it works.
+
+
+    Nothing about timers exists inside Dayline. This blueprint only calls
+    `dayline.show` with an end time, and the same field puts a wash cycle, an
+    oven or a sprinkler zone on the spine the same way.
+  domain: automation
+  homeassistant:
+    min_version: "2026.8.3"
+  source_url: https://github.com/bitmux/Dayline/blob/main/blueprints/automation/dayline/dayline_timer.yaml
+  input:
+    timers:
+      name: Timers
+      description: The timer helpers to put on the spine.
+      selector:
+        entity:
+          domain: timer
+          multiple: true
+    spine:
+      name: Which spine
+      description: >
+        Leave empty and the row goes on every Dayline card. Name one or more to
+        keep a kitchen timer off a nine-year-old's wall panel.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          integration: dayline
+          domain: sensor
+    finished_stays:
+      name: Leave a row when it goes off
+      description: >
+        An alert row with a Dismiss button, so a timer that went off while you
+        were in the garage is still saying so when you come back. Switch it off
+        and the row simply disappears at zero.
+      default: true
+      selector:
+        boolean:
+
+mode: queued
+max: 10
+max_exceeded: silent
+
+variables:
+  watched: !input timers
+  spine: !input spine
+  keep: !input finished_stays
+  # The helper's own name is the whole title. Someone who made a timer called
+  # "Cookies" has already written the row.
+  entity: "{{ trigger.event.data.entity_id }}"
+  title: "{{ state_attr(trigger.event.data.entity_id, 'friendly_name') or 'Timer' }}"
+  row: "timer_{{ trigger.event.data.entity_id | replace('.', '_') }}"
+
+triggers:
+  - trigger: event
+    event_type: timer.started
+    id: running
+  - trigger: event
+    event_type: timer.restarted
+    id: running
+  - trigger: event
+    event_type: timer.paused
+    id: paused
+  - trigger: event
+    event_type: timer.finished
+    id: finished
+  - trigger: event
+    event_type: timer.cancelled
+    id: cancelled
+
+conditions:
+  - condition: template
+    value_template: "{{ trigger.event.data.entity_id in watched }}"
+
+actions:
+  - choose:
+      # Running. `finishes_at` is what makes the bar fill; without it the row
+      # would still be right, just not a countdown.
+      - conditions:
+          - condition: trigger
+            id: running
+        sequence:
+          - action: dayline.show
+            data:
+              id: "{{ row }}"
+              spine: "{{ spine }}"
+              message: "{{ title }}"
+              ends_at: "{{ state_attr(entity, 'finishes_at') }}"
+
+      # Paused keeps the row and drops the bar. A bar that stopped moving looks
+      # like the card is broken; a row with no bar looks like what it is.
+      - conditions:
+          - condition: trigger
+            id: paused
+        sequence:
+          - action: dayline.show
+            data:
+              id: "{{ row }}"
+              spine: "{{ spine }}"
+              message: "{{ title }}"
+              sentence: Paused
+
+      - conditions:
+          - condition: trigger
+            id: finished
+        sequence:
+          - if:
+              - condition: template
+                value_template: "{{ keep }}"
+            then:
+              - action: dayline.show
+                data:
+                  id: "{{ row }}"
+                  spine: "{{ spine }}"
+                  message: "{{ title }}"
+                  level: alert
+                  sentence: Time is up
+                  cancel_label: Dismiss
+                  cancel_action:
+                    action: perform-action
+                    perform_action: dayline.dismiss
+                    data:
+                      id: "{{ row }}"
+            else:
+              - action: dayline.dismiss
+                data:
+                  id: "{{ row }}"
+                  spine: "{{ spine }}"
+
+      # Cancelled is not finished. Nobody wants an alert for the timer they
+      # deliberately stopped.
+      - conditions:
+          - condition: trigger
+            id: cancelled
+        sequence:
+          - action: dayline.dismiss
+            data:
+              id: "{{ row }}"
+              spine: "{{ spine }}"

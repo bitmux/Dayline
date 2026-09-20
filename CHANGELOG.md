@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.4.0-beta.2 — 19 September 2026
+
+**Rows that run out.** `dayline.show` takes an **Ends at**. A row that has one
+is drawn live, with the progress bar the card already gave a meeting that is
+under way, and joins the past once the end goes by instead of sitting above the
+now marker still claiming to be running.
+
+```yaml
+action: dayline.show
+data:
+  id: washer
+  message: Washing machine
+  ends_at: "{{ (now() + timedelta(minutes=48)).isoformat() }}"
+```
+
+It is one field, not a timer feature. Dayline still does not know what a timer
+is — which is why the same field covers the wash cycle, the oven, a sprinkler
+zone and "back in 20" rather than one narrow thing that only knows about one
+domain.
+
+`duration` is untouched and still means when the row stops being *drawn*. The
+two do not overlap: a cycle that ended at 6:40 should still be on the card at
+6:45.
+
+- **New blueprint — *Dayline: put a timer on the spine*.** Running, paused and
+  cancelled, plus an alert row with a Dismiss button when one goes off. It
+  watches `timer.*` helper entities. **Assist's voice timers are not those** —
+  they are held by the voice satellite and never reach the state machine, so
+  nothing can watch them; the blueprint says so rather than letting you find out
+  by it never working.
+- **Glance card:** a row with an end now takes the "what's on now" band instead
+  of the alert band, where the bar and the time remaining already are — and
+  where a finished one drops out by itself.
+- An end that is not after the start is ignored. There is no bar to draw for it,
+  and a row with no bar beats a row claiming to be done before it began.
+
 ## 0.4.0-beta.1 — 19 September 2026
 
 **It is called Dayline everywhere now.** The integration's domain, its services

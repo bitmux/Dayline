@@ -370,50 +370,46 @@ The forward half — *what the house will do* — is still answered by schedule
 calendars and by `dayline.show`, both of which have a person writing the
 sentence at the point the intent is expressed.
 
-## Countdowns — rows that end
+## Countdowns — rows that end — **done, 0.4.0-beta.2**
 
-**Tabled.** View Assist's own timers already work and already solve the problem
-in the place people are actually standing, and duplicating a working thing on a
-second surface is not worth the field it would cost. Kept here because the
-`ends_at` gap below is real and will come up again for anything that runs for a
-known length of time — a wash cycle, an oven, a sprinkler zone — none of which
-have a View Assist implementation to defer to.
+`dayline.show` takes an **`ends_at`**. A pushed row that has one is a span rather
+than a condition: drawn live with the progress bar the spine already had for a
+running meeting, and finished — past, struck through — once the end goes by. A
+row without one is unchanged, because "the garage is open" with a progress bar
+would be nonsense.
 
-"Hey Jarvis, ten minute timer for the cookies" should put a row on the spine that
-fills up as the timer runs, and a progress bar is a thing this card already
-draws. Nothing supports it today, and the gap is small and specific.
+That is the whole of it. The integration still does not know what a timer is,
+which is principle 1 and which is also why the same field gets the wash cycle,
+the oven, the sprinkler zone and "back in 20" without any of them being a
+feature. `duration` was left alone and means what it always meant — when the row
+stops being drawn — because a cycle that ended at 6:40 should still be on the
+card at 6:45.
 
-`dayline.show` takes a `duration`, but that sets `expires` — when the row
-should stop being drawn — and the row it builds is always `kind: standing` with
-no `end`. Standing rows are deliberately never drawn as live, because "the garage
-is open" with a progress bar would be nonsense. So a pushed row can appear and
-later vanish; it cannot count down.
+Both cards had to agree on one rule: **a pushed row with an end is an event.** On
+the spine that meant standing rows stop being routed straight to the overdue
+band when they carry an end. On the glance card it meant they leave the alert
+band for the "what's on now" band, which is where the bar and the time remaining
+already live — and where a finished one drops out by itself instead of sitting
+in the alert list for the rest of the day.
 
-**The fix is one field, not a timer feature.** Give `show` an `ends_at`, and a
-row that has one is drawn live, with the progress bar the spine already has for
-running events. Then a blueprint on `timer.started` / `timer.finished` does the
-rest and the integration never learns what a timer is — which is principle 1, and
-which also gets laundry cycles, the oven, the sprinklers and "back in 20" for
-free rather than one narrow feature that only knows about one domain.
+`blueprints/automation/dayline/dayline_timer.yaml` wires it to `timer.*` helpers:
+running, paused, cancelled, and an alert row with a Dismiss button when one goes
+off.
 
-Two things to settle first:
+**The question about the house got an answer, and it is no.** Home Assistant's
+own Assist timers are held by the voice satellite and the intent system; they
+are not `timer.*` entities and there is nothing on the state machine to watch.
+View Assist runs its own machinery for the same reason. So "Hey Jarvis, ten
+minute timer for the cookies" does not reach the spine, and the blueprint says
+so in its own description rather than letting someone find out by it never
+working. A voice command that runs a script that starts a real timer helper does
+work.
 
-- **Where the voice timer actually lives.** Home Assistant's own Assist timers
-  are held by the voice satellite and the intent system; they are not `timer.*`
-  helper entities and there is nothing on the state machine to watch. View Assist
-  runs its own timer machinery for the same reason. A `timer.*` helper started by
-  a script is the easy case and may not be the case in play. This decides whether
-  a blueprint can see them at all, and it is a question about the house, not
-  about this repo.
-- **Whether labelled `timer.*` helpers should be picked up with no automation at
-  all.** The `Dayline` label already means something different on a non-calendar
-  entity — explain this thing's automatic changes — so the label's meaning is
-  already per-domain, and `timer` meaning "put it on the spine while it runs"
-  would be consistent rather than a special case. Zero setup, but only ever
-  covers helpers.
-
-A finished timer is an alert row with a button, which `show` can already do
-today. It is only the running one that needs `ends_at`.
+**Still open:** whether a labelled `timer.*` helper should be picked up with no
+automation at all. The `Dayline` label already means something different on a
+non-calendar entity, so a per-domain meaning would be consistent rather than a
+special case — zero setup, but it only ever covers helpers. Not worth building
+until the blueprint has been lived with.
 
 ---
 

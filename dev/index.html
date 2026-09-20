@@ -238,6 +238,16 @@ mount("Pushed rows · alert and info levels, two buttons each", {
   sources: SOURCES,
 });
 
+// `ends_at`: a pushed row that is a span rather than a condition. Two running
+// with bars, one that already finished and must read as finished, and the
+// garage alongside them still being a condition with no bar at all.
+mount("Rows that run out · ends_at draws the countdown", {
+  entries: mock.spans,
+  headline: "4 September · 3 left today",
+  now: "Afternoon · washer running",
+  sources: SOURCES,
+});
+
 mount("Day spent · tomorrow's alarm closes the day", {
   entries: mock.dayDone,
   headline: "Nothing else today",

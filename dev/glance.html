@@ -132,6 +132,11 @@ mount("No weather entity configured", nowAndNext, { size: "half", weather: null 
 // The day is spent and the only thing left is tomorrow's alarm. This is the
 // state the whole when_empty rule exists for: "Nothing else today" is true and
 // answers the wrong question.
+// `ends_at`: a span takes the now band, where the bar and the time left are,
+// rather than the alert list. The garage, which has no end, stays an alert.
+mount("Rows that run out · the span is what's on now", mock.spans);
+mount("Rows that run out · half width", mock.spans, { size: "half" });
+
 mount("Day spent · tomorrow's alarm is the answer", mock.dayDone, { size: "half" });
 mount("Day spent · no alarm configured", mock.dayDone.filter((e) => e.kind !== "alarm"), { size: "half" });
 // And an alarm that goes off tonight, which is simply part of today.

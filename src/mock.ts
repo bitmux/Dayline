@@ -509,3 +509,65 @@ export const standing: SpineEntry[] = [
     automation: "Evening lights fade up",
   },
 ];
+
+
+/**
+ * Rows that run out: a pushed row with an `ends_at`.
+ *
+ * Three at once on purpose — one part way through, one just started, and one
+ * whose end has already gone by. The last is the point of the scene: it should
+ * be sitting in the past, struck through, not hanging above the now marker
+ * still claiming to be running.
+ */
+export const spans: SpineEntry[] = [
+  {
+    id: "push:timer_cookies",
+    start: offset(-4),
+    end: offset(6),
+    kind: "standing",
+    source: "House",
+    title: "Cookies",
+    priority: "high",
+    sticky: true,
+  },
+  {
+    id: "push:washer",
+    start: offset(-46),
+    end: offset(2),
+    kind: "standing",
+    source: "House",
+    title: "Washing machine",
+    automation: "Dryer starts when it finishes",
+    priority: "high",
+    sticky: true,
+  },
+  {
+    id: "push:sprinklers",
+    start: at(6, 0),
+    end: at(6, 20),
+    kind: "standing",
+    source: "House",
+    title: "Front lawn sprinklers",
+    priority: "high",
+    sticky: true,
+  },
+  {
+    id: "push:garage_open_span",
+    start: at(10, 42),
+    kind: "standing",
+    source: "House",
+    title: "Garage is open",
+    level: "info",
+    priority: "high",
+    sticky: true,
+    actions: [{ label: "Close it", service: "cover.close_cover" }],
+  },
+  {
+    id: "cal:pickup-span",
+    start: offset(95),
+    kind: "calendar",
+    source: "Google",
+    color: "blue",
+    title: "School pickup",
+  },
+];

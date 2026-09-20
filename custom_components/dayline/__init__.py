@@ -54,6 +54,11 @@ SHOW_SCHEMA = vol.Schema(
         vol.Optional("priority", default="high"): vol.In(PRIORITIES),
         vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=1)),
         vol.Optional("start"): cv.string,
+        # The other end of a row that runs for a known length of time. Distinct
+        # from `duration`, which says when the row stops being drawn: a wash
+        # cycle that ends at 6:40 should still be on the card at 6:45, struck
+        # through like any other finished thing.
+        vol.Optional("ends_at"): cv.string,
         vol.Optional("entity_id"): cv.entity_id,
         # Which spine, when there is more than one. Sensor entity ids, because
         # that is the name a person can see and point at.

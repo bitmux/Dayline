@@ -34,6 +34,7 @@ SHOTS = {
         "busy": "07-card-busy-day.png",
         "overlapping": "09-card-overlapping.png",
         "standing": "14-card-pushed-rows.png",
+        "spans": "15-card-rows-that-run-out.png",
         "daydone": "08-card-day-spent.png",
     },
     # The glance card is a fixed rectangle rather than a column, so its captures

@@ -720,7 +720,11 @@ export class DaylineCard extends LitElement {
       // Standing rows are true now, whenever they began. They never sort into
       // the past, because "the garage is open" struck through would be the card
       // telling you it is closed.
-      else if (e.kind === "standing") overdue.push(e);
+      //
+      // Unless one carries an end. Then it is not a condition but a span — a
+      // wash cycle, an oven, a ten-minute timer — and it belongs in the day
+      // like any other event: live while it runs, finished once it is over.
+      else if (e.kind === "standing" && !e.end) overdue.push(e);
       // Free time is built to start at now-or-later, so it is always ahead —
       // said explicitly because a gap starting exactly now would otherwise fall
       // through to the past and be drawn struck through.
@@ -730,6 +734,10 @@ export class DaylineCard extends LitElement {
       // all afternoon, a slow cooker, and a call inside both — and each gets its
       // own row, because "what is running right now" is never a single answer.
       else if (!Number.isNaN(end) && end > now) live.push(e);
+      // A span that has run out is over, buttons or not. Falling through to the
+      // overdue rule below would leave a finished countdown sitting above the
+      // now marker claiming to still want something.
+      else if (e.kind === "standing") past.push(e);
       else if (e.sticky && e.action) overdue.push(e);
       else past.push(e);
     }

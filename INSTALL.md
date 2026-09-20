@@ -316,6 +316,7 @@ else — every field is a selector, so there is no YAML to write.
 | **Priority** | *High* (default) never collapses off the card |
 | **Duration** | Seconds until it leaves on its own. Omit and it stays |
 | **Start** | Where it sorts into the day. Defaults to now |
+| **Ends at** | For something that runs for a known length of time. Draws the row live, with a progress bar |
 | **Related entity** | Optional. What the row is about, for the more-info dialog |
 | **Confirm button** | A label and an action |
 | **Cancel button** | A label and an action |
@@ -340,6 +341,47 @@ gets this right for you.
 
 Calling `show` again with the same **id** *replaces* the row rather than stacking
 a copy, so it is safe from an automation that runs on every state change.
+
+### Rows that run out
+
+Most pushed rows are conditions: *the garage is open* is true until something
+changes, and it never belongs in the past. Some are not. A wash cycle, the oven,
+a sprinkler zone and a ten-minute timer all end at a time that is already known
+when they start.
+
+Give **Ends at** an ISO timestamp and the row becomes one of those. It is drawn
+live — the terracotta treatment and the filling progress bar the card already
+gives a meeting that is under way — and once the end passes it takes its place
+in the past like any finished thing, struck through, rather than sitting above
+the now marker still claiming to be running.
+
+```yaml
+action: dayline.show
+data:
+  id: washer
+  message: Washing machine
+  ends_at: "{{ (now() + timedelta(minutes=48)).isoformat() }}"
+```
+
+**Duration** is a different question and the two do not overlap: *ends at* is
+when the thing finishes, *duration* is when the row stops being drawn at all. A
+wash cycle that ended at 6:40 should still be on the card at 6:45.
+
+An end that is not after the start is ignored rather than honoured — there is no
+sensible bar to draw for it, and a row with no bar is a better answer than a row
+claiming to be finished before it began.
+
+**Timers.** There is a blueprint — *Dayline: put a timer on the spine* — that
+does the whole of the above for `timer.*` helper entities, including an alert row
+with a Dismiss button when one goes off. Worth knowing before you reach for it:
+**Assist's voice timers are not `timer` entities.** "Hey Jarvis, ten minutes" is
+held by the voice satellite and never reaches the state machine, so nothing can
+watch it. A voice command that runs a script that starts a real timer helper
+works fine.
+
+Nothing about timers exists inside Dayline, and that is the point. One field on
+one action covers the timer, the washer, the oven and the sprinklers, instead of
+one narrow feature that only knows about one domain.
 
 ### `dayline.dismiss`
 

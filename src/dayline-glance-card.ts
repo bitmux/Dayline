@@ -77,6 +77,16 @@ type ResolvedConfig = DaylineGlanceCardConfig & typeof DEFAULTS;
  */
 const FIT_STEPS = 6;
 
+/**
+ * A pushed row that declared an end: a wash cycle, an oven, a ten-minute timer.
+ *
+ * Standing rows are otherwise conditions — "the garage is open" — true until
+ * something changes and never over. One with an `ends_at` is the opposite shape
+ * and is treated as an event everywhere: named in the band below while it runs,
+ * gone once it has.
+ */
+const isSpan = (e: SpineEntry): boolean => e.kind === "standing" && !!e.end;
+
 /** The chosen event, and whether it has already started. */
 interface NextUp {
   entry: SpineEntry;
@@ -696,7 +706,10 @@ export class DaylineGlanceCard extends LitElement {
   private _alerts(entries: SpineEntry[]): SpineEntry[] {
     const rank = (e: SpineEntry) => (e.level === "alert" ? 0 : 1);
     return entries
-      .filter((e) => e.level === "alert" || e.kind === "standing")
+      // A span belongs in the band below rather than here: that is where the
+      // card can draw how much of it is left, and where a finished one falls
+      // out on its own instead of sitting in the alert list forever.
+      .filter((e) => (e.level === "alert" || e.kind === "standing") && !isSpan(e))
       .sort((a, b) => rank(a) - rank(b) || Date.parse(b.start) - Date.parse(a.start))
       .slice(0, Math.max(0, this._config.max_alerts));
   }
@@ -720,11 +733,11 @@ export class DaylineGlanceCard extends LitElement {
         (e) =>
           !e.all_day &&
           e.kind !== "event" &&
-          e.kind !== "standing" &&
+          (e.kind !== "standing" || isSpan(e)) &&
           // Free time is the absence of a commitment. This card names the one
           // thing that matters next, and "2h 40m free" is not a thing to be at.
           e.kind !== "gap" &&
-          e.level !== "alert" &&
+          (e.level !== "alert" || isSpan(e)) &&
           !shown.has(e.id),
       )
       .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
