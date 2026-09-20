@@ -17,7 +17,7 @@
       "init": {
         "title": "Dayline",
         "menu_options": {
-          "labels": "Labels and tags — what Dayline is watching, and why",
+          "labels": "Labels and tags — what this card reads, and what may act",
           "calendars": "Calendar settings — pill names, priority, colour, schedule calendars",
           "sentences": "Sentences — what the house does, in plain words",
           "leaving": "Leave by — travel time to the places your events name",
@@ -28,19 +28,20 @@
       },
       "labels": {
         "title": "Labels and tags",
-        "description": "Most of what Dayline does is not configured here. It is decided by labels you apply in [Settings → Areas & labels](/config/labels) and by `#tags` you type into your own calendar event titles — so it lives where the thing itself lives, and changes without a restart.\n\n**Want a calendar in Dayline at all?** Give it the **{include}** label. Nothing without it is ever read, by any card.\n\n**Want it on only some cards?** Give it a filter label too, and set the same word as this card's filter under *Weather, to-do, and who this card is for*. A calendar needs **both**: the filter narrows what was admitted and cannot admit anything by itself.\n\nThis card's filter: **{filter}**.\nRight now the spine comes from {how}:\n\n{calendars}\n\n**Want an event to *do* something?** Put a `#tag` in its title — `Dinner out #Away` — and give that calendar the **{control}** label as well. Without it the chip still shows and nothing fires; that is deliberate, so a `#vacation` in a school calendar you subscribe to cannot touch your house. Control is a property of the calendar, not of the card, so it is the same one label whatever the filters say.\n\nAllowed to act:\n\n{controls}\n\nThen bind the tag to whatever you like with the **Dayline tag** blueprint (Settings → Automations → Blueprints → Import, `https://github.com/bitmux/Dayline/blob/main/blueprints/automation/dayline/dayline_tag.yaml`). The binding is an ordinary automation you can open and extend, so “unless someone is still home” is yours to write. Dayline fires the `dayline_tag` event and stops there.\n\nTags seen on today's events: {tags}\n\n**Want to explain something the house just did?** That belongs in the automation that did it: add a **Dayline: explain what just happened** action with your own sentence. Dayline used to watch labelled entities and write the line itself, which could say *what* changed and never *why* — and why is the only part anyone went looking for.\n\nA tag fires once, at its event's start — never at the end. Calendars are read every {scan} minutes, so a tag added to an event starting in the next minute or two may not fire.",
-        "data": {}
-      },
-      "sources": {
-        "title": "Weather, to-do, and who this card is for",
-        "description": "The weather entity supplies the hourly forecast joined onto upcoming entries; the to-do list supplies the sticky rows with a Done button. One of each — these are genuine choices, not something a label can answer.\n\n**Calendars are not chosen here.** A calendar joins Dayline by carrying the **Dayline** label, applied in [Settings → Areas & labels](/config/labels). Without it nothing is fetched, by any card.\n\n**One card each.** Add a second Dayline from the integrations page and give it a filter label below — `Wife`, `Kid`. That card then draws only the admitted calendars that *also* carry the filter, so the kid sees their own calendar and the shared family one, and not the mortgage renewal.\n\nLeave the filter empty and this card shows everything admitted, which is what the household card wants. A filter narrows; it never admits.",
+        "description": "Two labels, applied in [Settings → Areas & labels](/config/labels), decide what Dayline reads. Both take effect without a restart.\n\n**{include}** — a calendar carrying it is in. Nothing else is ever read.\n**{control}** — that calendar's `#tags` may act on the house. Without it a tag shows a chip and fires nothing, so a `#vacation` in a school calendar you subscribe to cannot touch anything.\n\n{how}\n\n{calendars}\n\nAllowed to act:\n\n{controls}\n\n---\n\nA `#tag` in an event title — `Dinner out #Away` — fires the `dayline_tag` event at the event's start. Once, never at the end, and calendars are read every {scan} minutes. Bind it with the **Dayline tag** blueprint: Settings → Automations → Blueprints → Import, `https://github.com/bitmux/Dayline/blob/main/blueprints/automation/dayline/dayline_tag.yaml`\n\nTags seen today: {tags}",
         "data": {
-          "weather_entity": "Weather",
-          "todo_entity": "To-do list",
-          "filter_label": "Filter label"
+          "filter_label": "Filter this card to"
         },
         "data_description": {
-          "filter_label": "Empty means every calendar carrying the **Dayline** label. Set it to narrow this card to the calendars carrying that label as well — and remember the calendar needs **both**, because a filter cannot admit anything on its own."
+          "filter_label": "Leave empty and this card draws every admitted calendar. Name a second label — `Kid`, `Wife` — and it draws only those carrying that one too. The calendar needs **both**: a filter narrows, it cannot admit."
+        }
+      },
+      "sources": {
+        "title": "Weather and to-do",
+        "description": "The weather entity supplies the hourly forecast joined onto upcoming entries; the to-do list supplies the sticky rows with a Done button. One of each — these are genuine choices, not something a label can answer.\n\nCalendars are not chosen here. See **Labels and tags**.",
+        "data": {
+          "weather_entity": "Weather",
+          "todo_entity": "To-do list"
         }
       },
       "calendars": {

@@ -89,23 +89,15 @@ def _how(source: str, label: str) -> str:
     """Takes the filter rather than assuming it: with a card each, the sentence
     has to name the label that card is actually narrowed by."""
     return {
-        "label": (
-            f"the **{LABEL_INCLUDE}** label — this card has no filter, so it "
-            "draws everything admitted"
-        ),
-        "filter": (
-            f"the **{LABEL_INCLUDE}** label, narrowed to the calendars also "
-            f"carrying **{label}**"
-        ),
+        "label": f"Everything carrying **{LABEL_INCLUDE}**:",
+        "filter": f"Carrying **{LABEL_INCLUDE}** and **{label}**:",
         "filter-empty": (
-            f"nothing. No calendar carries both **{LABEL_INCLUDE}** and "
-            f"**{label}** — a filter narrows what was admitted, it does not "
-            "admit anything by itself"
+            f"**Nothing.** No calendar carries both **{LABEL_INCLUDE}** and "
+            f"**{label}** — a filter narrows, it cannot admit."
         ),
         "none": (
-            f"nothing yet. No calendar carries the **{LABEL_INCLUDE}** label, "
-            "so this card has no day to draw. Apply it in Settings → Areas & "
-            "labels"
+            f"**Nothing yet.** Apply **{LABEL_INCLUDE}** to a calendar and it "
+            "appears here."
         ),
     }.get(source, source)
 
@@ -266,16 +258,20 @@ class DaySpineOptionsFlow(OptionsFlow):
         return []
 
     async def async_step_labels(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """A page that answers "why is this on my card", and nothing else.
+        """What this card reads, and the one label setting that is ours.
 
-        Deliberately read-only. Every fact on it is owned by the label registry
-        or by an automation, and offering to change it from here would mean
-        writing someone else's settings from inside ours — the mistake that made
-        the card's own Lovelace registration fail. It tells you what is true and
-        where the switch is.
+        Everything else on this page is owned by the label registry and shown
+        read-only, because offering to change somebody else's settings from
+        inside ours is the mistake that made the card's own Lovelace
+        registration fail. The filter is the exception and belongs here anyway:
+        it is a label, it is the thing people come to this page thinking about,
+        and it was hidden on the weather page for a week because it was stored
+        next to the entity pickers rather than next to its subject.
         """
         if user_input is not None:
-            return await self.async_step_init()
+            # Empty is a real answer and means "everything admitted".
+            self._opts[OPT_FILTER] = str(user_input.get(OPT_FILTER) or "").strip()
+            return self._save()
 
         coordinator = self._coordinator()
         calendars = self._resolved_calendars()
@@ -285,15 +281,18 @@ class DaySpineOptionsFlow(OptionsFlow):
 
         return self.async_show_form(
             step_id="labels",
-            data_schema=vol.Schema({}),
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(OPT_FILTER, default=self._filter()): selector.TextSelector(),
+                }
+            ),
             description_placeholders={
                 "include": LABEL_INCLUDE,
                 "control": LABEL_CONTROL,
-                "filter": self._filter() or "— none, so this card shows everything admitted",
                 "how": _how(source, self._filter()),
                 "calendars": _names(self.hass, calendars),
                 "controls": _names(self.hass, control),
-                "tags": ", ".join(f"#{tag}" for tag in seen) or "— none seen today",
+                "tags": ", ".join(f"#{tag}" for tag in seen) or "none seen today",
                 "scan": str(
                     self.config_entry.options.get(OPT_SCAN_MINUTES, DEFAULT_SCAN_MINUTES)
                 ),
@@ -318,9 +317,6 @@ class DaySpineOptionsFlow(OptionsFlow):
                 for entity_id in keep
             }
             # An empty box means the default, not a spine labelled "".
-            # Empty is a real answer here and means "everything admitted", so
-            # it is stored as empty rather than defaulted to anything.
-            self._opts[OPT_FILTER] = str(user_input.get(OPT_FILTER) or "").strip()
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data={
@@ -333,9 +329,6 @@ class DaySpineOptionsFlow(OptionsFlow):
         schema: dict[Any, Any] = {}
         _optional(schema, CONF_WEATHER, data.get(CONF_WEATHER), _entity("weather"))
         _optional(schema, CONF_TODO, data.get(CONF_TODO), _entity("todo"))
-        schema[
-            vol.Optional(OPT_FILTER, default=self._opts.get(OPT_FILTER) or "")
-        ] = selector.TextSelector()
         return self.async_show_form(step_id="sources", data_schema=vol.Schema(schema))
 
     # -- per-calendar label, priority, role ---------------------------------
