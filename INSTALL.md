@@ -79,7 +79,7 @@ from an entity's settings dialog, or in bulk by ticking rows in
 
 The integration's **Configure → Labels and tags** page says which entities
 currently carry each label, so you can check your work without leaving Home
-Assistant.
+Assistant. It is also where a card's filter label is set.
 
 ### `Dayline` — what goes on the card
 
@@ -180,8 +180,9 @@ calendar is not allowed to fire" — never "nothing is listening".
 
 **Settings → Devices & services → Dayline → Configure.** Six sections:
 
-- **Labels and tags** — read-only. What is labelled right now, which calendars
-  may act, which tags have been seen today, and where to change each.
+- **Labels and tags** — what this card reads, what may act, which tags have
+  been seen today, and the **filter label** that narrows this card. Everything
+  else on it is the label registry's and is shown rather than offered.
 - **Calendar settings** — each calendar's pill label, colour, default priority,
   and whether it is a *schedule* calendar. Order matters: when two calendars carry
   the same event worded differently, the first one listed supplies the wording.
@@ -191,8 +192,7 @@ calendar is not allowed to fire" — never "nothing is listening".
   only the tag; written `coffee` it means either. First match wins, so the
   order of the list is the order of precedence. This *describes*; to make an
   event act, use a `#tag`.
-- **Weather and to-do** — the two entity pickers, and the label this card
-  answers to.
+- **Weather and to-do** — the two entity pickers, and nothing else.
 - **Tuning** — sun rows, merge similarity, excluded titles, timings, and
   optional templates for the headline and the "Now" subline.
 
@@ -861,9 +861,9 @@ not by adding filters to the first one: *Settings → Devices & services → Day
 
 Everything that makes a day is already per card: to-do list, weather, which
 phones' alarms to read, leave-by, free time, wording. What narrows the
-*calendars* is the **filter label**, under **Weather, to-do, and who this card
-is for**. Set it to `Kid`, apply a `Kid` label alongside `Dayline` on the
-calendars they should see, and that spine draws those and nothing else.
+*calendars* is the **filter label**, under **Options → Labels and tags**. Set
+it to `Kid`, apply a `Kid` label alongside `Dayline` on the calendars they
+should see, and that spine draws those and nothing else.
 
 **Two labels, answering two different questions.** `Dayline` **admits** a
 calendar — without it nothing is fetched, by any card. A **filter** label then

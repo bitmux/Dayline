@@ -292,7 +292,7 @@ class DaySpineOptionsFlow(OptionsFlow):
                 "how": _how(source, self._filter()),
                 "calendars": _names(self.hass, calendars),
                 "controls": _names(self.hass, control),
-                "tags": ", ".join(f"#{tag}" for tag in seen) or "none seen today",
+                "tags": ", ".join(f"#{tag}" for tag in seen) or "none yet",
                 "scan": str(
                     self.config_entry.options.get(OPT_SCAN_MINUTES, DEFAULT_SCAN_MINUTES)
                 ),
