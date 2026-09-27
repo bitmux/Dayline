@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0-beta.3 — 20 September 2026
+## 0.4.0-beta.3 — 26 September 2026
 
 **Countdowns count.** A minute was the right resolution for everything on these
 cards until the first ten-minute timer, which advanced its bar by a tenth at a
