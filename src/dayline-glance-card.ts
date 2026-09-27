@@ -12,6 +12,7 @@ import type {
   SpineAction,
   SpineEntry,
 } from "./types";
+import { fillStyle, nextChange, remaining } from "./countdown";
 
 /**
  * Dayline, reduced to what survives being read from across a room.
@@ -109,6 +110,9 @@ export class DaylineGlanceCard extends LitElement {
   @state() private _stateObj?: HassEntity;
   @state() private _now = Date.now();
   @state() private _pending = new Set<string>();
+  /** Set while rendering: the soonest moment the countdown's text goes stale. */
+  private _soonest: number | null = null;
+  private _fine?: number;
   /** 0 = everything drawn. See FIT_STEPS. */
   @state() private _fit = 0;
 
@@ -189,6 +193,7 @@ export class DaylineGlanceCard extends LitElement {
     super.connectedCallback();
     if (this._config?.load_fonts) loadFonts();
     this._startClock();
+    document.addEventListener("visibilitychange", this._onVisible);
     // A panel gets resized by rotation, by a dashboard edit, and once by the
     // browser settling after load. Each time, start from everything drawn — a
     // card that only ever gives things up would stay stripped down forever
@@ -214,9 +219,42 @@ export class DaylineGlanceCard extends LitElement {
     super.disconnectedCallback();
     if (this._timer) window.clearInterval(this._timer);
     if (this._align) window.clearTimeout(this._align);
-    this._timer = this._align = undefined;
+    if (this._fine) window.clearTimeout(this._fine);
+    this._timer = this._align = this._fine = undefined;
+    document.removeEventListener("visibilitychange", this._onVisible);
     this._ro?.disconnect();
     this._ro = undefined;
+  }
+
+  /**
+   * A panel that was asleep comes back showing the moment it went under. One
+   * tick on the way in, and the bar re-anchors with the same render.
+   */
+  private _onVisible = (): void => {
+    if (!document.hidden) this._now = Date.now();
+  };
+
+  /** When the one line of "how much is left" next says something else. */
+  private _watch(end: number): void {
+    const next = nextChange(end, this._now);
+    if (next === null) return;
+    this._soonest = this._soonest === null ? next : Math.min(this._soonest, next);
+  }
+
+  /**
+   * One timeout, aimed at the next change rather than at the next minute.
+   *
+   * Nothing is scheduled when nothing is running -- see countdown.ts for why
+   * the bar itself needs no timer at all.
+   */
+  private _scheduleFine(): void {
+    if (this._fine) window.clearTimeout(this._fine);
+    this._fine = undefined;
+    if (this._soonest === null) return;
+    this._fine = window.setTimeout(() => {
+      this._fine = undefined;
+      this._now = Date.now();
+    }, this._soonest);
   }
 
   /**
@@ -229,6 +267,9 @@ export class DaylineGlanceCard extends LitElement {
    * ResizeObserver above is the only thing that ever winds it back.
    */
   protected override updated(): void {
+    // Before the early return below: a card that has finished shrinking still
+    // has a timer to keep honest.
+    this._scheduleFine();
     if (this._fit >= FIT_STEPS) return;
     const card = this.renderRoot.querySelector(".card") as HTMLElement | null;
     if (!card) return;
@@ -315,6 +356,7 @@ export class DaylineGlanceCard extends LitElement {
   // ------------------------------------------------------------------- render
 
   protected override render(): TemplateResult {
+    this._soonest = null;
     const cfg = this._config;
     const s = this._stateObj;
     const down = !s || s.state === "unavailable" || s.state === "unknown";
@@ -536,10 +578,7 @@ export class DaylineGlanceCard extends LitElement {
     const end = Date.parse(e.end);
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return nothing;
     const pct = Math.round(Math.min(1, Math.max(0, (this._now - start) / (end - start))) * 100);
-    const mins = Math.max(0, Math.round((end - this._now) / 60_000));
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    const left = h && m ? `${h}h ${m}m` : h ? `${h}h` : `${m}m`;
+    this._watch(end);
     return html`<div class="prog">
       <div
         class="prog-track"
@@ -548,9 +587,9 @@ export class DaylineGlanceCard extends LitElement {
         aria-valuemin="0"
         aria-valuemax="100"
       >
-        <div class="prog-fill" style="width:${pct}%"></div>
+        <div class="prog-fill" style=${fillStyle(start, end, this._now)}></div>
       </div>
-      <div class="prog-left">${left} left</div>
+      <div class="prog-left">${remaining(end, this._now)}</div>
     </div>`;
   }
 

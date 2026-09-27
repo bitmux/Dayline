@@ -13,6 +13,12 @@ blueprint:
     this at that helper and it works.
 
 
+    Which timers? By default, the ones you have labelled **Dayline** — the
+    same label the cards use for calendars. A house runs timers for occupancy
+    timeouts and pump cycles that nobody wants on a wall panel, so this admits
+    nothing until you say so, one label at a time.
+
+
     Nothing about timers exists inside Dayline. This blueprint only calls
     `dayline.show` with an end time, and the same field puts a wash cycle, an
     oven or a sprinkler zone on the spine the same way.
@@ -23,7 +29,17 @@ blueprint:
   input:
     timers:
       name: Timers
-      description: The timer helpers to put on the spine.
+      description: >
+        Leave this empty and it watches every timer carrying the **Dayline**
+        label, the same way the card picks up calendars — label the cookies,
+        leave the occupancy timeouts alone, and never come back here again.
+
+
+        Name timers explicitly instead and the label is ignored for this
+        automation. Worth it when a timer belongs on the spine but you would
+        rather not label it, or when two copies of this blueprint want two
+        different sets.
+      default: []
       selector:
         entity:
           domain: timer
@@ -81,8 +97,17 @@ triggers:
     id: cancelled
 
 conditions:
+  # Named timers if any were named, otherwise whatever is labelled right now.
+  #
+  # Read at trigger time rather than at reload, so a timer labelled this
+  # afternoon is on the spine the next time it runs, with nothing to restart.
+  # `label_entities` is Home Assistant's own resolution — it takes in the
+  # entities of a labelled device too — which is what makes the label mean the
+  # same thing here as it does on a calendar.
   - condition: template
-    value_template: "{{ trigger.event.data.entity_id in watched }}"
+    value_template: >
+      {% set admitted = label_entities('Dayline') if label_id('Dayline') else [] %}
+      {{ trigger.event.data.entity_id in (watched if watched else admitted) }}
 
 actions:
   - choose:

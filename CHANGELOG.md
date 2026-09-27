@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.4.0-beta.3 — 20 September 2026
+
+**Countdowns count.** A minute was the right resolution for everything on these
+cards until the first ten-minute timer, which advanced its bar by a tenth at a
+time and spent its last sixty seconds saying "1m left".
+
+- **The bar fills smoothly.** One CSS animation, told the whole span once and
+  left to run on its own — no frame loop, no second clock, nothing recalculated
+  per frame. Each ordinary minute tick hands it a fresh offset, which costs
+  nothing and quietly corrects any drift, including a panel that was asleep.
+  Reduced motion goes back to a bar that moves once a minute.
+- **Under a minute, the text counts seconds.** *45s left*, *44s left*. The row
+  wakes for the moment its own text changes rather than on the wall-clock minute,
+  so a timer ending at 6:40:20 changes what it says at :20 past. Nothing is
+  scheduled at all while nothing is running, which is most of a day.
+- **A card coming back from a suspended tab re-anchors on the way in.** Panel
+  browsers stop the clock on a page they have put in the background, and the
+  first thing anyone saw on waking one was whatever had been true when it went
+  under.
+
+**The timer blueprint watches labelled timers by default.** A house runs timers
+for occupancy timeouts and pump cycles, and none of them belong on a wall panel.
+Leave **Timers** empty and it takes every timer carrying the `Dayline` label —
+the same label the cards use for calendars, read as each timer runs, so labelling
+one this afternoon takes effect with nothing to reload. Naming timers explicitly
+still works and overrides the label.
+
 ## 0.4.0-beta.2 — 19 September 2026
 
 **Rows that run out.** `dayline.show` takes an **Ends at**. A row that has one

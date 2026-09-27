@@ -405,11 +405,19 @@ so in its own description rather than letting someone find out by it never
 working. A voice command that runs a script that starts a real timer helper does
 work.
 
-**Still open:** whether a labelled `timer.*` helper should be picked up with no
-automation at all. The `Dayline` label already means something different on a
-non-calendar entity, so a per-domain meaning would be consistent rather than a
-special case — zero setup, but it only ever covers helpers. Not worth building
-until the blueprint has been lived with.
+**The label arrived in 0.4.0-beta.3** — in the blueprint, not the integration.
+Watching every `timer.*` was wrong the first time a real house looked at it: the
+helpers doing occupancy timeouts and pump cycles outnumber the ones anybody wants
+to see, and an automation that shows all of them is an automation you switch off.
+So the blueprint's default is now the `Dayline` label, resolved at trigger time
+with Home Assistant's own `label_entities`, which makes labelling a timer the
+same gesture as labelling a calendar. Naming timers explicitly still overrides
+it.
+
+**Still open:** whether the integration should pick a labelled `timer.*` helper
+up with no automation at all — zero setup, but it only ever covers helpers, and
+it would be the first time Dayline knew what a timer was. The blueprint plus a
+label is cheap enough that this may never need answering.
 
 ---
 

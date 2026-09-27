@@ -419,7 +419,11 @@ export const styles = css`
   }
   .prog-fill {
     position: absolute;
-    inset: 0 auto 0 0;
+    /* Full width and slid out of the track, rather than a width that grows.
+       See countdown.ts: the offset is inline, and so is the animation that
+       carries it the rest of the way. */
+    inset: 0;
+    transform: translateX(-100%);
     border-radius: 999px;
     /*
      * The calendar's colour, taken down into the dark half of its own hue. The
@@ -845,10 +849,28 @@ export const styles = css`
     }
   }
 
+  /* The one animation on this card that runs on its own: a span filling toward
+     its end. Declared once here and driven entirely by the inline offset and
+     duration the row carries, so nothing recalculates it per frame. */
+  @keyframes dayline-run {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .row.tappable,
     .act {
       transition: none;
+    }
+    /* Back to a bar that moves once a minute. The inline transform underneath
+       is already where it belongs, so turning the animation off leaves the row
+       correct rather than empty. */
+    .prog-fill {
+      animation: none !important;
     }
   }
 `;

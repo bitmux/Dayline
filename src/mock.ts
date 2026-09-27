@@ -521,6 +521,18 @@ export const standing: SpineEntry[] = [
  */
 export const spans: SpineEntry[] = [
   {
+    // Under a minute, because that is where a countdown stops rounding and
+    // starts counting -- the one state that cannot be checked from a still.
+    id: "push:timer_pasta",
+    start: offset(-7.5),
+    end: offset(0.65),
+    kind: "standing",
+    source: "House",
+    title: "Pasta",
+    priority: "high",
+    sticky: true,
+  },
+  {
     id: "push:timer_cookies",
     start: offset(-4),
     end: offset(6),

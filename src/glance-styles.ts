@@ -272,6 +272,11 @@ export const glanceStyles = css`
   }
   .prog-fill {
     height: 100%;
+    /* Same trick as the spine card: a full-width bar slid out from under the
+       track's clipping, so the leading cap stays round and the fill stays off
+       the layout path. countdown.ts writes the offset and the animation. */
+    width: 100%;
+    transform: translateX(-100%);
     border-radius: 3px;
     /*
      * Whose event it is, same as the dot two lines above it. Not taken down the
@@ -513,9 +518,21 @@ export const glanceStyles = css`
   button:active {
     transform: translateY(1px);
   }
+  @keyframes dayline-run {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     button:active {
       transform: none;
+    }
+    .prog-fill {
+      animation: none !important;
     }
   }
 

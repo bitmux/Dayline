@@ -14,6 +14,7 @@ import type {
   SpineRow,
   SpineSource,
 } from "./types";
+import { fillStyle, nextChange, remaining } from "./countdown";
 
 const DEFAULT_LEGEND =
   "Past entries stay, struck through, so the day reads as a whole. " +
@@ -72,6 +73,9 @@ export class DaylineCard extends LitElement {
   @state() private _alldayExpanded = false;
   /** Entry ids whose action was just pressed, dimmed until the feed confirms. */
   @state() private _pending = new Set<string>();
+  /** Set while rendering: the soonest moment a countdown's text goes stale. */
+  private _soonest: number | null = null;
+  private _fine?: number;
 
   private _hass?: HomeAssistant;
   private _timer?: number;
@@ -125,13 +129,58 @@ export class DaylineCard extends LitElement {
     super.connectedCallback();
     if (this._config?.load_fonts) loadFonts();
     this._startClock();
+    document.addEventListener("visibilitychange", this._onVisible);
   }
 
   public override disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this._timer) window.clearInterval(this._timer);
     if (this._align) window.clearTimeout(this._align);
-    this._timer = this._align = undefined;
+    if (this._fine) window.clearTimeout(this._fine);
+    this._timer = this._align = this._fine = undefined;
+    document.removeEventListener("visibilitychange", this._onVisible);
+  }
+
+  /**
+   * A card coming back from a suspended tab has no idea how long it was gone.
+   *
+   * The wall-clock interval below is throttled or stopped outright while a
+   * panel's browser has the page in the background, so the first thing anyone
+   * sees on waking it is whatever was true when it went under. One tick on the
+   * way back in, and the bars re-anchor with it, since they are handed a fresh
+   * offset by the same render.
+   */
+  private _onVisible = (): void => {
+    if (!document.hidden) this._now = Date.now();
+  };
+
+  /**
+   * Note that something on screen is counting down, and when it next has
+   * something different to say. The soonest one wins: a card showing a
+   * ten-minute timer and a two-hour meeting only has to wake for the timer,
+   * and waking for the timer redraws the meeting anyway.
+   */
+  private _watch(end: number): void {
+    const next = nextChange(end, this._now);
+    if (next === null) return;
+    this._soonest = this._soonest === null ? next : Math.min(this._soonest, next);
+  }
+
+  /**
+   * One timeout, aimed at the next thing that changes -- not a second clock.
+   *
+   * Nothing is scheduled when nothing on the card is running, which is the
+   * ordinary state of a day, so this costs exactly nothing until a timer is
+   * started and stops costing anything the moment it ends.
+   */
+  protected override updated(): void {
+    if (this._fine) window.clearTimeout(this._fine);
+    this._fine = undefined;
+    if (this._soonest === null) return;
+    this._fine = window.setTimeout(() => {
+      this._fine = undefined;
+      this._now = Date.now();
+    }, this._soonest);
   }
 
   /**
@@ -191,6 +240,10 @@ export class DaylineCard extends LitElement {
   // ------------------------------------------------------------------- render
 
   protected override render(): TemplateResult {
+    // Gathered by the rows themselves as they draw, because the end times are
+    // already in hand there and finding them again afterwards would mean
+    // running the whole classification a second time.
+    this._soonest = null;
     const cfg = this._config;
     const s = this._stateObj;
     const loading = !s || s.state === "unavailable" || s.state === "unknown";
@@ -523,9 +576,12 @@ export class DaylineCard extends LitElement {
   private _renderProgress(row: SpineRow): TemplateResult | typeof nothing {
     if (!this._config.show_progress) return nothing;
     const pct = Math.round((row.progress ?? 0) * 100);
+    const start = Date.parse(row.entry!.start);
+    const end = Date.parse(row.entry!.end!);
+    this._watch(end);
     return html`<div class="prog">
       <div class="prog-track" role="progressbar" aria-valuenow=${pct} aria-valuemin="0" aria-valuemax="100">
-        <div class="prog-fill" style="width:${pct}%"></div>
+        <div class="prog-fill" style=${fillStyle(start, end, this._now)}></div>
         <span class="prog-chip">${this._remaining(row.entry!)}</span>
       </div>
       <div class="prog-end">${this._endLabel(row.entry!)}</div>
@@ -840,11 +896,7 @@ export class DaylineCard extends LitElement {
 
   /** "2h 41m left" for the chip riding the progress bar. */
   private _remaining(e: SpineEntry): string {
-    const mins = Math.max(0, Math.round((Date.parse(e.end!) - this._now) / 60_000));
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    const span = h && m ? `${h}h ${m}m` : h ? `${h}h` : `${m}m`;
-    return `${span} left`;
+    return remaining(Date.parse(e.end!), this._now);
   }
 
   /**

@@ -371,13 +371,29 @@ An end that is not after the start is ignored rather than honoured — there is 
 sensible bar to draw for it, and a row with no bar is a better answer than a row
 claiming to be finished before it began.
 
+The bar fills smoothly rather than in one-minute steps, and under a minute the
+row counts seconds: *45s left*, *44s left*. Both cost nothing to run — the bar is
+a single CSS animation the browser is told about once, and the text schedules
+itself for the moment it would change rather than waking on every tick — which
+matters on a wall panel that has to survive being left on all day.
+
 **Timers.** There is a blueprint — *Dayline: put a timer on the spine* — that
 does the whole of the above for `timer.*` helper entities, including an alert row
-with a Dismiss button when one goes off. Worth knowing before you reach for it:
-**Assist's voice timers are not `timer` entities.** "Hey Jarvis, ten minutes" is
-held by the voice satellite and never reaches the state machine, so nothing can
-watch it. A voice command that runs a script that starts a real timer helper
-works fine.
+with a Dismiss button when one goes off.
+
+By default it watches **the timers you have labelled `Dayline`**, exactly the way
+the cards pick up calendars. That default is the important part: a house runs
+timers for occupancy timeouts, pump cycles and debounces, and none of them belong
+on a wall panel. Label the kitchen timer; leave the bedroom's fifteen-minute
+occupancy timeout alone. Labelling is read as each timer runs, so a label applied
+this afternoon takes effect immediately, with nothing to reload. Naming timers in
+the blueprint's own **Timers** field still works and overrides the label for that
+automation.
+
+Worth knowing before you reach for it: **Assist's voice timers are not `timer`
+entities.** "Hey Jarvis, ten minutes" is held by the voice satellite and never
+reaches the state machine, so nothing can watch it. A voice command that runs a
+script that starts a real timer helper works fine.
 
 Nothing about timers exists inside Dayline, and that is the point. One field on
 one action covers the timer, the washer, the oven and the sprinklers, instead of
